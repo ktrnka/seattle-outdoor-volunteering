@@ -8,3 +8,8 @@
 | Eastlake Community Council blog                   | 🔸 Scaffolding   | Extractor stub created                                       |
 | Neighborhood blogs (Ballard, Fremont, Wallyhood) | 🔲 Not started   | RSS/blog parsing with LLM classification                    |
 | City email-only events                           | 🔲 Not started   | Manual YAML entry for now                                   |
+
+
+# Delridge Neighborhood Development Association (DNDA)
+- https://dnda.org/events/
+- Green Seattle's Pigeon Point redirects to here!
