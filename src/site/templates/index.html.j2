@@ -1,0 +1,35 @@
+<!doctype html>
+<html data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <title>Seattle Outdoor Volunteer Calendar</title>
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Outdoor Volunteer Opportunities (Seattle-area)</h1>
+    <table role="grid">
+      <thead><tr><th>Date</th><th>Event</th><th>Where</th><th></th></tr></thead>
+      <tbody>
+      {% for e in events|sort(attribute='start') %}
+        <tr>
+          <td>{{ e.start.strftime('%a %b %d') }}</td>
+          <td><a href="{{ e.url }}">{{ e.title }}</a></td>
+          <td>{{ e.venue or '' }}</td>
+          <td>
+            <a
+              href="https://calendar.google.com/calendar/render?action=TEMPLATE
+&text={{ e.title|urlencode }}
+&dates={{ e.start.strftime('%Y%m%dT%H%M%SZ') }}/{{ e.end.strftime('%Y%m%dT%H%M%SZ') }}
+&location={{ (e.venue or '')|urlencode }}"
+              role="button" target="_blank">Add to Google</a>
+            <!-- TODO: Outlook, Apple -->
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <footer><small>Built automatically every night.  Data may lag sources.</small></footer>
+  </main>
+</body>
+</html>

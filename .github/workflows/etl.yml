@@ -1,0 +1,24 @@
+name: ETL
+
+on:
+  schedule:
+    - cron:  '0 7 * * *'   # 07:00 UTC daily
+  workflow_dispatch:
+
+jobs:
+  run-etl:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Install deps
+      run: pip install -r requirements.txt
+    - name: Run ETL
+      run: python -m src.cli etl
+    - name: Commit DB
+      uses: EndBug/add-and-commit@v9
+      with:
+        add: 'data/events.sqlite.gz'
+        message: 'chore(data): nightly DB update'

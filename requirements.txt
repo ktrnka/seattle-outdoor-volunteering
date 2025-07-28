@@ -1,0 +1,9 @@
+beautifulsoup4
+requests
+pydantic
+click
+jinja2
+staticjinja
+sqlite-utils
+python-dateutil
+python-dotenv
