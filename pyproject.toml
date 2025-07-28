@@ -25,7 +25,7 @@ dependencies = [
     "click",
     "jinja2",
     "staticjinja",
-    "sqlite-utils",
+    "sqlalchemy",
     "python-dateutil",
     "python-dotenv",
 ]

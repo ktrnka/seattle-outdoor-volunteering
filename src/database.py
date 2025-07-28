@@ -1,0 +1,129 @@
+"""Database module using SQLAlchemy for managing the events database."""
+
+from typing import List
+from sqlalchemy import create_engine, Column, String, DateTime, Float, Text, PrimaryKeyConstraint
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.dialects.sqlite import insert
+
+from .config import DB_PATH
+from .models import Event as PydanticEvent
+
+Base = declarative_base()
+
+
+class Event(Base):
+    """SQLAlchemy model for events table."""
+    __tablename__ = 'events'
+
+    source = Column(String, nullable=False)
+    source_id = Column(String, nullable=False)
+    title = Column(String, nullable=False)
+    start = Column(DateTime, nullable=False)
+    end = Column(DateTime, nullable=False)
+    venue = Column(String, nullable=True)
+    address = Column(String, nullable=True)
+    url = Column(Text, nullable=False)
+    cost = Column(String, nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    tags = Column(Text, nullable=True)  # Stored as comma-separated string
+
+    __table_args__ = (
+        PrimaryKeyConstraint('source', 'source_id'),
+    )
+
+    def to_pydantic(self) -> PydanticEvent:
+        """Convert SQLAlchemy model to Pydantic model."""
+        tags = self.tags.split(',') if self.tags else []
+        return PydanticEvent(
+            source=self.source,
+            source_id=self.source_id,
+            title=self.title,
+            start=self.start,
+            end=self.end,
+            venue=self.venue,
+            address=self.address,
+            url=self.url,
+            cost=self.cost,
+            latitude=self.latitude,
+            longitude=self.longitude,
+            tags=tags
+        )
+
+
+def get_engine():
+    """Create and return a SQLAlchemy engine for the SQLite database."""
+    return create_engine(f'sqlite:///{DB_PATH}', echo=False)
+
+
+def get_session() -> Session:
+    """Create and return a SQLAlchemy session."""
+    engine = get_engine()
+    SessionLocal = sessionmaker(bind=engine)
+    return SessionLocal()
+
+
+def init_database() -> None:
+    """Initialize the database by creating all tables."""
+    engine = get_engine()
+    Base.metadata.create_all(bind=engine)
+
+
+def upsert_events(events: List[PydanticEvent]) -> None:
+    """Insert or update events in the database using SQLAlchemy."""
+    session = get_session()
+
+    try:
+        for event in events:
+            # Convert Pydantic model to dict for upsert
+            event_data = {
+                'source': event.source,
+                'source_id': event.source_id,
+                'title': event.title,
+                'start': event.start,
+                'end': event.end,
+                'venue': event.venue,
+                'address': event.address,
+                'url': str(event.url),
+                'cost': event.cost,
+                'latitude': event.latitude,
+                'longitude': event.longitude,
+                'tags': ','.join(event.tags) if event.tags else ''
+            }
+
+            # Use SQLite-specific upsert syntax
+            stmt = insert(Event).values(**event_data)
+            stmt = stmt.on_conflict_do_update(
+                index_elements=['source', 'source_id'],
+                set_=event_data
+            )
+            session.execute(stmt)
+
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+
+
+def get_all_events_sorted() -> List[PydanticEvent]:
+    """Retrieve all events from the database sorted by start date."""
+    session = get_session()
+
+    try:
+        events = session.query(Event).order_by(Event.start).all()
+        return [event.to_pydantic() for event in events]
+    finally:
+        session.close()
+
+
+def get_events_count() -> int:
+    """Get the total count of events in the database."""
+    session = get_session()
+
+    try:
+        return session.query(Event).count()
+    finally:
+        session.close()
