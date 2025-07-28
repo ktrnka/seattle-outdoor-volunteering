@@ -17,4 +17,4 @@ class Event(BaseModel):
     tags:     Optional[List[str]] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True

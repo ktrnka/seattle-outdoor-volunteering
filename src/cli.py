@@ -1,8 +1,13 @@
-import click, gzip, shutil, sqlite_utils
+import click
+import gzip
+import shutil
+import sqlite_utils
+from pathlib import Path
+
 from .config import DB_PATH, DB_GZ
 from .etl.gsp import GSPExtractor
-from .etl.spr import SPRExtractor
 from .etl.spf import SPFExtractor
+from .etl.spr import SPRExtractor
 from .site import generator
 
 @click.group()
