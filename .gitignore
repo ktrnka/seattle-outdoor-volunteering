@@ -208,3 +208,5 @@ Thumbs.db
 cache/
 downloads/
 scraped_data/
+
+.ruff_cache/
