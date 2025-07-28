@@ -1,7 +1,7 @@
+import re
 import requests
 from bs4 import BeautifulSoup
 from dateutil import parser
-
 from .base import BaseExtractor
 from ..models import Event
 
@@ -25,8 +25,7 @@ class GSPExtractor(BaseExtractor):
                 if not title_link:
                     continue
                 title = title_link.get_text(strip=True)
-                event_url_attr = title_link.get('href')
-                event_url = str(event_url_attr) if event_url_attr else ''
+                event_url = title_link.get('href', '')
                 if event_url and event_url.startswith('/'):
                     event_url = "https://seattle.greencitypartnerships.org" + event_url
                 
@@ -75,7 +74,7 @@ class GSPExtractor(BaseExtractor):
                         # Fallback
                         start = parser.parse(f"{date_part} {current_year} 09:00:00")
                         end = start.replace(hour=12)
-                except Exception:
+                except:
                     # Fallback parsing
                     start = parser.parse(f"{current_year}-07-28 09:00:00")
                     end = start.replace(hour=12)

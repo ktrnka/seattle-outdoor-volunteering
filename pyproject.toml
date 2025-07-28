@@ -55,5 +55,5 @@ line-length = 150
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["src"]

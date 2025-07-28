@@ -1,20 +1,21 @@
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, HttpUrl
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict, HttpUrl
+
 
 class Event(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     source:   str
     source_id: str
     title:    str
     start:    datetime
     end:      datetime
-    venue:    Optional[str]
-    address:  Optional[str]
+    venue:    Optional[str] = None
+    address:  Optional[str] = None
     url:      HttpUrl
     cost:     Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     tags:     Optional[List[str]] = []
-
-    class Config:
-        from_attributes = True
