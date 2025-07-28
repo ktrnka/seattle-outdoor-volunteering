@@ -27,7 +27,7 @@ def init_db():
 def etl():
     """Run all extractors, deduplicate, and build/compact DB."""
     all_events = []
-    
+
     for extractor_class in [GSPExtractor, SPRExtractor, SPFExtractor]:
         # Fetch raw data and extract events
         extractor = extractor_class.fetch()
@@ -38,12 +38,13 @@ def etl():
 
     # Run deduplication
     deduplicated_events = deduplicate_events(all_events)
-    
+
     # Count duplicates
     duplicate_count = sum(1 for event in deduplicated_events if event.same_as)
     unique_count = len(deduplicated_events) - duplicate_count
-    
-    click.echo(f"Deduplication: {len(deduplicated_events)} total events, {unique_count} unique, {duplicate_count} duplicates")
+
+    click.echo(
+        f"Deduplication: {len(deduplicated_events)} total events, {unique_count} unique, {duplicate_count} duplicates")
 
     # Save events to database
     database.upsert_events(deduplicated_events)
@@ -58,21 +59,21 @@ def deduplicate():
     """Run deduplication on existing events in the database."""
     click.echo("Loading events from database...")
     events = database.get_all_events_sorted()
-    
+
     if not events:
         click.echo("No events found in database. Run 'etl' first.")
         return
-    
+
     click.echo(f"Loaded {len(events)} events")
     click.echo("Running deduplication...")
-    
+
     # Run deduplication
     deduplicated_events = deduplicate_events(events)
-    
+
     # Count duplicates
     duplicate_count = sum(1 for event in deduplicated_events if event.same_as)
     click.echo(f"Found {duplicate_count} duplicate events")
-    
+
     # Update database with deduplication results
     database.upsert_events(deduplicated_events)
     click.echo("Database updated with deduplication results")
@@ -89,22 +90,26 @@ def list_events(all_future, all_past, show_duplicates):
         title = "Duplicate events"
         show_year = True
     elif all_future:
-        events = database.get_all_future_events() if not show_duplicates else database.get_all_future_events()
+        events = database.get_all_future_events(
+        ) if not show_duplicates else database.get_all_future_events()
         if not show_duplicates:
             events = [e for e in events if not e.same_as]
-        title = "All future events" + (" (including duplicates)" if show_duplicates else " (canonical only)")
+        title = "All future events" + \
+            (" (including duplicates)" if show_duplicates else " (canonical only)")
         show_year = True
     elif all_past:
         events = database.get_all_past_events()
         if not show_duplicates:
             events = [e for e in events if not e.same_as]
-        title = "All past events" + (" (including duplicates)" if show_duplicates else " (canonical only)")
+        title = "All past events" + \
+            (" (including duplicates)" if show_duplicates else " (canonical only)")
         show_year = True
     else:
         events = database.get_upcoming_events(days_ahead=30)
         if not show_duplicates:
             events = [e for e in events if not e.same_as]
-        title = "Upcoming events (next 30 days)" + (" (including duplicates)" if show_duplicates else " (canonical only)")
+        title = "Upcoming events (next 30 days)" + (
+            " (including duplicates)" if show_duplicates else " (canonical only)")
         show_year = False
 
     total_count = len(events)
@@ -153,7 +158,8 @@ def list_events(all_future, all_past, show_duplicates):
         click.echo(f"• {event.title}")
         click.echo(f"  {time_str}")
         click.echo(f"  {address_str}{venue_str}")
-        click.echo(f"  Source: {event.source}{cost_str}{tags_str}{duplicate_str}")
+        click.echo(
+            f"  Source: {event.source}{cost_str}{tags_str}{duplicate_str}")
         click.echo(f"  {event.url}")
         click.echo("")  # Empty line for readability
 

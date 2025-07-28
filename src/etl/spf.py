@@ -103,7 +103,8 @@ class SPFExtractor(BaseExtractor):
             is_gsp_event = False
             if organizer and isinstance(organizer, dict):
                 organizer_name = organizer.get("name", "")
-                organizer_url = organizer.get("sameAs", "") or organizer.get("url", "")
+                organizer_url = organizer.get(
+                    "sameAs", "") or organizer.get("url", "")
                 if "Green Seattle Partnership" in organizer_name or "greenseattle.org" in organizer_url:
                     is_gsp_event = True
 
@@ -125,7 +126,8 @@ class SPFExtractor(BaseExtractor):
                 cost=None,  # Not available in schema.org data
                 latitude=None,  # Not available in schema.org data
                 longitude=None,  # Not available in schema.org data
-                tags=["Green Seattle Partnership"] if is_gsp_event else []  # Tag GSP events
+                # Tag GSP events
+                tags=["Green Seattle Partnership"] if is_gsp_event else []
             )
 
         except (ValueError, TypeError, KeyError):

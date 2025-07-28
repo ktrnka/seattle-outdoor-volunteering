@@ -29,7 +29,8 @@ class Event(Base):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     tags = Column(Text, nullable=True)  # Stored as comma-separated string
-    same_as = Column(String, nullable=True)  # URL of the canonical/primary version of this event
+    # URL of the canonical/primary version of this event
+    same_as = Column(String, nullable=True)
 
     __table_args__ = (
         PrimaryKeyConstraint('source', 'source_id'),
@@ -212,15 +213,15 @@ def get_events_by_canonical(canonical_url: str) -> List[PydanticEvent]:
         canonical_event = session.query(Event).filter(
             Event.url == canonical_url
         ).first()
-        
+
         if not canonical_event:
             return []
-            
+
         # Get all duplicates of this event
         duplicate_events = session.query(Event).filter(
             Event.same_as == canonical_url
         ).all()
-        
+
         all_events = [canonical_event] + duplicate_events
         return [event.to_pydantic() for event in all_events]
     finally:

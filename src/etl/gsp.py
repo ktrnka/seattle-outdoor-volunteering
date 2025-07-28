@@ -46,10 +46,11 @@ class GSPExtractor(BaseExtractor):
                 source_id = None
                 if event_url and '/event/' in event_url:
                     try:
-                        source_id = event_url.split('/event/')[-1].split('/')[0]
+                        source_id = event_url.split(
+                            '/event/')[-1].split('/')[0]
                     except Exception:
                         pass
-                
+
                 # Fallback to title-based ID if we can't extract from URL
                 if not source_id:
                     source_id = title.lower().replace(" ", "-")[:64]

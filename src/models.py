@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, HttpUrl
 
 class Event(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     source:   str
     source_id: str
     title:    str
@@ -19,4 +19,5 @@ class Event(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     tags:     Optional[List[str]] = []
-    same_as: Optional[str] = None  # URL of the canonical/primary version of this event
+    # URL of the canonical/primary version of this event
+    same_as: Optional[str] = None
