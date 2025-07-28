@@ -3,10 +3,11 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sqlite_utils import Database
 from ..config import DB_PATH
 
+
 def build(output_dir: Path):
     db = Database(DB_PATH)
     rows = list(db["events"].rows)
-    env  = Environment(
+    env = Environment(
         loader=FileSystemLoader(Path(__file__).parent / "templates"),
         autoescape=select_autoescape()
     )
