@@ -1,5 +1,7 @@
 # tests/test_etl_spr.py
 from pathlib import Path
+
+from pydantic import HttpUrl
 from src.etl.spr import SPRExtractor
 
 
@@ -29,7 +31,8 @@ def test_parse_fixture():
     assert first_event.start.day == 27
     assert first_event.start.hour == 8  # 8am local time
     assert first_event.end.hour == 11  # 11am local time
-    assert first_event.same_as == "http://seattle.greencitypartnerships.org/event/42030"
+    assert first_event.same_as == HttpUrl(
+        "http://seattle.greencitypartnerships.org/event/42030")
 
     # Verify URL format
     assert "trumbaEmbed" in str(first_event.url)

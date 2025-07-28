@@ -20,4 +20,4 @@ class Event(BaseModel):
     longitude: Optional[float] = None
     tags:     Optional[List[str]] = []
     # URL of the canonical/primary version of this event
-    same_as: Optional[str] = None
+    same_as: Optional[HttpUrl] = None

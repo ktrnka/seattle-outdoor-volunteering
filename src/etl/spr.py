@@ -67,8 +67,8 @@ class SPRExtractor(BaseExtractor):
 
         # Extract x-trumba:weblink (GSP URL for Green Seattle Partnership events)
         weblink_elem = item.find(".//x-trumba:weblink", namespaces)
-        same_as_url = normalize_url(
-            weblink_elem.text) if weblink_elem is not None else ""
+        same_as_url = HttpUrl(normalize_url(
+            weblink_elem.text)) if weblink_elem is not None else None
 
         # Extract source_id from GUID (format: http://uid.trumba.com/event/187593769)
         source_id = ""
