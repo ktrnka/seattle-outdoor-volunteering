@@ -1,6 +1,7 @@
 """Database module using SQLAlchemy for managing the events database."""
 
 from typing import List
+from datetime import datetime, timedelta
 from sqlalchemy import create_engine, Column, String, DateTime, Float, Text, PrimaryKeyConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -125,5 +126,55 @@ def get_events_count() -> int:
 
     try:
         return session.query(Event).count()
+    finally:
+        session.close()
+
+
+def get_upcoming_events(days_ahead: int = 30) -> List[PydanticEvent]:
+    """Retrieve upcoming events within the specified number of days."""
+    from datetime import datetime, timedelta
+
+    session = get_session()
+    now = datetime.now()
+    future_limit = now + timedelta(days=days_ahead)
+
+    try:
+        events = session.query(Event).filter(
+            Event.start >= now,
+            Event.start <= future_limit
+        ).order_by(Event.start).all()
+        return [event.to_pydantic() for event in events]
+    finally:
+        session.close()
+
+
+def get_all_future_events() -> List[PydanticEvent]:
+    """Retrieve all future events sorted by start date."""
+    from datetime import datetime
+
+    session = get_session()
+    now = datetime.now()
+
+    try:
+        events = session.query(Event).filter(
+            Event.start >= now
+        ).order_by(Event.start).all()
+        return [event.to_pydantic() for event in events]
+    finally:
+        session.close()
+
+
+def get_all_past_events() -> List[PydanticEvent]:
+    """Retrieve all past events sorted by start date (most recent first)."""
+    from datetime import datetime
+
+    session = get_session()
+    now = datetime.now()
+
+    try:
+        events = session.query(Event).filter(
+            Event.start < now
+        ).order_by(Event.start.desc()).all()
+        return [event.to_pydantic() for event in events]
     finally:
         session.close()

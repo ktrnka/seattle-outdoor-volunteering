@@ -13,9 +13,19 @@
       <tbody>
       {% for e in events|sort(attribute='start') %}
         <tr>
-          <td>{{ e.start.strftime('%a %b %d') }}</td>
+          <td>
+            {{ e.start.strftime('%a %-m/%-d') }}<br>
+            <small>{{ e.start.strftime('%-I:%M%p')|lower }} - {{ e.end.strftime('%-I:%M%p')|lower }}</small>
+          </td>
           <td><a href="{{ e.url }}">{{ e.title }}</a></td>
-          <td>{{ e.venue or '' }}</td>
+          <td>
+            {% if e.address and e.address.lower() != 'none' %}
+              {{ e.address }}
+            {% else %}
+              Location TBD
+            {% endif %}
+            {% if e.venue %} at {{ e.venue }}{% endif %}
+          </td>
           <td>
             <a
               href="https://calendar.google.com/calendar/render?action=TEMPLATE

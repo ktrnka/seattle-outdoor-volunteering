@@ -41,30 +41,70 @@ def etl():
 
 
 @cli.command()
-def list_events():
-    """List all events sorted by date for quality checking."""
-    events = database.get_all_events_sorted()
+@click.option('--all-future', is_flag=True, help='Show all future events')
+@click.option('--all-past', is_flag=True, help='Show all past events')
+def list_events(all_future, all_past):
+    """List events. By default shows upcoming events in the next month."""
+    if all_future:
+        events = database.get_all_future_events()
+        title = "All future events"
+        show_year = True
+    elif all_past:
+        events = database.get_all_past_events()
+        title = "All past events"
+        show_year = True
+    else:
+        events = database.get_upcoming_events(days_ahead=30)
+        title = "Upcoming events (next 30 days)"
+        show_year = False
+
     total_count = len(events)
 
     if total_count == 0:
-        click.echo("No events found in database.")
+        click.echo(f"No {title.lower()} found in database.")
         return
 
-    click.echo(f"Found {total_count} events:\n")
+    click.echo(f"{title}: {total_count} events\n")
 
     for event in events:
-        # Format the event display
-        start_str = event.start.strftime("%Y-%m-%d %H:%M")
-        end_str = event.end.strftime("%Y-%m-%d %H:%M")
+        # Format date and time with day of week
+        day_of_week = event.start.strftime("%a")  # Mon, Tue, etc.
+        if show_year:
+            date_str = event.start.strftime("%-m/%-d/%Y")
+        else:
+            date_str = event.start.strftime("%-m/%-d")
+        date_with_day = f"{day_of_week} {date_str}"
+
+        start_time = event.start.strftime("%-I:%M%p").lower()
+        end_time = event.end.strftime("%-I:%M%p").lower()
+
+        # Check if the event spans multiple days
+        if event.start.date() != event.end.date():
+            end_day_of_week = event.end.strftime("%a")
+            if show_year:
+                end_date_str = event.end.strftime("%-m/%-d/%Y")
+            else:
+                end_date_str = event.end.strftime("%-m/%-d")
+            end_date_with_day = f"{end_day_of_week} {end_date_str}"
+            time_str = f"{date_with_day} {start_time} - {end_date_with_day} {end_time}"
+        else:
+            time_str = f"{date_with_day} from {start_time} - {end_time}"
+
         venue_str = f" at {event.venue}" if event.venue else ""
         cost_str = f" (Cost: {event.cost})" if event.cost else ""
         tags_str = f" [Tags: {', '.join(event.tags)}]" if event.tags else ""
 
+        # Handle address display - don't show "None"
+        if event.address and event.address.lower() != "none":
+            address_str = event.address
+        else:
+            address_str = "Location TBD"
+
         click.echo(f"• {event.title}")
-        click.echo(f"  Source: {event.source} | ID: {event.source_id}")
-        click.echo(f"  Time: {start_str} → {end_str}")
-        click.echo(f"  Location: {event.address}{venue_str}")
-        click.echo(f"  URL: {event.url}{cost_str}{tags_str}")
+        click.echo(f"  {time_str}")
+        click.echo(f"  {address_str}{venue_str}")
+        click.echo(f"  Source: {event.source}{cost_str}{tags_str}")
+        click.echo(f"  {event.url}")
         click.echo("")  # Empty line for readability
 
 
