@@ -10,15 +10,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
       with:
-        python-version: '3.11'
-    - name: Install deps
-      run: pip install -r requirements.txt
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: "pyproject.toml"
+    
+    - name: Install the project
+      run: uv sync --locked
+    
     - name: Run ETL
-      run: python -m src.cli etl
-    - name: Commit DB
+      run: uv run seattle-volunteering etl
+    
+    - name: Generate site
+      run: uv run seattle-volunteering build-site
+    
+    - name: Commit DB and site
       uses: EndBug/add-and-commit@v9
       with:
-        add: 'data/events.sqlite.gz'
-        message: 'chore(data): nightly DB update'
+        add: 'data/events.sqlite.gz docs/index.html'
+        message: 'chore(data): nightly DB and site update'
