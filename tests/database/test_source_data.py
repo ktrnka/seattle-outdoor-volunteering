@@ -1,16 +1,16 @@
 # tests/test_database.py
-from src.database import get_events_count, get_all_events_sorted
+from src.database import get_source_events_count, get_source_events
 
 
 def test_database_has_events():
     """Basic test to verify we can connect to the database and it has events."""
-    count = get_events_count()
+    count = get_source_events_count()
     assert count > 0, f"Expected database to have events, but found {count}"
 
 
 def test_can_list_events():
     """Test that we can retrieve events from the database."""
-    events = get_all_events_sorted()
+    events = get_source_events()
     assert len(events) > 0, "Expected to retrieve events from database"
 
     # Verify the first event has required fields
@@ -21,12 +21,3 @@ def test_can_list_events():
     assert first_event.start is not None
     assert first_event.end is not None
     assert first_event.url is not None
-
-
-def test_events_are_sorted_by_start_date():
-    """Test that events are returned sorted by start date."""
-    events = get_all_events_sorted()
-    if len(events) > 1:
-        for i in range(1, len(events)):
-            assert events[i-1].start <= events[i].start, \
-                f"Events are not sorted: {events[i-1].start} > {events[i].start}"

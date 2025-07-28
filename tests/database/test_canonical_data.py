@@ -3,10 +3,9 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-import pytest
 from pydantic import HttpUrl
 
-from src.models import Event, CanonicalEvent
+from src.models import Event
 from src.etl.new_deduplication import deduplicate_events_new
 from src import database
 
@@ -55,8 +54,8 @@ def test_canonical_events_database_integration():
 
     # Save to database (assuming database is initialized)
     try:
-        database.upsert_canonical_events(canonical_events)
-        database.upsert_event_group_memberships(membership_map)
+        database.overwrite_canonical_events(canonical_events)
+        database.overwrite_event_group_memberships(membership_map)
 
         # Test retrieval
         retrieved_canonicals = database.get_canonical_events()

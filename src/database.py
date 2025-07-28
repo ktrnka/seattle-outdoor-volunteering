@@ -140,8 +140,8 @@ def init_database() -> None:
     Base.metadata.create_all(bind=engine)
 
 
-def upsert_events(events: List[PydanticEvent]) -> None:
-    """Insert or update events in the database using SQLAlchemy."""
+def upsert_source_events(events: List[PydanticEvent]) -> None:
+    """Insert or update source events in the database using SQLAlchemy."""
     session = get_session()
 
     try:
@@ -179,7 +179,7 @@ def upsert_events(events: List[PydanticEvent]) -> None:
         session.close()
 
 
-def get_all_events_sorted() -> List[PydanticEvent]:
+def get_source_events() -> List[PydanticEvent]:
     """Retrieve all events from the database sorted by start date."""
     session = get_session()
 
@@ -190,7 +190,7 @@ def get_all_events_sorted() -> List[PydanticEvent]:
         session.close()
 
 
-def get_events_count() -> int:
+def get_source_events_count() -> int:
     """Get the total count of events in the database."""
     session = get_session()
 
@@ -200,7 +200,7 @@ def get_events_count() -> int:
         session.close()
 
 
-def get_upcoming_events(days_ahead: int = 30) -> List[PydanticEvent]:
+def get_upcoming_source_events(days_ahead: int = 30) -> List[PydanticEvent]:
     """Retrieve upcoming events within the specified number of days."""
     session = get_session()
     now = datetime.now()
@@ -216,7 +216,7 @@ def get_upcoming_events(days_ahead: int = 30) -> List[PydanticEvent]:
         session.close()
 
 
-def get_all_future_events() -> List[PydanticEvent]:
+def get_future_source_events() -> List[PydanticEvent]:
     """Retrieve all future events sorted by start date."""
     session = get_session()
     now = datetime.now()
@@ -230,7 +230,7 @@ def get_all_future_events() -> List[PydanticEvent]:
         session.close()
 
 
-def get_all_past_events() -> List[PydanticEvent]:
+def get_past_source_events() -> List[PydanticEvent]:
     """Retrieve all past events sorted by start date (most recent first)."""
     session = get_session()
     now = datetime.now()
@@ -244,58 +244,8 @@ def get_all_past_events() -> List[PydanticEvent]:
         session.close()
 
 
-def get_non_duplicate_events() -> List[PydanticEvent]:
-    """Retrieve all events that are not marked as duplicates."""
-    session = get_session()
-
-    try:
-        events = session.query(Event).filter(
-            Event.same_as.is_(None)
-        ).order_by(Event.start).all()
-        return [event.to_pydantic() for event in events]
-    finally:
-        session.close()
-
-
-def get_duplicate_events() -> List[PydanticEvent]:
-    """Retrieve all events that are marked as duplicates."""
-    session = get_session()
-
-    try:
-        events = session.query(Event).filter(
-            Event.same_as.isnot(None)
-        ).order_by(Event.start).all()
-        return [event.to_pydantic() for event in events]
-    finally:
-        session.close()
-
-
-def get_events_by_canonical(canonical_url: str) -> List[PydanticEvent]:
-    """Retrieve all events (canonical + duplicates) for a given canonical event URL."""
-    session = get_session()
-
-    try:
-        # Get the canonical event
-        canonical_event = session.query(Event).filter(
-            Event.url == canonical_url
-        ).first()
-
-        if not canonical_event:
-            return []
-
-        # Get all duplicates of this event
-        duplicate_events = session.query(Event).filter(
-            Event.same_as == canonical_url
-        ).all()
-
-        all_events = [canonical_event] + duplicate_events
-        return [event.to_pydantic() for event in all_events]
-    finally:
-        session.close()
-
-
-def upsert_canonical_events(canonical_events: List[PydanticCanonicalEvent]) -> None:
-    """Insert or update canonical events in the database."""
+def overwrite_canonical_events(canonical_events: List[PydanticCanonicalEvent]) -> None:
+    """Overwrite all canonical events in the database."""
     session = get_session()
 
     try:
@@ -334,7 +284,7 @@ def upsert_canonical_events(canonical_events: List[PydanticCanonicalEvent]) -> N
         session.close()
 
 
-def upsert_event_group_memberships(membership_map: Dict[Tuple[str, str], str]) -> None:
+def overwrite_event_group_memberships(membership_map: Dict[Tuple[str, str], str]) -> None:
     """Insert or update event group membership records."""
     session = get_session()
 
@@ -378,7 +328,7 @@ def get_canonical_events() -> List[PydanticCanonicalEvent]:
         session.close()
 
 
-def get_canonical_events_future() -> List[PydanticCanonicalEvent]:
+def get_future_canonical_events() -> List[PydanticCanonicalEvent]:
     """Retrieve canonical events that haven't ended yet."""
     session = get_session()
 

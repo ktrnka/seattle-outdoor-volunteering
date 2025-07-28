@@ -3,13 +3,13 @@ from datetime import timezone
 from urllib.parse import quote_plus
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from itertools import groupby
-from ..database import get_canonical_events_future
+from ..database import get_future_canonical_events
 from ..models import SEATTLE_TZ
 
 
 def build(output_dir: Path):
     # Get future canonical events (already deduplicated)
-    canonical_events = get_canonical_events_future()
+    canonical_events = get_future_canonical_events()
 
     # Convert events to dict format for template compatibility
     event_dicts = []

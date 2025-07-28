@@ -57,9 +57,9 @@ def etl():
 
     # Save to database
     click.echo("Saving to database...")
-    database.upsert_events(source_events)
-    database.upsert_canonical_events(canonical_events)
-    database.upsert_event_group_memberships(membership_map)
+    database.upsert_source_events(source_events)
+    database.overwrite_canonical_events(canonical_events)
+    database.overwrite_event_group_memberships(membership_map)
 
     # Compress database for git
     with open(DB_PATH, "rb") as src, gzip.open(DB_GZ, "wb") as dst:
@@ -74,7 +74,7 @@ def etl():
 def deduplicate(show_examples, verbose):
     """Run deduplication on existing source events in the database."""
     click.echo("Loading source events from database...")
-    source_events = database.get_all_events_sorted()
+    source_events = database.get_source_events()
 
     if not source_events:
         click.echo("No source events found in database. Run 'etl' first.")
@@ -145,8 +145,8 @@ def deduplicate(show_examples, verbose):
 
     # Save canonical events to database
     click.echo("Saving canonical events to database...")
-    database.upsert_canonical_events(canonical_events)
-    database.upsert_event_group_memberships(membership_map)
+    database.overwrite_canonical_events(canonical_events)
+    database.overwrite_event_group_memberships(membership_map)
     click.echo("Deduplication complete!")
 
 
@@ -155,7 +155,7 @@ def deduplicate(show_examples, verbose):
 def list_canonical(future_only):
     """List canonical events from the new deduplication system."""
     if future_only:
-        canonical_events = database.get_canonical_events_future()
+        canonical_events = database.get_future_canonical_events()
         title = "Future canonical events"
     else:
         canonical_events = database.get_canonical_events()
@@ -190,7 +190,7 @@ def list_events(all_future, all_past):
     from datetime import timedelta
 
     if all_future:
-        events = database.get_canonical_events_future()
+        events = database.get_future_canonical_events()
         title = "All future canonical events"
         show_year = True
     elif all_past:
@@ -202,7 +202,7 @@ def list_events(all_future, all_past):
         show_year = True
     else:
         # Get future events and filter for next 30 days
-        all_future_events = database.get_canonical_events_future()
+        all_future_events = database.get_future_canonical_events()
         now = datetime.utcnow()
         thirty_days_from_now = now + timedelta(days=30)
         events = [e for e in all_future_events if e.start <=
@@ -276,7 +276,7 @@ def show_source_events(date):
         return
 
     click.echo(f"Loading all source events for {target_date}...")
-    all_events = database.get_all_events_sorted()
+    all_events = database.get_source_events()
 
     # Filter events for the specified date
     matching_events = [

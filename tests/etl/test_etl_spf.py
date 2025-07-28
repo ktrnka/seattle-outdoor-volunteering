@@ -2,9 +2,11 @@
 from pathlib import Path
 from src.etl.spf import SPFExtractor
 
+data_path = Path(__file__).parent / "data"
+
 
 def test_parse_fixture():
-    html = Path("tests/fixtures/spf_events.html").read_text()
+    html = (data_path / "spf_events.html").read_text()
     extractor = SPFExtractor(html)
     events = extractor.extract()
 

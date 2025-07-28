@@ -4,10 +4,12 @@ from pathlib import Path
 from pydantic import HttpUrl
 from src.etl.gsp import GSPExtractor, GSPCalendarExtractor, GSPAPIExtractor
 
+data_path = Path(__file__).parent / "data"
+
 
 def test_parse_calendar_fixture():
     """Test parsing the calendar HTML page fixture."""
-    html = Path("tests/fixtures/gsp_calendar.html").read_text()
+    html = (data_path / "gsp_calendar.html").read_text()
     extractor = GSPCalendarExtractor(html)
     events = extractor.extract()
 
@@ -27,7 +29,7 @@ def test_parse_calendar_fixture():
 
 def test_parse_api_fixture():
     """Test parsing the new API endpoint response with 100 events."""
-    json_data = Path("tests/fixtures/gsp_api_100.json").read_text()
+    json_data = (data_path / "gsp_api_100.json").read_text()
     extractor = GSPAPIExtractor(json_data)
     events = extractor.extract()
 
@@ -49,7 +51,7 @@ def test_parse_api_fixture():
 
 def test_main_extractor_delegates_to_api():
     """Test that the main GSPExtractor properly delegates to API extractor when given JSON."""
-    json_data = Path("tests/fixtures/gsp_api_100.json").read_text()
+    json_data = (data_path / "gsp_api_100.json").read_text()
     extractor = GSPExtractor(json_data)
     events = extractor.extract()
 
@@ -60,7 +62,7 @@ def test_main_extractor_delegates_to_api():
 
 def test_main_extractor_delegates_to_calendar():
     """Test that the main GSPExtractor properly delegates to calendar extractor when given HTML."""
-    html = Path("tests/fixtures/gsp_calendar.html").read_text()
+    html = (data_path / "gsp_calendar.html").read_text()
     extractor = GSPExtractor(html)
     events = extractor.extract()
 

@@ -4,10 +4,12 @@ from pathlib import Path
 from pydantic import HttpUrl
 from src.etl.spr import SPRExtractor
 
+data_path = Path(__file__).parent / "data"
+
 
 def test_parse_fixture():
     """Test parsing the RSS fixture file"""
-    rss_content = Path("tests/fixtures/spr_volunteer.rss").read_text()
+    rss_content = (data_path / "spr_volunteer.rss").read_text()
     extractor = SPRExtractor(rss_content)
     events = extractor.extract()
 
@@ -51,7 +53,7 @@ def test_parse_fixture():
 
 def test_parse_multiple_events():
     """Test that we parse multiple events correctly"""
-    rss_content = Path("tests/fixtures/spr_volunteer.rss").read_text()
+    rss_content = (data_path / "spr_volunteer.rss").read_text()
     extractor = SPRExtractor(rss_content)
     events = extractor.extract()
 
@@ -77,7 +79,7 @@ def test_parse_multiple_events():
 
 def test_datetime_parsing():
     """Test that date and time parsing works correctly"""
-    rss_content = Path("tests/fixtures/spr_volunteer.rss").read_text()
+    rss_content = (data_path / "spr_volunteer.rss").read_text()
     extractor = SPRExtractor(rss_content)
     events = extractor.extract()
 
@@ -93,7 +95,7 @@ def test_datetime_parsing():
 
 def test_contact_info_extraction():
     """Test that contact information is extracted properly"""
-    rss_content = Path("tests/fixtures/spr_volunteer.rss").read_text()
+    rss_content = (data_path / "spr_volunteer.rss").read_text()
     extractor = SPRExtractor(rss_content)
     events = extractor.extract()
 
