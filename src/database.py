@@ -3,8 +3,7 @@
 from typing import List
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine, Column, String, DateTime, Float, Text, PrimaryKeyConstraint
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from sqlalchemy.dialects.sqlite import insert
 
 from .config import DB_PATH, ensure_database_exists
