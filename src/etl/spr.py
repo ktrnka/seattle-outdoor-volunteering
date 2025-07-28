@@ -47,6 +47,11 @@ class SPRExtractor(BaseExtractor):
 
     def _parse_rss_item(self, item) -> Event:
         """Parse a single RSS item into an Event."""
+        # Define namespace map for XML parsing
+        namespaces = {
+            'x-trumba': 'http://schemas.trumba.com/rss/x-trumba'
+        }
+
         # Extract basic fields
         title_elem = item.find("title")
         title = title_elem.text if title_elem is not None else ""
@@ -61,8 +66,9 @@ class SPRExtractor(BaseExtractor):
         guid = guid_elem.text if guid_elem is not None else ""
 
         # Extract x-trumba:weblink (GSP URL for Green Seattle Partnership events)
-        weblink_elem = item.find(".//x-trumba:weblink")
-        weblink = weblink_elem.text if weblink_elem is not None else ""
+        weblink_elem = item.find(".//x-trumba:weblink", namespaces)
+        same_as_url = normalize_url(
+            weblink_elem.text) if weblink_elem is not None else ""
 
         # Extract source_id from GUID (format: http://uid.trumba.com/event/187593769)
         source_id = ""
@@ -75,9 +81,6 @@ class SPRExtractor(BaseExtractor):
         address, venue, cost, start_dt, end_dt, tags = self._parse_description(
             description)
 
-        # Check if this is a Green Seattle Partnership event
-        is_gsp_event = weblink and "greencitypartnerships.org" in weblink
-
         # Ensure we have valid datetime values
         if start_dt is None:
             start_dt = datetime.now().replace(hour=9, minute=0, second=0, microsecond=0)
@@ -89,11 +92,6 @@ class SPRExtractor(BaseExtractor):
             event_url = RSS_URL
         else:
             event_url = link
-
-        # Determine same_as URL if this is a GSP event
-        same_as_url = None
-        if is_gsp_event and weblink:
-            same_as_url = normalize_url(weblink)
 
         return Event(
             source=self.source,

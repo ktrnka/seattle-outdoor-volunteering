@@ -21,6 +21,8 @@ def test_parse_fixture():
     assert "Pigeon Point" in first_event.title
     assert first_event.url
 
+    # Ideally we'd like to get the registration link, but it's not present in the JSON-LD data
+
     # Check that venue and address extraction works for events that have it
     events_with_venue = [e for e in events if e.venue]
     assert len(
