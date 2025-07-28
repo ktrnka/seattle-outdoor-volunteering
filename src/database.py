@@ -7,7 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.dialects.sqlite import insert
 
-from .config import DB_PATH
+from .config import DB_PATH, ensure_database_exists
 from .models import Event as PydanticEvent
 
 Base = declarative_base()
@@ -58,6 +58,7 @@ class Event(Base):
 
 def get_engine():
     """Create and return a SQLAlchemy engine for the SQLite database."""
+    ensure_database_exists()
     return create_engine(f'sqlite:///{DB_PATH}', echo=False)
 
 
