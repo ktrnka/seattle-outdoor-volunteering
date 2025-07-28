@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List
 import requests
 from dateutil import parser
+from pydantic import HttpUrl
 
 from .base import BaseExtractor
 from ..models import Event
@@ -15,14 +16,16 @@ class SPRExtractor(BaseExtractor):
     """Seattle Parks & Recreation extractor for RSS feed."""
     source = "SPR"
 
-    def fetch(self, rss_content=None) -> List[Event]:
-        """Fetch events from SPR volunteer RSS feed."""
-        if rss_content is None:
-            response = requests.get(RSS_URL, timeout=30)
-            rss_content = response.text
+    @classmethod
+    def fetch(cls):
+        """Fetch raw RSS content from SPR volunteer feed."""
+        response = requests.get(RSS_URL, timeout=30)
+        return cls(response.text)
 
+    def extract(self) -> List[Event]:
+        """Extract events from SPR volunteer RSS feed."""
         try:
-            root = ET.fromstring(rss_content)
+            root = ET.fromstring(self.raw_data)
         except ET.ParseError:
             # Return empty list for malformed XML
             return []
@@ -87,7 +90,7 @@ class SPRExtractor(BaseExtractor):
             end=end_dt,
             venue=venue,
             address=address,
-            url=event_url,
+            url=HttpUrl(event_url),
             cost=cost,
             tags=tags
         )

@@ -5,7 +5,8 @@ from src.etl.spf import SPFExtractor
 
 def test_parse_fixture():
     html = Path("tests/fixtures/spf_events.html").read_text()
-    events = SPFExtractor(session=None).fetch(html=html)
+    extractor = SPFExtractor(html)
+    events = extractor.extract()
 
     # sanity check - expect at least a few events
     assert len(events) >= 3

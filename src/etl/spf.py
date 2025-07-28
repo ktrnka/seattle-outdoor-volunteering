@@ -4,6 +4,7 @@ from typing import List, Optional
 import requests
 from bs4 import BeautifulSoup
 from dateutil import parser
+from pydantic import HttpUrl
 
 from .base import BaseExtractor
 from ..models import Event
@@ -15,12 +16,15 @@ class SPFExtractor(BaseExtractor):
     """Seattle Parks Foundation extractor - parses schema.org JSON-LD data."""
     source = "SPF"
 
-    def fetch(self, html=None) -> List[Event]:
-        """Extract events from SPF website JSON-LD schema.org data."""
-        if html is None:
-            html = requests.get(SPF_EVENTS_URL, timeout=30).text
+    @classmethod
+    def fetch(cls):
+        """Fetch raw HTML from the SPF events page."""
+        html = requests.get(SPF_EVENTS_URL, timeout=30).text
+        return cls(html)
 
-        soup = BeautifulSoup(html, "html.parser")
+    def extract(self) -> List[Event]:
+        """Extract events from SPF website JSON-LD schema.org data."""
+        soup = BeautifulSoup(self.raw_data, "html.parser")
         events = []
 
         # Find the JSON-LD script tag containing event data
@@ -48,6 +52,8 @@ class SPFExtractor(BaseExtractor):
             except (json.JSONDecodeError, KeyError):
                 # Skip malformed JSON or missing keys
                 continue
+
+        return events
 
         return events
 
@@ -105,7 +111,7 @@ class SPFExtractor(BaseExtractor):
                 end=end_date,
                 venue=venue,
                 address=address,
-                url=url,
+                url=HttpUrl(url),
                 cost=None,  # Not available in schema.org data
                 latitude=None,  # Not available in schema.org data
                 longitude=None,  # Not available in schema.org data

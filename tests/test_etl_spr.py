@@ -6,7 +6,8 @@ from src.etl.spr import SPRExtractor
 def test_parse_fixture():
     """Test parsing the RSS fixture file"""
     rss_content = Path("tests/fixtures/spr_volunteer.rss").read_text()
-    events = SPRExtractor(session=None).fetch(rss_content=rss_content)
+    extractor = SPRExtractor(rss_content)
+    events = extractor.extract()
 
     # sanity check - expect at least a few events
     assert len(events) >= 3
@@ -47,7 +48,8 @@ def test_parse_fixture():
 def test_parse_multiple_events():
     """Test that we parse multiple events correctly"""
     rss_content = Path("tests/fixtures/spr_volunteer.rss").read_text()
-    events = SPRExtractor(session=None).fetch(rss_content=rss_content)
+    extractor = SPRExtractor(rss_content)
+    events = extractor.extract()
 
     # Should have multiple events
     assert len(events) >= 5
@@ -72,7 +74,8 @@ def test_parse_multiple_events():
 def test_datetime_parsing():
     """Test that date and time parsing works correctly"""
     rss_content = Path("tests/fixtures/spr_volunteer.rss").read_text()
-    events = SPRExtractor(session=None).fetch(rss_content=rss_content)
+    extractor = SPRExtractor(rss_content)
+    events = extractor.extract()
 
     # Check that start times are before end times
     for event in events:
@@ -87,7 +90,8 @@ def test_datetime_parsing():
 def test_contact_info_extraction():
     """Test that contact information is extracted properly"""
     rss_content = Path("tests/fixtures/spr_volunteer.rss").read_text()
-    events = SPRExtractor(session=None).fetch(rss_content=rss_content)
+    extractor = SPRExtractor(rss_content)
+    events = extractor.extract()
 
     # Find an event with contact info
     contact_event = next(
@@ -99,12 +103,14 @@ def test_contact_info_extraction():
 
 def test_empty_rss():
     """Test handling of empty RSS content"""
-    events = SPRExtractor(session=None).fetch(
-        rss_content="<?xml version='1.0'?><rss><channel></channel></rss>")
+    extractor = SPRExtractor(
+        "<?xml version='1.0'?><rss><channel></channel></rss>")
+    events = extractor.extract()
     assert events == []
 
 
 def test_malformed_rss():
     """Test handling of malformed RSS content"""
-    events = SPRExtractor(session=None).fetch(rss_content="not xml at all")
+    extractor = SPRExtractor("not xml at all")
+    events = extractor.extract()
     assert events == []

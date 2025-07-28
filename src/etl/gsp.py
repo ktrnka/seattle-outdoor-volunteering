@@ -1,6 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 from dateutil import parser
+import datetime
+from pydantic import HttpUrl
 
 from .base import BaseExtractor
 from ..models import Event
@@ -11,10 +13,15 @@ CAL_URL = "https://seattle.greencitypartnerships.org/event/calendar/"
 class GSPExtractor(BaseExtractor):
     source = "GSP"
 
-    def fetch(self, html=None):
-        if html is None:
-            html = requests.get(CAL_URL, timeout=30).text
-        soup = BeautifulSoup(html, "html.parser")
+    @classmethod
+    def fetch(cls):
+        """Fetch raw HTML from the GSP calendar."""
+        html = requests.get(CAL_URL, timeout=30).text
+        return cls(html)
+
+    def extract(self):
+        """Extract events from the HTML content."""
+        soup = BeautifulSoup(self.raw_data, "html.parser")
         events = []
 
         # Look for event divs in the table
@@ -48,7 +55,6 @@ class GSPExtractor(BaseExtractor):
 
                 # Try to parse the date
                 # Format: "July 28, 9am-12:30pm" -> need to add year
-                import datetime
                 current_year = datetime.datetime.now().year
                 try:
                     # Simple parsing - assume it's in the current year
@@ -92,7 +98,7 @@ class GSPExtractor(BaseExtractor):
                     end=end,
                     venue=venue,
                     address=None,
-                    url=event_url or CAL_URL,
+                    url=HttpUrl(event_url or CAL_URL),
                 )
                 events.append(evt)
             except Exception:

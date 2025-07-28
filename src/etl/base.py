@@ -1,18 +1,19 @@
 import abc
 from typing import List
-from . import utils  # helper with caching, db write, etc.
 from ..models import Event
 
 
 class BaseExtractor(abc.ABC):
-    def __init__(self, session):
-        self.session = session
+    def __init__(self, raw_data: str):
+        self.raw_data = raw_data
 
+    @classmethod
     @abc.abstractmethod
-    def fetch(self) -> List[Event]:
+    def fetch(cls) -> 'BaseExtractor':
+        """Fetch raw data and return an instance of the extractor."""
         ...
 
-    def run(self):
-        events = self.fetch()
-        utils.upsert_events(events)
-        return len(events)
+    @abc.abstractmethod
+    def extract(self) -> List[Event]:
+        """Extract events from the raw data."""
+        ...
