@@ -84,3 +84,27 @@ Tests use fixtures in `tests/fixtures/` with real HTML/XML samples. Run with `uv
 - **Scheduling**: GitHub Actions cron at 7AM UTC daily
 - **Hosting**: GitHub Pages serves `docs/index.html`
 - **Styling**: PicoCSS via CDN, minimal custom CSS for date headers
+
+## Long-Term TODO
+
+### Data Quality & Collection
+- **Filter SPF events**: Use GitHub Models LLM to classify and filter out non-volunteer events from Seattle Parks Foundation
+- **Expand GSP data**: Currently only fetching first 5 events, but many more are available
+- **Validate SPR parsing**: More thorough checking of parsed data from Seattle Parks & Rec
+- **RSS/Blog support**: Once LLM integration is ready, add support for RSS feeds and event calendars mentioned in `DATA_SOURCES.md`
+
+### Event Enhancement
+- **Standardize titles**: Use LLM to create more informative titles like "Park restoration at Woodland Park with Greg"
+- **Event categorization**: Support both parks work and litter cleanup work with user filtering options
+- **Enhanced details**: Standardize event information to cover who/what/why/how/when (explaining "why" invasive species removal matters will be challenging)
+
+### User Experience
+- **Geographic filtering**: Add distance-based filtering with user location (cookie storage vs neighborhood selector)
+- **Site freshness**: Show when site was last updated and data limitations
+- **Interactive details**: Click on rows to expand with more event information
+- **Mobile optimization**: Ensure responsive design works well on all devices
+
+### Development & Quality
+- **PR automation**: Run unit tests on pull requests
+- **UI documentation**: Attach desktop and mobile screenshots to GitHub PRs
+- **LLM integration**: Foundation for classification, title standardization, and content enhancement

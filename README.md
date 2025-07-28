@@ -1,21 +1,26 @@
-# Seattle-Outdoor-Volunteering
+# Seattle Outdoor Volunteering
 
-Aggregates Seattle-area outdoor volunteer events into a compressed SQLite
-database (checked into the repo) and publishes a minimal static website styled
-with [PicoCSS](https://picocss.com).
+Aggregates Seattle-area outdoor volunteer events and publishes them at [seattlevolunteering.com](https://seattlevolunteering.com).
 
-* ETL runs nightly via GitHub Actions, fetching:
-  1. Green Seattle Partnership event calendar [56]
-  2. Seattle Parks & Rec volunteer calendar [6]
-  3. Seattle Parks Foundation events [11]
+## Quick Start
 
-* Static-site generation then converts the cleaned tables to
-  `docs/index.html`, ready for GitHub Pages hosting.
+```bash
+# Setup
+cp .env.example .env
+uv sync
 
-* A Click CLI lets you run everything locally for debugging.
+# Run full ETL pipeline
+uv run seattle-volunteering etl
 
-* Manual or hard-to-scrape events live in `data/manual_events.yaml`.
+# Generate site only  
+uv run seattle-volunteering build-site
+```
 
-See DATA_SOURCES.md for implementation status.
+## Data Sources
 
-cp .env.example .env   # then fill in any keys you have
+Currently scraping 3 sources nightly via GitHub Actions:
+- Green Seattle Partnership (56 events)
+- Seattle Parks & Rec (6 events) 
+- Seattle Parks Foundation (11 events)
+
+See `DATA_SOURCES.md` for implementation details.
