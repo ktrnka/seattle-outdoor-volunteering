@@ -1,7 +1,11 @@
 from datetime import datetime
 from typing import List, Optional
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ConfigDict, HttpUrl
+
+# Seattle timezone
+SEATTLE_TZ = ZoneInfo('America/Los_Angeles')
 
 
 class Event(BaseModel):
@@ -10,8 +14,8 @@ class Event(BaseModel):
     source:   str
     source_id: str
     title:    str
-    start:    datetime
-    end:      datetime
+    start:    datetime  # Should be timezone-aware (UTC)
+    end:      datetime  # Should be timezone-aware (UTC)
     venue:    Optional[str] = None
     address:  Optional[str] = None
     url:      HttpUrl

@@ -19,19 +19,21 @@
           </td>
           <td><a href="{{ e.url }}">{{ e.title }}</a></td>
           <td>
-            {% if e.address and e.address.lower() != 'none' %}
-              {{ e.address }}
+            {% if e.venue %}
+              {{ e.venue }}
+              {% if e.maps_url %} (<a href="{{ e.maps_url }}" target="_blank">{{ e.address }}</a>){% endif %}
+            {% elif e.address and e.address.lower() != 'none' %}
+              {% if e.maps_url %}<a href="{{ e.maps_url }}" target="_blank">{{ e.address }}</a>{% else %}{{ e.address }}{% endif %}
             {% else %}
               Location TBD
             {% endif %}
-            {% if e.venue %} at {{ e.venue }}{% endif %}
           </td>
           <td>
             <a
               href="https://calendar.google.com/calendar/render?action=TEMPLATE
 &text={{ e.title|urlencode }}
-&dates={{ e.start.strftime('%Y%m%dT%H%M%SZ') }}/{{ e.end.strftime('%Y%m%dT%H%M%SZ') }}
-&location={{ (e.venue or '')|urlencode }}"
+&dates={{ e.start_utc.strftime('%Y%m%dT%H%M%SZ') }}/{{ e.end_utc.strftime('%Y%m%dT%H%M%SZ') }}
+&location={{ (e.address or e.venue or '')|urlencode }}"
               role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>

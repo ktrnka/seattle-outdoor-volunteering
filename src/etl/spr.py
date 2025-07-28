@@ -1,6 +1,6 @@
 import re
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 import requests
 from dateutil import parser
@@ -8,7 +8,7 @@ from pydantic import HttpUrl
 
 from .base import BaseExtractor
 from .url_utils import normalize_url
-from ..models import Event
+from ..models import Event, SEATTLE_TZ
 
 RSS_URL = "https://www.trumba.com/calendars/volunteer-1.rss"
 
@@ -86,6 +86,18 @@ class SPRExtractor(BaseExtractor):
             start_dt = datetime.now().replace(hour=9, minute=0, second=0, microsecond=0)
         if end_dt is None:
             end_dt = start_dt.replace(hour=12)
+
+        # Convert to UTC (assume Pacific time if timezone-naive)
+        if start_dt.tzinfo is None:
+            start_dt = start_dt.replace(
+                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+        if end_dt.tzinfo is None:
+            end_dt = end_dt.replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+        if start_dt.tzinfo is None:
+            start_dt = start_dt.replace(
+                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+        if end_dt.tzinfo is None:
+            end_dt = end_dt.replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
 
         # Ensure we have a valid URL
         if not link or not link.startswith('http'):
@@ -176,7 +188,7 @@ class SPRExtractor(BaseExtractor):
 
     def _parse_datetime(self, datetime_line: str):
         """Parse datetime information from a line like 'Sunday, July 27, 2025, 8–11am'."""
-        # Default fallback
+        # Default fallback (timezone-naive, will be converted to UTC later)
         current_year = datetime.now().year
         start_dt = datetime(current_year, 7, 28, 9, 0)  # fallback
         end_dt = datetime(current_year, 7, 28, 12, 0)   # fallback
@@ -224,5 +236,12 @@ class SPRExtractor(BaseExtractor):
         except Exception:
             # Keep fallback values
             pass
+
+        # Convert to UTC (assume Pacific time if timezone-naive)
+        if start_dt.tzinfo is None:
+            start_dt = start_dt.replace(
+                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+        if end_dt.tzinfo is None:
+            end_dt = end_dt.replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
 
         return start_dt, end_dt

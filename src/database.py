@@ -94,7 +94,7 @@ def upsert_events(events: List[PydanticEvent]) -> None:
                 'latitude': event.latitude,
                 'longitude': event.longitude,
                 'tags': ','.join(event.tags) if event.tags else '',
-                'same_as': event.same_as
+                'same_as': str(event.same_as) if event.same_as else None
             }
 
             # Use SQLite-specific upsert syntax

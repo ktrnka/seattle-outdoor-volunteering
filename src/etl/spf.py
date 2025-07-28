@@ -1,5 +1,6 @@
 import json
 from typing import List, Optional
+from datetime import timezone
 
 import requests
 from bs4 import BeautifulSoup
@@ -8,7 +9,7 @@ from pydantic import HttpUrl
 
 from .base import BaseExtractor
 from .url_utils import normalize_url
-from ..models import Event
+from ..models import Event, SEATTLE_TZ
 
 SPF_EVENTS_URL = "https://www.seattleparksfoundation.org/events/"
 
@@ -79,6 +80,19 @@ class SPFExtractor(BaseExtractor):
             # Parse dates
             start_date = parser.isoparse(start_date_str)
             end_date = parser.isoparse(end_date_str)
+
+            # Convert to UTC if timezone-naive (assume Seattle local time)
+            if start_date.tzinfo is None:
+                start_date = start_date.replace(
+                    tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+            else:
+                start_date = start_date.astimezone(timezone.utc)
+
+            if end_date.tzinfo is None:
+                end_date = end_date.replace(
+                    tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+            else:
+                end_date = end_date.astimezone(timezone.utc)
 
             # Optional fields
             venue = None

@@ -2,11 +2,12 @@ import requests
 from bs4 import BeautifulSoup
 from dateutil import parser
 import datetime
+from datetime import timezone
 from pydantic import HttpUrl
 
 from .base import BaseExtractor
 from .url_utils import normalize_url, extract_event_id_from_url
-from ..models import Event
+from ..models import Event, SEATTLE_TZ
 
 CAL_URL = "https://seattle.greencitypartnerships.org/event/calendar/"
 
@@ -97,15 +98,37 @@ class GSPExtractor(BaseExtractor):
                         else:
                             # default 3 hour duration
                             end = start.replace(hour=start.hour + 3)
+
+                        # Convert to UTC (assume Pacific time)
+                        if start.tzinfo is None:
+                            start = start.replace(
+                                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+                        if end.tzinfo is None:
+                            end = end.replace(
+                                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
                     else:
                         # Fallback
                         start = parser.parse(
                             f"{date_part} {current_year} 09:00:00")
                         end = start.replace(hour=12)
+                        # Convert to UTC (assume Pacific time)
+                        if start.tzinfo is None:
+                            start = start.replace(
+                                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+                        if end.tzinfo is None:
+                            end = end.replace(
+                                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
                 except Exception:
                     # Fallback parsing
                     start = parser.parse(f"{current_year}-07-28 09:00:00")
                     end = start.replace(hour=12)
+                    # Convert to UTC (assume Pacific time)
+                    if start.tzinfo is None:
+                        start = start.replace(
+                            tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+                    if end.tzinfo is None:
+                        end = end.replace(
+                            tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
 
                 evt = Event(
                     source=self.source,
