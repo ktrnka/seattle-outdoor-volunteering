@@ -1,10 +1,6 @@
 name: Deploy Site
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'docs/index.html'
   workflow_dispatch:
 
 jobs:
