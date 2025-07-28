@@ -10,8 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write  # for committing changes
-      pages: write     # for deploying to GitHub Pages
-      id-token: write  # for GitHub Pages deployment
     steps:
     - uses: actions/checkout@v4
     
@@ -40,11 +38,3 @@ jobs:
       with:
         add: 'data/events.sqlite.gz docs/index.html'
         message: 'chore(data): nightly DB and site update'
-    
-    - name: Upload pages artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: docs
-    
-    - name: Deploy to GitHub Pages
-      uses: actions/deploy-pages@v4
