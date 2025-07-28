@@ -29,8 +29,8 @@ def test_parse_fixture():
     assert first_event.start.year == 2025
     assert first_event.start.month == 7
     assert first_event.start.day == 27
-    assert first_event.start.hour == 8  # 8am local time
-    assert first_event.end.hour == 11  # 11am local time
+    assert first_event.start.hour == 15  # 8am local time, which is 3pm UTC
+    assert first_event.end.hour == 18  # 11am local time, which is 6pm UTC
     assert first_event.same_as == HttpUrl(
         "http://seattle.greencitypartnerships.org/event/42030")
 
