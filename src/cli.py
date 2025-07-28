@@ -31,11 +31,12 @@ def etl(deduplicate_only):
         # Load existing events from database and re-run deduplication
         click.echo("Loading events from database...")
         all_events = database.get_all_events_sorted()
-        
+
         if not all_events:
-            click.echo("No events found in database. Run 'etl' without --deduplicate-only first.")
+            click.echo(
+                "No events found in database. Run 'etl' without --deduplicate-only first.")
             return
-            
+
         click.echo(f"Loaded {len(all_events)} events from database")
     else:
         # Fetch fresh data from all sources

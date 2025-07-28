@@ -78,7 +78,7 @@ def _group_similar_events(events: List[Event]) -> List[List[Event]]:
 def _select_canonical_event(events: List[Event]) -> Event:
     """
     Select the canonical event from a group of similar events based on source precedence.
-    
+
     Special handling: If SPR event is selected and has a same_as link (GSP registration),
     use that URL instead of the SPR URL to provide better registration experience.
 
@@ -100,7 +100,7 @@ def _select_canonical_event(events: List[Event]) -> Event:
             return SOURCE_PRECEDENCE.get(event.source, 999)
 
         canonical = min(events, key=get_precedence)
-    
+
     # Special handling for SPR events: if they have a same_as link (usually GSP registration),
     # use that URL instead of the SPR URL for better user experience
     if canonical.source == "SPR" and canonical.same_as:
@@ -109,7 +109,7 @@ def _select_canonical_event(events: List[Event]) -> Event:
         # We already checked that same_as is not None above
         canonical.url = canonical.same_as  # type: ignore
         canonical.same_as = None  # Clear same_as since this is now the canonical URL
-    
+
     return canonical
 
 

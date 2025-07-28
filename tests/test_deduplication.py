@@ -279,9 +279,9 @@ def test_select_canonical_event():
 def test_spr_same_as_url_becomes_canonical_url():
     """Test that SPR events with same_as URLs use the same_as URL as canonical."""
     from pydantic import HttpUrl
-    
+
     base_time = datetime(2024, 6, 15, 10, 0, tzinfo=UTC)
-    
+
     # SPR event with same_as pointing to GSP registration
     spr_event = Event(
         source="SPR",
@@ -292,10 +292,11 @@ def test_spr_same_as_url_becomes_canonical_url():
         url=HttpUrl("https://seattle.gov/parks/event/1"),
         same_as=HttpUrl("https://seattle.greencitypartnerships.org/event/123")
     )
-    
+
     canonical = _select_canonical_event([spr_event])
-    
+
     # Should use the GSP URL from same_as field
-    assert canonical.url == HttpUrl("https://seattle.greencitypartnerships.org/event/123")
+    assert canonical.url == HttpUrl(
+        "https://seattle.greencitypartnerships.org/event/123")
     assert canonical.same_as is None  # Should be cleared
     assert canonical.source == "SPR"  # Should still be SPR source for timing info
