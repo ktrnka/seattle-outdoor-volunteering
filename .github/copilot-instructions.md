@@ -125,6 +125,7 @@ Tests use fixtures in `tests/fixtures/` with real HTML/XML samples. Run with `uv
 - ~~**Expand GSP data**: Currently only fetching first 5 events, but many more are available~~ ✅ **COMPLETED**: Now fetching 66 events via API endpoint
 - **Validate SPR parsing**: More thorough checking of parsed data from Seattle Parks & Rec
 - **RSS/Blog support**: Once LLM integration is ready, add support for RSS feeds and event calendars mentioned in `DATA_SOURCES.md`
+- Splink for more nuanced entity merging
 
 ### Event Enhancement
 - **Standardize titles**: Use LLM to create more informative titles like "Park restoration at Woodland Park with Greg"
