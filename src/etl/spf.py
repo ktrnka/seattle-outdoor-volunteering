@@ -1,13 +1,117 @@
-from typing import List
+import json
+from typing import List, Optional
+
+import requests
+from bs4 import BeautifulSoup
+from dateutil import parser
 
 from .base import BaseExtractor
 from ..models import Event
 
+SPF_EVENTS_URL = "https://www.seattleparksfoundation.org/events/"
+
 
 class SPFExtractor(BaseExtractor):
-    """Seattle Parks Foundation extractor - placeholder implementation."""
+    """Seattle Parks Foundation extractor - parses schema.org JSON-LD data."""
     source = "SPF"
 
-    def fetch(self) -> List[Event]:
-        """Placeholder - returns empty list for now."""
-        return []
+    def fetch(self, html=None) -> List[Event]:
+        """Extract events from SPF website JSON-LD schema.org data."""
+        if html is None:
+            html = requests.get(SPF_EVENTS_URL, timeout=30).text
+
+        soup = BeautifulSoup(html, "html.parser")
+        events = []
+
+        # Find the JSON-LD script tag containing event data
+        json_scripts = soup.find_all("script", type="application/ld+json")
+
+        for script in json_scripts:
+            try:
+                script_content = script.get_text()
+                if not script_content:
+                    continue
+
+                data = json.loads(script_content)
+                # The data might be a list of events or a single event
+                if isinstance(data, list):
+                    event_list = data
+                else:
+                    event_list = [data]
+
+                for event_data in event_list:
+                    if event_data.get("@type") == "Event":
+                        event = self._parse_event(event_data)
+                        if event:
+                            events.append(event)
+
+            except (json.JSONDecodeError, KeyError):
+                # Skip malformed JSON or missing keys
+                continue
+
+        return events
+
+    def _parse_event(self, event_data: dict) -> Optional[Event]:
+        """Parse a single event from schema.org JSON-LD data."""
+        try:
+            # Required fields
+            title = event_data.get("name", "").strip()
+            if not title:
+                return None
+
+            url = event_data.get("url", "").strip()
+            if not url:
+                return None
+
+            start_date_str = event_data.get("startDate", "")
+            end_date_str = event_data.get("endDate", "")
+
+            if not start_date_str or not end_date_str:
+                return None
+
+            # Parse dates
+            start_date = parser.isoparse(start_date_str)
+            end_date = parser.isoparse(end_date_str)
+
+            # Optional fields
+            venue = None
+            address = None
+
+            location = event_data.get("location")
+            if location and isinstance(location, dict):
+                venue = location.get("name", "").strip()
+                address_obj = location.get("address")
+                if address_obj and isinstance(address_obj, dict):
+                    street = address_obj.get("streetAddress", "")
+                    locality = address_obj.get("addressLocality", "")
+                    region = address_obj.get("addressRegion", "")
+
+                    address_parts = [part for part in [
+                        street, locality, region] if part]
+                    address = ", ".join(
+                        address_parts) if address_parts else None
+
+            # Generate a source_id from URL
+            source_id = url.split(
+                "/")[-2] if url.endswith("/") else url.split("/")[-1]
+            if not source_id:
+                source_id = str(hash(url))
+
+            return Event(
+                source=self.source,
+                source_id=source_id,
+                title=title,
+                start=start_date,
+                end=end_date,
+                venue=venue,
+                address=address,
+                url=url,
+                cost=None,  # Not available in schema.org data
+                latitude=None,  # Not available in schema.org data
+                longitude=None,  # Not available in schema.org data
+                tags=[]  # Could be extracted from description if needed
+            )
+
+        except (ValueError, TypeError, KeyError):
+            # Skip events with parsing errors
+            return None
