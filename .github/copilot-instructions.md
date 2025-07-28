@@ -25,6 +25,14 @@ New data sources should:
 3. Generate deterministic `source_id` values for stable database keys
 4. Use `normalize_url()` and handle timezone conversion to UTC
 
+**For Complex Sources with Multiple Data Formats:**
+- Create a base extractor class with shared utility methods (following DRY principle)
+- Create separate specialized extractors for each data format (API, HTML, RSS, etc.)
+
+**Testing Strategy:**
+- Use `curl` to download real API responses to `tests/fixtures/` for comprehensive testing
+- Include proper headers (Accept, X-Requested-With, User-Agent) when testing AJAX endpoints
+
 ### Database Strategy
 - Compressed SQLite checked into git at `data/events.sqlite.gz`
 - Auto-extracted to `data/events.sqlite` when missing via `config.ensure_database_exists()`
@@ -54,6 +62,13 @@ When adding new data sources, prefer downloading example files to `tests/fixture
 - Allows rapid iteration on parsing logic
 - Creates reliable test fixtures for future regression testing
 
+**API Discovery and Testing:**
+- Test API endpoints with `curl` using appropriate headers before implementing extractors
+
+### Code Organization and Maintainability
+- Follow single responsibility principle: separate classes for different data formats
+- Use base classes with static methods for shared utility functions (DRY principle)
+
 ### Asking for Clarification
 If instructions don't seem feasible (e.g., extracting data that doesn't exist in the source, conflicting requirements), stop development and ask for guidance rather than making assumptions. Clear communication prevents wasted effort and ensures the right solution.
 
@@ -77,6 +92,11 @@ uv run seattle-volunteering init-db
 
 ### Testing
 Tests use fixtures in `tests/fixtures/` with real HTML/XML samples. Run with `uv run pytest`.
+
+**Integration Testing:**
+- Use `uv run seattle-volunteering etl` to test the full pipeline with live data
+- This verifies all extractors work together and shows actual event counts
+- Compare output before/after changes to ensure improvements work as expected
 
 ### Adding New Sources
 1. **Download example data**: If possible, download an example file (HTML, XML, JSON-LD) to `tests/fixtures/` for unit testing
@@ -102,7 +122,7 @@ Tests use fixtures in `tests/fixtures/` with real HTML/XML samples. Run with `uv
 
 ### Data Quality & Collection
 - **Filter SPF events**: Use GitHub Models LLM to classify and filter out non-volunteer events from Seattle Parks Foundation
-- **Expand GSP data**: Currently only fetching first 5 events, but many more are available
+- ~~**Expand GSP data**: Currently only fetching first 5 events, but many more are available~~ ✅ **COMPLETED**: Now fetching 66 events via API endpoint
 - **Validate SPR parsing**: More thorough checking of parsed data from Seattle Parks & Rec
 - **RSS/Blog support**: Once LLM integration is ready, add support for RSS feeds and event calendars mentioned in `DATA_SOURCES.md`
 
