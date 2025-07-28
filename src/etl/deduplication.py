@@ -4,9 +4,10 @@ from typing import List
 from ..models import Event
 
 # Source precedence order (lower number = higher precedence)
+# SPR preferred over GSP because SPR has time-of-day info while GSP often only has dates
 SOURCE_PRECEDENCE = {
-    "GSP": 1,  # Green Seattle Partnership - source of truth for registration
-    "SPR": 2,  # Seattle Parks & Rec - clean data source
+    "SPR": 1,  # Seattle Parks & Rec - has time info and often links to GSP for registration
+    "GSP": 2,  # Green Seattle Partnership - often only has date info, not times
     "SPF": 3,  # Seattle Parks Foundation - messiest data source
 }
 
@@ -77,6 +78,9 @@ def _group_similar_events(events: List[Event]) -> List[List[Event]]:
 def _select_canonical_event(events: List[Event]) -> Event:
     """
     Select the canonical event from a group of similar events based on source precedence.
+    
+    Special handling: If SPR event is selected and has a same_as link (GSP registration),
+    use that URL instead of the SPR URL to provide better registration experience.
 
     Args:
         events: List of similar events from potentially different sources
@@ -88,14 +92,25 @@ def _select_canonical_event(events: List[Event]) -> Event:
         raise ValueError("Cannot select canonical event from empty list")
 
     if len(events) == 1:
-        return events[0]
+        canonical = events[0]
+    else:
+        # Sort by source precedence (lower number = higher precedence)
+        def get_precedence(event: Event) -> int:
+            # Unknown sources get lowest precedence
+            return SOURCE_PRECEDENCE.get(event.source, 999)
 
-    # Sort by source precedence (lower number = higher precedence)
-    def get_precedence(event: Event) -> int:
-        # Unknown sources get lowest precedence
-        return SOURCE_PRECEDENCE.get(event.source, 999)
-
-    return min(events, key=get_precedence)
+        canonical = min(events, key=get_precedence)
+    
+    # Special handling for SPR events: if they have a same_as link (usually GSP registration),
+    # use that URL instead of the SPR URL for better user experience
+    if canonical.source == "SPR" and canonical.same_as:
+        # Create a copy of the event with the GSP URL but keep all other SPR data
+        canonical = canonical.model_copy()
+        # We already checked that same_as is not None above
+        canonical.url = canonical.same_as  # type: ignore
+        canonical.same_as = None  # Clear same_as since this is now the canonical URL
+    
+    return canonical
 
 
 def _events_likely_same(event1: Event, event2: Event) -> bool:

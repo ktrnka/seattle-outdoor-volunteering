@@ -11,7 +11,7 @@ UTC = ZoneInfo('UTC')
 
 
 def test_source_precedence():
-    """Test that GSP has highest precedence, followed by SPR, then SPF."""
+    """Test that SPR has highest precedence, followed by GSP, then SPF."""
     # Create similar events from different sources
     base_time = datetime(2024, 6, 15, 10, 0, tzinfo=UTC)
 
@@ -47,16 +47,16 @@ def test_source_precedence():
 
     result = deduplicate_events(events)
 
-    # GSP should be canonical (no same_as)
-    gsp_event = next(e for e in result if e.source == "GSP")
-    assert gsp_event.same_as is None
-
-    # SPR and SPF should point to GSP
+    # SPR should be canonical (no same_as)
     spr_event = next(e for e in result if e.source == "SPR")
+    assert spr_event.same_as is None
+
+    # GSP and SPF should point to SPR
+    gsp_event = next(e for e in result if e.source == "GSP")
     spf_event = next(e for e in result if e.source == "SPF")
 
-    assert spr_event.same_as == gsp_event.url
-    assert spf_event.same_as == gsp_event.url
+    assert gsp_event.same_as == spr_event.url
+    assert spf_event.same_as == spr_event.url
 
 
 def test_no_duplicates():
@@ -122,8 +122,8 @@ def test_time_difference_tolerance():
     gsp_event = next(e for e in result if e.source == "GSP")
     spr_event = next(e for e in result if e.source == "SPR")
 
-    assert gsp_event.same_as is None
-    assert spr_event.same_as == gsp_event.url
+    assert spr_event.same_as is None  # SPR is now canonical
+    assert gsp_event.same_as == spr_event.url
 
 
 def test_time_difference_too_large():
@@ -273,4 +273,29 @@ def test_select_canonical_event():
     ]
 
     canonical = _select_canonical_event(events)
-    assert canonical.source == "GSP"  # Should pick GSP as highest precedence
+    assert canonical.source == "SPR"  # Should pick SPR as highest precedence
+
+
+def test_spr_same_as_url_becomes_canonical_url():
+    """Test that SPR events with same_as URLs use the same_as URL as canonical."""
+    from pydantic import HttpUrl
+    
+    base_time = datetime(2024, 6, 15, 10, 0, tzinfo=UTC)
+    
+    # SPR event with same_as pointing to GSP registration
+    spr_event = Event(
+        source="SPR",
+        source_id="spr-1",
+        title="Park Restoration",
+        start=base_time,
+        end=base_time.replace(hour=12),
+        url=HttpUrl("https://seattle.gov/parks/event/1"),
+        same_as=HttpUrl("https://seattle.greencitypartnerships.org/event/123")
+    )
+    
+    canonical = _select_canonical_event([spr_event])
+    
+    # Should use the GSP URL from same_as field
+    assert canonical.url == HttpUrl("https://seattle.greencitypartnerships.org/event/123")
+    assert canonical.same_as is None  # Should be cleared
+    assert canonical.source == "SPR"  # Should still be SPR source for timing info

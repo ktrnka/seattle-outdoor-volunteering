@@ -24,17 +24,30 @@ def init_db():
 
 
 @cli.command()
-def etl():
+@click.option('--deduplicate-only', is_flag=True, help='Only run deduplication on existing data, skip fetching from sources')
+def etl(deduplicate_only):
     """Run all extractors, deduplicate, and build/compact DB."""
-    all_events = []
+    if deduplicate_only:
+        # Load existing events from database and re-run deduplication
+        click.echo("Loading events from database...")
+        all_events = database.get_all_events_sorted()
+        
+        if not all_events:
+            click.echo("No events found in database. Run 'etl' without --deduplicate-only first.")
+            return
+            
+        click.echo(f"Loaded {len(all_events)} events from database")
+    else:
+        # Fetch fresh data from all sources
+        all_events = []
 
-    for extractor_class in [GSPExtractor, SPRExtractor, SPFExtractor]:
-        # Fetch raw data and extract events
-        extractor = extractor_class.fetch()
-        events = extractor.extract()
-        all_events.extend(events)
+        for extractor_class in [GSPExtractor, SPRExtractor, SPFExtractor]:
+            # Fetch raw data and extract events
+            extractor = extractor_class.fetch()
+            events = extractor.extract()
+            all_events.extend(events)
 
-        click.echo(f"{extractor_class.__name__}: {len(events)} events")
+            click.echo(f"{extractor_class.__name__}: {len(events)} events")
 
     # Run deduplication
     deduplicated_events = deduplicate_events(all_events)

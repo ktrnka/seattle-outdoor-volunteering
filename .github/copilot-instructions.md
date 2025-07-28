@@ -43,8 +43,8 @@ New data sources should:
 Events are deduplicated using a precedence-based approach that groups similar events by title, venue, and time, then selects the canonical version based on source precedence:
 
 **Source Precedence (lower number = higher precedence):**
-1. **GSP**: Preferred as canonical (registration URL and source of truth)
-2. **SPR**: Clean data source
+1. **SPR**: Preferred as canonical (has time-of-day information, often links to GSP for registration)
+2. **GSP**: Often only has date information without specific times
 3. **SPF**: Messiest data source
 
 When duplicate events are found across sources:
