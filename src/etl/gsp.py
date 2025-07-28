@@ -5,6 +5,7 @@ import datetime
 from pydantic import HttpUrl
 
 from .base import BaseExtractor
+from .url_utils import normalize_url, extract_event_id_from_url
 from ..models import Event
 
 CAL_URL = "https://seattle.greencitypartnerships.org/event/calendar/"
@@ -37,6 +38,21 @@ class GSPExtractor(BaseExtractor):
                 event_url = str(event_url_attr) if event_url_attr else ''
                 if event_url and event_url.startswith('/'):
                     event_url = "https://seattle.greencitypartnerships.org" + event_url
+
+                # Normalize the URL
+                normalized_url = normalize_url(event_url or CAL_URL)
+
+                # Extract source_id from URL - format like "/event/41845"
+                source_id = None
+                if event_url and '/event/' in event_url:
+                    try:
+                        source_id = event_url.split('/event/')[-1].split('/')[0]
+                    except Exception:
+                        pass
+                
+                # Fallback to title-based ID if we can't extract from URL
+                if not source_id:
+                    source_id = title.lower().replace(" ", "-")[:64]
 
                 # Extract date/time info from em tag
                 date_info = event_div.select_one("p em")
@@ -92,13 +108,13 @@ class GSPExtractor(BaseExtractor):
 
                 evt = Event(
                     source=self.source,
-                    source_id=title.lower().replace(" ", "-")[:64],
+                    source_id=source_id,
                     title=title,
                     start=start,
                     end=end,
                     venue=venue,
                     address=None,
-                    url=HttpUrl(event_url or CAL_URL),
+                    url=HttpUrl(normalized_url),
                 )
                 events.append(evt)
             except Exception:

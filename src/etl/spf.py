@@ -7,6 +7,7 @@ from dateutil import parser
 from pydantic import HttpUrl
 
 from .base import BaseExtractor
+from .url_utils import normalize_url
 from ..models import Event
 
 SPF_EVENTS_URL = "https://www.seattleparksfoundation.org/events/"
@@ -97,6 +98,15 @@ class SPFExtractor(BaseExtractor):
                     address = ", ".join(
                         address_parts) if address_parts else None
 
+            # Check if this is a Green Seattle Partnership event
+            organizer = event_data.get("organizer")
+            is_gsp_event = False
+            if organizer and isinstance(organizer, dict):
+                organizer_name = organizer.get("name", "")
+                organizer_url = organizer.get("sameAs", "") or organizer.get("url", "")
+                if "Green Seattle Partnership" in organizer_name or "greenseattle.org" in organizer_url:
+                    is_gsp_event = True
+
             # Generate a source_id from URL
             source_id = url.split(
                 "/")[-2] if url.endswith("/") else url.split("/")[-1]
@@ -111,11 +121,11 @@ class SPFExtractor(BaseExtractor):
                 end=end_date,
                 venue=venue,
                 address=address,
-                url=HttpUrl(url),
+                url=HttpUrl(normalize_url(url)),
                 cost=None,  # Not available in schema.org data
                 latitude=None,  # Not available in schema.org data
                 longitude=None,  # Not available in schema.org data
-                tags=[]  # Could be extracted from description if needed
+                tags=["Green Seattle Partnership"] if is_gsp_event else []  # Tag GSP events
             )
 
         except (ValueError, TypeError, KeyError):

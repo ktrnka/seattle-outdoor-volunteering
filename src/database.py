@@ -29,6 +29,7 @@ class Event(Base):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     tags = Column(Text, nullable=True)  # Stored as comma-separated string
+    same_as = Column(String, nullable=True)  # URL of the canonical/primary version of this event
 
     __table_args__ = (
         PrimaryKeyConstraint('source', 'source_id'),
@@ -49,7 +50,8 @@ class Event(Base):
             cost=self.cost,
             latitude=self.latitude,
             longitude=self.longitude,
-            tags=tags
+            tags=tags,
+            same_as=self.same_as
         )
 
 
@@ -90,7 +92,8 @@ def upsert_events(events: List[PydanticEvent]) -> None:
                 'cost': event.cost,
                 'latitude': event.latitude,
                 'longitude': event.longitude,
-                'tags': ','.join(event.tags) if event.tags else ''
+                'tags': ','.join(event.tags) if event.tags else '',
+                'same_as': event.same_as
             }
 
             # Use SQLite-specific upsert syntax
@@ -132,8 +135,6 @@ def get_events_count() -> int:
 
 def get_upcoming_events(days_ahead: int = 30) -> List[PydanticEvent]:
     """Retrieve upcoming events within the specified number of days."""
-    from datetime import datetime, timedelta
-
     session = get_session()
     now = datetime.now()
     future_limit = now + timedelta(days=days_ahead)
@@ -150,8 +151,6 @@ def get_upcoming_events(days_ahead: int = 30) -> List[PydanticEvent]:
 
 def get_all_future_events() -> List[PydanticEvent]:
     """Retrieve all future events sorted by start date."""
-    from datetime import datetime
-
     session = get_session()
     now = datetime.now()
 
@@ -166,8 +165,6 @@ def get_all_future_events() -> List[PydanticEvent]:
 
 def get_all_past_events() -> List[PydanticEvent]:
     """Retrieve all past events sorted by start date (most recent first)."""
-    from datetime import datetime
-
     session = get_session()
     now = datetime.now()
 
@@ -176,5 +173,55 @@ def get_all_past_events() -> List[PydanticEvent]:
             Event.start < now
         ).order_by(Event.start.desc()).all()
         return [event.to_pydantic() for event in events]
+    finally:
+        session.close()
+
+
+def get_non_duplicate_events() -> List[PydanticEvent]:
+    """Retrieve all events that are not marked as duplicates."""
+    session = get_session()
+
+    try:
+        events = session.query(Event).filter(
+            Event.same_as.is_(None)
+        ).order_by(Event.start).all()
+        return [event.to_pydantic() for event in events]
+    finally:
+        session.close()
+
+
+def get_duplicate_events() -> List[PydanticEvent]:
+    """Retrieve all events that are marked as duplicates."""
+    session = get_session()
+
+    try:
+        events = session.query(Event).filter(
+            Event.same_as.isnot(None)
+        ).order_by(Event.start).all()
+        return [event.to_pydantic() for event in events]
+    finally:
+        session.close()
+
+
+def get_events_by_canonical(canonical_url: str) -> List[PydanticEvent]:
+    """Retrieve all events (canonical + duplicates) for a given canonical event URL."""
+    session = get_session()
+
+    try:
+        # Get the canonical event
+        canonical_event = session.query(Event).filter(
+            Event.url == canonical_url
+        ).first()
+        
+        if not canonical_event:
+            return []
+            
+        # Get all duplicates of this event
+        duplicate_events = session.query(Event).filter(
+            Event.same_as == canonical_url
+        ).all()
+        
+        all_events = [canonical_event] + duplicate_events
+        return [event.to_pydantic() for event in all_events]
     finally:
         session.close()

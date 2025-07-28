@@ -7,6 +7,7 @@ from dateutil import parser
 from pydantic import HttpUrl
 
 from .base import BaseExtractor
+from .url_utils import normalize_url
 from ..models import Event
 
 RSS_URL = "https://www.trumba.com/calendars/volunteer-1.rss"
@@ -59,6 +60,10 @@ class SPRExtractor(BaseExtractor):
         guid_elem = item.find("guid")
         guid = guid_elem.text if guid_elem is not None else ""
 
+        # Extract x-trumba:weblink (GSP URL for Green Seattle Partnership events)
+        weblink_elem = item.find(".//x-trumba:weblink")
+        weblink = weblink_elem.text if weblink_elem is not None else ""
+
         # Extract source_id from GUID (format: http://uid.trumba.com/event/187593769)
         source_id = ""
         if guid:
@@ -69,6 +74,9 @@ class SPRExtractor(BaseExtractor):
         # Parse description for structured data
         address, venue, cost, start_dt, end_dt, tags = self._parse_description(
             description)
+
+        # Check if this is a Green Seattle Partnership event
+        is_gsp_event = weblink and "greencitypartnerships.org" in weblink
 
         # Ensure we have valid datetime values
         if start_dt is None:
@@ -82,6 +90,11 @@ class SPRExtractor(BaseExtractor):
         else:
             event_url = link
 
+        # Determine same_as URL if this is a GSP event
+        same_as_url = None
+        if is_gsp_event and weblink:
+            same_as_url = normalize_url(weblink)
+
         return Event(
             source=self.source,
             source_id=source_id,
@@ -90,9 +103,10 @@ class SPRExtractor(BaseExtractor):
             end=end_dt,
             venue=venue,
             address=address,
-            url=HttpUrl(event_url),
+            url=HttpUrl(normalize_url(event_url)),
             cost=cost,
-            tags=tags
+            tags=tags,
+            same_as=same_as_url
         )
 
     def _parse_description(self, description: str):

@@ -19,3 +19,4 @@ class Event(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     tags:     Optional[List[str]] = []
+    same_as: Optional[str] = None  # URL of the canonical/primary version of this event
