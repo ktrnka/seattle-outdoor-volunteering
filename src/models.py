@@ -23,7 +23,7 @@ class Event(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     tags:     Optional[List[str]] = []
-    # URL of the canonical/primary version of this event
+    # URL of the canonical/primary version of this event (from raw source data)
     same_as: Optional[HttpUrl] = None
 
     def has_time_info(self) -> bool:

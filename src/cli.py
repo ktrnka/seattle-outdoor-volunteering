@@ -1,14 +1,15 @@
 import click
 import gzip
 import shutil
+from collections import Counter
+from datetime import datetime
 from pathlib import Path
 
 from .config import DB_PATH, DB_GZ
 from .etl.gsp import GSPExtractor
 from .etl.spf import SPFExtractor
 from .etl.spr import SPRExtractor
-from .etl.deduplication import deduplicate_events
-from .etl.new_deduplication import deduplicate_events_new, normalize_title
+from .etl.new_deduplication import deduplicate_events_new
 from .site import generator
 from . import database
 
@@ -31,140 +32,81 @@ def init_db():
 
 
 @cli.command()
-@click.option('--deduplicate-only', is_flag=True, help='Only run deduplication on existing data, skip fetching from sources')
-def etl(deduplicate_only):
-    """Run all extractors, deduplicate, and build/compact DB."""
-    if deduplicate_only:
-        # Load existing events from database and re-run deduplication
-        click.echo("Loading events from database...")
-        all_events = database.get_all_events_sorted()
+def etl():
+    """Run all extractors, deduplication, and build/compact DB."""
+    # Fetch source events from all extractors
+    source_events = []
 
-        if not all_events:
-            click.echo(
-                "No events found in database. Run 'etl' without --deduplicate-only first.")
-            return
+    for extractor_class in [GSPExtractor, SPRExtractor, SPFExtractor]:
+        extractor = extractor_class.fetch()
+        events = extractor.extract()
+        source_events.extend(events)
+        click.echo(f"{extractor_class.__name__}: {len(events)} events")
 
-        click.echo(f"Loaded {len(all_events)} events from database")
-    else:
-        # Fetch fresh data from all sources
-        all_events = []
+    # Run deduplication to create canonical events
+    click.echo("Running deduplication...")
+    canonical_events, membership_map = deduplicate_events_new(source_events)
 
-        for extractor_class in [GSPExtractor, SPRExtractor, SPFExtractor]:
-            # Fetch raw data and extract events
-            extractor = extractor_class.fetch()
-            events = extractor.extract()
-            all_events.extend(events)
-
-            click.echo(f"{extractor_class.__name__}: {len(events)} events")
-
-    # Run deduplication
-    deduplicated_events = deduplicate_events(all_events)
-
-    # Count duplicates
-    duplicate_count = sum(1 for event in deduplicated_events if event.same_as)
-    unique_count = len(deduplicated_events) - duplicate_count
-
+    # Show summary
+    total_groups_with_duplicates = sum(
+        1 for canonical in canonical_events if len(canonical.source_events) > 1)
     click.echo(
-        f"Deduplication: {len(deduplicated_events)} total events, {unique_count} unique, {duplicate_count} duplicates")
+        f"Created {len(canonical_events)} canonical events from {len(source_events)} source events")
+    click.echo(
+        f"Found {total_groups_with_duplicates} groups with multiple sources")
 
-    # Save events to database
-    database.upsert_events(deduplicated_events)
+    # Save to database
+    click.echo("Saving to database...")
+    database.upsert_events(source_events)
+    database.upsert_canonical_events(canonical_events)
+    database.upsert_event_group_memberships(membership_map)
 
-    # gzip-compress for committing
+    # Compress database for git
     with open(DB_PATH, "rb") as src, gzip.open(DB_GZ, "wb") as dst:
         shutil.copyfileobj(src, dst)
 
-
-@cli.command()
-def deduplicate():
-    """Run deduplication on existing events in the database."""
-    click.echo("Loading events from database...")
-    events = database.get_all_events_sorted()
-
-    if not events:
-        click.echo("No events found in database. Run 'etl' first.")
-        return
-
-    click.echo(f"Loaded {len(events)} events")
-    click.echo("Running deduplication...")
-
-    # Run deduplication
-    deduplicated_events = deduplicate_events(events)
-
-    # Count duplicates
-    duplicate_count = sum(1 for event in deduplicated_events if event.same_as)
-    click.echo(f"Found {duplicate_count} duplicate events")
-
-    # Update database with deduplication results
-    database.upsert_events(deduplicated_events)
-    click.echo("Database updated with deduplication results")
+    click.echo("ETL complete!")
 
 
 @cli.command()
 @click.option('--show-examples', is_flag=True, help='Show examples of how events are being merged')
 @click.option('--verbose', is_flag=True, help='Show detailed logging of the deduplication process')
-def new_deduplicate(show_examples, verbose):
-    """Run the new deduplication system using canonical events."""
-    click.echo("Loading events from database...")
-    events = database.get_all_events_sorted()
+def deduplicate(show_examples, verbose):
+    """Run deduplication on existing source events in the database."""
+    click.echo("Loading source events from database...")
+    source_events = database.get_all_events_sorted()
 
-    if not events:
-        click.echo("No events found in database. Run 'etl' first.")
+    if not source_events:
+        click.echo("No source events found in database. Run 'etl' first.")
         return
 
-    click.echo(f"Loaded {len(events)} source events")
+    click.echo(f"Loaded {len(source_events)} source events")
 
     if verbose:
         click.echo("\n--- Detailed deduplication process ---")
-        # Show some statistics about the input events
-        source_counts = {}
-        for event in events:
-            source_counts[event.source] = source_counts.get(
-                event.source, 0) + 1
-
+        # Show source event counts
+        source_counts = Counter(event.source for event in source_events)
         click.echo("Source event counts:")
         for source, count in sorted(source_counts.items()):
             click.echo(f"  {source}: {count} events")
 
-        # Show grouping process
-        from .etl.new_deduplication import group_events_by_title_and_date
-        groups = group_events_by_title_and_date(events)
+    # Run deduplication
+    click.echo("Running deduplication...")
+    canonical_events, membership_map = deduplicate_events_new(source_events)
 
-        click.echo(f"\nGrouped into {len(groups)} title/date combinations:")
-        click.echo(
-            f"  Single-event groups: {sum(1 for g in groups.values() if len(g) == 1)}")
-        click.echo(
-            f"  Multi-event groups: {sum(1 for g in groups.values() if len(g) > 1)}")
-
-        # Show some examples of grouping keys
-        click.echo("\nExample grouping keys:")
-        for i, ((normalized_title, event_date), group) in enumerate(list(groups.items())[:5]):
-            click.echo(
-                f"  '{normalized_title}' on {event_date}: {len(group)} events")
-
-    click.echo("Running new deduplication system...")
-
-    # Run new deduplication
-    canonical_events, membership_map = deduplicate_events_new(events)
-
-    # Show statistics
-    total_source_events = len(events)
-    total_canonical_events = len(canonical_events)
+    # Show summary
     total_groups_with_duplicates = sum(
         1 for canonical in canonical_events if len(canonical.source_events) > 1)
-
     click.echo(
-        f"Created {total_canonical_events} canonical events from {total_source_events} source events")
+        f"Created {len(canonical_events)} canonical events from {len(source_events)} source events")
     click.echo(
-        f"Found {total_groups_with_duplicates} groups with multiple source events")
+        f"Found {total_groups_with_duplicates} groups with multiple sources")
 
     if verbose:
-        # Show size distribution of groups
+        # Show group size distribution
         group_sizes = [len(canonical.source_events)
                        for canonical in canonical_events]
-        from collections import Counter
         size_counts = Counter(group_sizes)
-
         click.echo("\nGroup size distribution:")
         for size in sorted(size_counts.keys()):
             count = size_counts[size]
@@ -172,10 +114,9 @@ def new_deduplicate(show_examples, verbose):
 
     if show_examples:
         click.echo("\n--- Examples of event merging ---")
-
         examples_shown = 0
         for canonical in canonical_events:
-            if len(canonical.source_events) > 1 and examples_shown < 5:  # Show up to 5 examples
+            if len(canonical.source_events) > 1 and examples_shown < 5:
                 click.echo(f"\nCanonical Event: {canonical.title}")
                 click.echo(
                     f"  Date: {canonical.start.strftime('%Y-%m-%d %H:%M UTC')}")
@@ -184,9 +125,9 @@ def new_deduplicate(show_examples, verbose):
                 click.echo(
                     f"  Merged from {len(canonical.source_events)} sources:")
 
-                # Find the source events from the original events list using the membership map
+                # Find the source events for this canonical event
                 source_events_for_canonical = []
-                for event in events:
+                for event in source_events:
                     event_key = (event.source, event.source_id)
                     if event_key in membership_map and membership_map[event_key] == canonical.canonical_id:
                         source_events_for_canonical.append(event)
@@ -202,11 +143,11 @@ def new_deduplicate(show_examples, verbose):
         if examples_shown == 0:
             click.echo("No duplicate groups found to show as examples.")
 
-    # Save to database
+    # Save canonical events to database
     click.echo("Saving canonical events to database...")
     database.upsert_canonical_events(canonical_events)
     database.upsert_event_group_memberships(membership_map)
-    click.echo("New deduplication results saved to database")
+    click.echo("Deduplication complete!")
 
 
 @cli.command()
@@ -242,36 +183,31 @@ def list_canonical(future_only):
 
 
 @cli.command()
-@click.option('--all-future', is_flag=True, help='Show all future events')
-@click.option('--all-past', is_flag=True, help='Show all past events')
-@click.option('--show-duplicates', is_flag=True, help='Show duplicate events instead of canonical ones')
-def list_events(all_future, all_past, show_duplicates):
-    """List events. By default shows upcoming events in the next month."""
-    if show_duplicates:
-        events = database.get_duplicate_events()
-        title = "Duplicate events"
-        show_year = True
-    elif all_future:
-        events = database.get_all_future_events(
-        ) if not show_duplicates else database.get_all_future_events()
-        if not show_duplicates:
-            events = [e for e in events if not e.same_as]
-        title = "All future events" + \
-            (" (including duplicates)" if show_duplicates else " (canonical only)")
+@click.option('--all-future', is_flag=True, help='Show all future canonical events')
+@click.option('--all-past', is_flag=True, help='Show all past canonical events')
+def list_events(all_future, all_past):
+    """List canonical events. By default shows upcoming events in the next month."""
+    from datetime import timedelta
+
+    if all_future:
+        events = database.get_canonical_events_future()
+        title = "All future canonical events"
         show_year = True
     elif all_past:
-        events = database.get_all_past_events()
-        if not show_duplicates:
-            events = [e for e in events if not e.same_as]
-        title = "All past events" + \
-            (" (including duplicates)" if show_duplicates else " (canonical only)")
+        # Get all events and filter for past ones
+        all_canonical = database.get_canonical_events()
+        now = datetime.utcnow()
+        events = [e for e in all_canonical if e.end < now]
+        title = "All past canonical events"
         show_year = True
     else:
-        events = database.get_upcoming_events(days_ahead=30)
-        if not show_duplicates:
-            events = [e for e in events if not e.same_as]
-        title = "Upcoming events (next 30 days)" + (
-            " (including duplicates)" if show_duplicates else " (canonical only)")
+        # Get future events and filter for next 30 days
+        all_future_events = database.get_canonical_events_future()
+        now = datetime.utcnow()
+        thirty_days_from_now = now + timedelta(days=30)
+        events = [e for e in all_future_events if e.start <=
+                  thirty_days_from_now]
+        title = "Upcoming canonical events (next 30 days)"
         show_year = False
 
     total_count = len(events)
@@ -309,7 +245,10 @@ def list_events(all_future, all_past, show_duplicates):
         venue_str = f" at {event.venue}" if event.venue else ""
         cost_str = f" (Cost: {event.cost})" if event.cost else ""
         tags_str = f" [Tags: {', '.join(event.tags)}]" if event.tags else ""
-        duplicate_str = f" [DUPLICATE of {event.same_as}]" if event.same_as else ""
+
+        # Show source count if merged from multiple sources
+        source_count_str = f" [Sources: {len(event.source_events)}]" if len(
+            event.source_events) > 1 else ""
 
         # Handle address display - don't show "None"
         if event.address and event.address.lower() != "none":
@@ -321,7 +260,7 @@ def list_events(all_future, all_past, show_duplicates):
         click.echo(f"  {time_str}")
         click.echo(f"  {address_str}{venue_str}")
         click.echo(
-            f"  Source: {event.source}{cost_str}{tags_str}{duplicate_str}")
+            f"  Canonical ID: {event.canonical_id}{cost_str}{tags_str}{source_count_str}")
         click.echo(f"  {event.url}")
         click.echo("")  # Empty line for readability
 
@@ -330,8 +269,6 @@ def list_events(all_future, all_past, show_duplicates):
 @click.argument('date', required=True)
 def show_source_events(date):
     """Show all source events for a specified date (YYYY-MM-DD) with raw data dump."""
-    from datetime import datetime
-
     try:
         target_date = datetime.strptime(date, '%Y-%m-%d').date()
     except ValueError:
@@ -378,8 +315,6 @@ def show_source_events(date):
 @click.argument('date', required=True)
 def show_canonical_events(date):
     """Show all canonical events for a specified date (YYYY-MM-DD) with raw data dump."""
-    from datetime import datetime
-
     try:
         target_date = datetime.strptime(date, '%Y-%m-%d').date()
     except ValueError:
