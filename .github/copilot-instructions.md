@@ -45,6 +45,18 @@ When duplicate events are found across sources:
 - Site generation filters to canonical events only (`WHERE same_as IS NULL`)
 - Events are considered duplicates if they have similar titles, venues, and start times within 2 hours
 
+## Development Guidelines
+
+### Test-Driven Development for Data Sources
+When adding new data sources, prefer downloading example files to `tests/fixtures/` and developing extraction rules against static data. This approach:
+- Avoids slow and flaky network requests during development
+- Prevents issues with changing data underneath us
+- Allows rapid iteration on parsing logic
+- Creates reliable test fixtures for future regression testing
+
+### Asking for Clarification
+If instructions don't seem feasible (e.g., extracting data that doesn't exist in the source, conflicting requirements), stop development and ask for guidance rather than making assumptions. Clear communication prevents wasted effort and ensures the right solution.
+
 ## Development Workflows
 
 ### Local Development
@@ -67,10 +79,11 @@ uv run seattle-volunteering init-db
 Tests use fixtures in `tests/fixtures/` with real HTML/XML samples. Run with `uv run pytest`.
 
 ### Adding New Sources
-1. Create extractor in `src/etl/new_source.py` inheriting from `BaseExtractor`
-2. Add to extractor list in `src/cli.py:etl()`
-3. Add HTML/XML fixture to `tests/fixtures/`
-4. Update `DATA_SOURCES.md` status table
+1. **Download example data**: If possible, download an example file (HTML, XML, JSON-LD) to `tests/fixtures/` for unit testing
+2. **Test-driven development**: Write and iterate on tests using the fixture data until extraction rules work correctly - this avoids slow/flaky network requests and changing data
+3. Create extractor in `src/etl/new_source.py` inheriting from `BaseExtractor`
+4. Add to extractor list in `src/cli.py:etl()`
+5. Update `DATA_SOURCES.md` status table
 
 ## File Structure Notes
 - CLI entry point: `src/cli.py` with Click commands
