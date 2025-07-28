@@ -44,8 +44,17 @@ class GSPBaseExtractor(BaseExtractor):
         return normalize_url(event_url or base_url)
 
     @staticmethod
+    def _create_date_only_times(year, month, day):
+        """Create zero-duration start/end times at midnight UTC for date-only events."""
+        # Create midnight UTC time for the given date
+        start = datetime.datetime(
+            year, month, day, 0, 0, 0, tzinfo=timezone.utc)
+        end = start  # Zero duration indicates this is a date-only event
+        return start, end
+
+    @staticmethod
     def _create_default_times(year=None, month=7, day=28, start_hour=9, duration_hours=3):
-        """Create default start/end times in UTC."""
+        """Create default start/end times in UTC for events with time info."""
         if year is None:
             year = datetime.datetime.now().year
 
@@ -138,13 +147,16 @@ class GSPAPIExtractor(GSPBaseExtractor):
                     date_parts = date_text.split('/')
                     if len(date_parts) == 3:
                         month, day, year = map(int, date_parts)
-                        start, end = self._create_default_times(
+                        # API only provides date, not time - create date-only event
+                        start, end = self._create_date_only_times(
                             year, month, day)
                     else:
                         raise ValueError("Invalid date format")
                 except Exception:
-                    # Fallback to default times
-                    start, end = self._create_default_times()
+                    # Fallback to current date if parsing fails
+                    current_date = datetime.datetime.now()
+                    start, end = self._create_date_only_times(
+                        current_date.year, current_date.month, current_date.day)
 
                 normalized_url = self._normalize_event_url(event_url, API_URL)
                 evt = self._create_event(

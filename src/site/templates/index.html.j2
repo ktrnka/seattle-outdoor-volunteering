@@ -37,7 +37,11 @@
         {% for e in date_group.events %}
         <tr>
           <td>
-            <small>{{ e.start.strftime('%-I:%M%p')|lower }} - {{ e.end.strftime('%-I:%M%p')|lower }}</small>
+            {% if e.is_date_only %}
+              <small>Time unknown</small>
+            {% else %}
+              <small>{{ e.start.strftime('%-I:%M%p')|lower }} - {{ e.end.strftime('%-I:%M%p')|lower }}</small>
+            {% endif %}
           </td>
           <td><a href="{{ e.url }}">{{ e.title }}</a></td>
           <td>
