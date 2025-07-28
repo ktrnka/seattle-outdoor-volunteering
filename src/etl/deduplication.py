@@ -1,19 +1,29 @@
 """Deduplication utilities for events from multiple sources."""
 
-from typing import List, Dict, Set
-from .url_utils import urls_match, normalize_url
+from typing import List
 from ..models import Event
+
+# Source precedence order (lower number = higher precedence)
+SOURCE_PRECEDENCE = {
+    "GSP": 1,  # Green Seattle Partnership - source of truth for registration
+    "SPR": 2,  # Seattle Parks & Rec - clean data source
+    "SPF": 3,  # Seattle Parks Foundation - messiest data source
+}
 
 
 def deduplicate_events(events: List[Event]) -> List[Event]:
     """
-    Identify and mark duplicate events across sources using URL matching.
+    Identify and mark duplicate events across sources using precedence-based matching.
 
     Strategy:
-    1. Build a map of normalized URLs to events
-    2. For events with same_as URLs, mark them as duplicates
-    3. For events without same_as, check if their URL matches another event's same_as
-    4. Prefer GSP as canonical source (since it's the primary registration)
+    1. Group events by similarity (title, venue, time)
+    2. Within each group, pick the canonical event based on source precedence
+    3. Mark lower-precedence events with same_as pointing to canonical event
+
+    Source precedence (lower number = higher precedence):
+    - GSP: 1 (source of truth for registration)
+    - SPR: 2 (clean data source)
+    - SPF: 3 (messiest data source)
 
     Args:
         events: List of events from all sources
@@ -21,75 +31,71 @@ def deduplicate_events(events: List[Event]) -> List[Event]:
     Returns:
         List of events with same_as field set appropriately
     """
-    # Build URL to event mapping for canonical events
-    url_to_event: Dict[str, Event] = {}
+    # Group similar events together
+    event_groups = _group_similar_events(events)
 
-    # First pass: collect all events that could be canonical (no same_as)
-    for event in events:
-        if not event.same_as:
-            normalized_url = normalize_url(event.url)
-            url_to_event[normalized_url] = event
+    # For each group, determine the canonical event and mark duplicates
+    for group in event_groups:
+        if len(group) > 1:
+            canonical_event = _select_canonical_event(group)
 
-    # Second pass: find duplicates
-    for event in events:
-        if event.same_as:
-            # This event already points to a canonical version
-            continue
-
-        # Check if this event's URL matches any same_as URLs from other events
-        normalized_url = normalize_url(event.url)
-
-        # Look for other events that point to this one as canonical
-        for other_event in events:
-            if (other_event.same_as and
-                other_event != event and
-                    urls_match(normalized_url, other_event.same_as)):
-
-                # This event is the canonical version that others point to
-                # No need to mark it as duplicate
-                break
-        else:
-            # Check if there's a canonical event this should point to
-            # Look through all events with same_as to find the canonical URL
-            canonical_url = _find_canonical_url_for_event(event, events)
-            if canonical_url:
-                event.same_as = canonical_url
+            # Mark all other events in group as duplicates
+            for event in group:
+                if event != canonical_event:
+                    event.same_as = canonical_event.url
 
     return events
 
 
-def _find_canonical_url_for_event(event: Event, all_events: List[Event]) -> str | None:
+def _group_similar_events(events: List[Event]) -> List[List[Event]]:
     """
-    Find the canonical URL that this event should point to as same_as.
+    Group events that are likely the same event from different sources.
 
-    For example, if we have:
-    - SPF event about "Pigeon Point" from greenseattle.org organizer
-    - GSP event at URL "https://seattle.greencitypartnerships.org/event/41845"  
-    - SPR event with same_as="https://seattle.greencitypartnerships.org/event/41845"
-
-    Then the SPF event should also point to the GSP URL as canonical.
+    Returns:
+        List of event groups, where each group contains events that are likely duplicates
     """
-    event_url = normalize_url(event.url)
+    groups = []
+    ungrouped_events = events.copy()
 
-    # Look for events that have same_as URLs
-    for other_event in all_events:
-        if not other_event.same_as or other_event == event:
-            continue
+    while ungrouped_events:
+        current_event = ungrouped_events.pop(0)
+        group = [current_event]
 
-        # Check if this event could be a duplicate of the canonical event
-        canonical_url = normalize_url(other_event.same_as)
+        # Find all events similar to current_event
+        i = 0
+        while i < len(ungrouped_events):
+            if _events_likely_same(current_event, ungrouped_events[i]):
+                group.append(ungrouped_events.pop(i))
+            else:
+                i += 1
 
-        if _events_likely_same(event, other_event):
-            return canonical_url
+        groups.append(group)
 
-        # Also check if there's a canonical event with this URL
-        for potential_canonical in all_events:
-            if (not potential_canonical.same_as and
-                urls_match(canonical_url, potential_canonical.url) and
-                    _events_likely_same(event, potential_canonical)):
-                return canonical_url
+    return groups
 
-    return None
+
+def _select_canonical_event(events: List[Event]) -> Event:
+    """
+    Select the canonical event from a group of similar events based on source precedence.
+
+    Args:
+        events: List of similar events from potentially different sources
+
+    Returns:
+        The event that should be considered canonical
+    """
+    if not events:
+        raise ValueError("Cannot select canonical event from empty list")
+
+    if len(events) == 1:
+        return events[0]
+
+    # Sort by source precedence (lower number = higher precedence)
+    def get_precedence(event: Event) -> int:
+        # Unknown sources get lowest precedence
+        return SOURCE_PRECEDENCE.get(event.source, 999)
+
+    return min(events, key=get_precedence)
 
 
 def _events_likely_same(event1: Event, event2: Event) -> bool:

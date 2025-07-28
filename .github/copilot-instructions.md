@@ -9,7 +9,7 @@ Sources (GSP/SPR/SPF) → BaseExtractor → Event models → Deduplication → S
 ```
 
 - **ETL Sources**: Each has a dedicated extractor inheriting from `BaseExtractor` in `src/etl/`
-- **Deduplication**: Smart URL-based matching in `src/etl/deduplication.py` - GSP events are canonical
+- **Deduplication**: Smart precedence-based matching in `src/etl/deduplication.py` - GSP events are canonical
 - **Database**: SQLAlchemy with both Pydantic models (`src/models.py`) and SQLAlchemy models (`src/database.py`)
 - **Site Generation**: Jinja2 templates in `src/site/templates/` with timezone-aware datetime handling
 
@@ -32,10 +32,18 @@ New data sources should:
 - Upsert operations handle both new and updated events
 
 ### Deduplication Logic
-Events are deduplicated by URL matching. When the same event appears across sources:
-- GSP is preferred as canonical (registration URL)
-- Duplicates get `same_as` field pointing to canonical event URL
+Events are deduplicated using a precedence-based approach that groups similar events by title, venue, and time, then selects the canonical version based on source precedence:
+
+**Source Precedence (lower number = higher precedence):**
+1. **GSP**: Preferred as canonical (registration URL and source of truth)
+2. **SPR**: Clean data source
+3. **SPF**: Messiest data source
+
+When duplicate events are found across sources:
+- The highest-precedence source becomes canonical (no `same_as` field)
+- Lower-precedence duplicates get `same_as` field pointing to canonical event URL
 - Site generation filters to canonical events only (`WHERE same_as IS NULL`)
+- Events are considered duplicates if they have similar titles, venues, and start times within 2 hours
 
 ## Development Workflows
 
