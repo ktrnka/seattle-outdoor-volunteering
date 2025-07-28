@@ -3,17 +3,13 @@ from datetime import timezone
 from urllib.parse import quote_plus
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from itertools import groupby
-from ..database import get_upcoming_events
+from ..database import get_canonical_events_future
 from ..models import SEATTLE_TZ
 
 
 def build(output_dir: Path):
-    # Get upcoming events for the next 30 days (canonical only)
-    upcoming_events = get_upcoming_events(days_ahead=30)
-
-    # Filter out duplicate events
-    canonical_events = [
-        event for event in upcoming_events if not event.same_as]
+    # Get future canonical events (already deduplicated)
+    canonical_events = get_canonical_events_future()
 
     # Convert events to dict format for template compatibility
     event_dicts = []
@@ -28,9 +24,12 @@ def build(output_dir: Path):
         start_pacific = start_utc.astimezone(SEATTLE_TZ)
         end_pacific = end_utc.astimezone(SEATTLE_TZ)
 
+        # Check if this is a date-only event (midnight UTC with zero duration)
+        is_date_only = (event.start.hour == 0 and event.start.minute == 0 and
+                        event.start.second == 0 and event.start == event.end)
+
         event_dict = {
-            "source": event.source,
-            "source_id": event.source_id,
+            "canonical_id": event.canonical_id,
             "title": event.title,
             "start": start_pacific,  # Display time in Pacific timezone
             "end": end_pacific,      # Display time in Pacific timezone
@@ -43,7 +42,8 @@ def build(output_dir: Path):
             "latitude": event.latitude,
             "longitude": event.longitude,
             "tags": ",".join(event.tags) if event.tags else "",
-            "is_date_only": event.is_date_only(),  # Whether this is a date-only event
+            "is_date_only": is_date_only,  # Whether this is a date-only event
+            "source_events": event.source_events,  # List of source events that were merged
             # Add Google Maps URL for addresses
             "maps_url": f"https://www.google.com/maps/search/{quote_plus(event.address)}" if event.address and event.address.lower() != 'none' else None
         }

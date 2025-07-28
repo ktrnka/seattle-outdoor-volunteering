@@ -43,3 +43,30 @@ class Event(BaseModel):
     def is_date_only(self) -> bool:
         """Check if this is a date-only event (time unknown/not specified)."""
         return not self.has_time_info()
+
+
+class CanonicalEvent(BaseModel):
+    """Canonical event created by merging duplicate events from multiple sources."""
+    model_config = ConfigDict(from_attributes=True)
+
+    canonical_id: str  # Generated unique ID for the canonical event
+    title: str
+    start: datetime  # Should be timezone-aware (UTC)
+    end: datetime  # Should be timezone-aware (UTC)
+    venue: Optional[str] = None
+    address: Optional[str] = None
+    url: HttpUrl  # Preferred registration URL
+    cost: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    tags: Optional[List[str]] = []
+    source_events: List[str] = []  # List of (source, source_id) pairs
+
+
+class EventGroupMembership(BaseModel):
+    """Represents membership of a source event in a canonical event group."""
+    model_config = ConfigDict(from_attributes=True)
+
+    canonical_id: str
+    source: str
+    source_id: str
