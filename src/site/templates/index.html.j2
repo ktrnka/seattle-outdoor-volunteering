@@ -4,17 +4,39 @@
   <meta charset="utf-8">
   <title>Seattle Outdoor Volunteer Calendar</title>
   <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css">
+  <style>
+    .add-to-calendar { font-size: 0.8em; padding: 0.25rem 0.5rem; }
+    .date-header { 
+      background-color: white; 
+      font-weight: bold; 
+      text-align: center; 
+      font-size: 1.1em;
+      padding-top: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid #dee2e6;
+    }
+    .date-header:first-child {
+      padding-top: 0.75rem;
+    }
+    /* Remove alternating row colors */
+    table[role="grid"] tbody tr {
+      background-color: transparent;
+    }
+  </style>
 </head>
 <body>
   <main class="container">
     <h1>Outdoor Volunteer Opportunities (Seattle-area)</h1>
+    
     <table role="grid">
-      <thead><tr><th>Date</th><th>Event</th><th>Where</th><th></th></tr></thead>
       <tbody>
-      {% for e in events|sort(attribute='start') %}
+      {% for date_group in events_by_date %}
+        <tr class="date-header">
+          <td colspan="4">{{ date_group.date.strftime('%A, %-m/%-d') }}</td>
+        </tr>
+        {% for e in date_group.events %}
         <tr>
           <td>
-            {{ e.start.strftime('%a %-m/%-d') }}<br>
             <small>{{ e.start.strftime('%-I:%M%p')|lower }} - {{ e.end.strftime('%-I:%M%p')|lower }}</small>
           </td>
           <td><a href="{{ e.url }}">{{ e.title }}</a></td>
@@ -34,10 +56,11 @@
 &text={{ e.title|urlencode }}
 &dates={{ e.start_utc.strftime('%Y%m%dT%H%M%SZ') }}/{{ e.end_utc.strftime('%Y%m%dT%H%M%SZ') }}
 &location={{ (e.address or e.venue or '')|urlencode }}"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
+        {% endfor %}
       {% endfor %}
       </tbody>
     </table>

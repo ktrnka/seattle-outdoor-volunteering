@@ -4,17 +4,39 @@
   <meta charset="utf-8">
   <title>Seattle Outdoor Volunteer Calendar</title>
   <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css">
+  <style>
+    .add-to-calendar { font-size: 0.8em; padding: 0.25rem 0.5rem; }
+    .date-header { 
+      background-color: white; 
+      font-weight: bold; 
+      text-align: center; 
+      font-size: 1.1em;
+      padding-top: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid #dee2e6;
+    }
+    .date-header:first-child {
+      padding-top: 0.75rem;
+    }
+    /* Remove alternating row colors */
+    table[role="grid"] tbody tr {
+      background-color: transparent;
+    }
+  </style>
 </head>
 <body>
   <main class="container">
     <h1>Outdoor Volunteer Opportunities (Seattle-area)</h1>
+    
     <table role="grid">
-      <thead><tr><th>Date</th><th>Event</th><th>Where</th><th></th></tr></thead>
       <tbody>
       
+        <tr class="date-header">
+          <td colspan="4">Monday, 7/28</td>
+        </tr>
+        
         <tr>
           <td>
-            Mon 7/28<br>
             <small>9:00am - 12:30pm</small>
           </td>
           <td><a href="https://seattle.greencitypartnerships.org/event/42093">Weeding south of 70th St. again</a></td>
@@ -30,14 +52,18 @@
 &text=Weeding%20south%20of%2070th%20St.%20again
 &dates=20250728T160000Z/20250728T193000Z
 &location=Burke-Gilman%20Trail"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
+        
       
+        <tr class="date-header">
+          <td colspan="4">Tuesday, 7/29</td>
+        </tr>
+        
         <tr>
           <td>
-            Tue 7/29<br>
             <small>10:00am - 1:00pm</small>
           </td>
           <td><a href="https://seattle.greencitypartnerships.org/event/41845">Pigeon Point Park Restoration Event</a></td>
@@ -53,14 +79,13 @@
 &text=Pigeon%20Point%20Park%20Restoration%20Event
 &dates=20250729T170000Z/20250729T200000Z
 &location=Pigeon%20Point"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
-      
+        
         <tr>
           <td>
-            Tue 7/29<br>
             <small>10:00am - 1:00pm</small>
           </td>
           <td><a href="https://www.seattleparksfoundation.org/event/pigeon-point-park-restoration-event-41">Pigeon Point Park Restoration Event</a></td>
@@ -75,14 +100,18 @@
 &text=Pigeon%20Point%20Park%20Restoration%20Event
 &dates=20250729T170000Z/20250729T200000Z
 &location="
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
+        
       
+        <tr class="date-header">
+          <td colspan="4">Wednesday, 7/30</td>
+        </tr>
+        
         <tr>
           <td>
-            Wed 7/30<br>
             <small>9:00am - 12:30pm</small>
           </td>
           <td><a href="https://seattle.greencitypartnerships.org/event/42100">Weeding the BG Trail at 70th</a></td>
@@ -98,14 +127,13 @@
 &text=Weeding%20the%20BG%20Trail%20at%2070th
 &dates=20250730T160000Z/20250730T193000Z
 &location=Burke-Gilman%20Trail"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
-      
+        
         <tr>
           <td>
-            Wed 7/30<br>
             <small>5:00pm - 8:00pm</small>
           </td>
           <td><a href="https://www.seattleparksfoundation.org/event/kciacc-candidates-forum-2025">KCIACC Candidates Forum 2025</a></td>
@@ -121,14 +149,13 @@
 &text=KCIACC%20Candidates%20Forum%202025
 &dates=20250731T000000Z/20250731T030000Z
 &location=5740%20Martin%20Luther%20King%20Jr%20Way%20S%2C%20Seattle%2C%20WA"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
-      
+        
         <tr>
           <td>
-            Wed 7/30<br>
             <small>6:30pm - 8:00pm</small>
           </td>
           <td><a href="https://www.seattleparksfoundation.org/event/spf-pop-up-concerts-in-the-park-black-stax-at-dr-blanche-lavizzo-park-stage">SPF Pop-Up Concerts in the Park: Black Stax at Dr. Blanche Lavizzo Park Stage</a></td>
@@ -144,14 +171,18 @@
 &text=SPF%20Pop-Up%20Concerts%20in%20the%20Park%3A%20Black%20Stax%20at%20Dr.%20Blanche%20Lavizzo%20Park%20Stage
 &dates=20250731T013000Z/20250731T030000Z
 &location=2050%20S%20Jackson%20St%2C%20Seattle%2C%20WA"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
+        
       
+        <tr class="date-header">
+          <td colspan="4">Thursday, 7/31</td>
+        </tr>
+        
         <tr>
           <td>
-            Thu 7/31<br>
             <small>10:00am - 12:00pm</small>
           </td>
           <td><a href="https://seattle.greencitypartnerships.org/event/41994">Individual hours Dave and Ann</a></td>
@@ -167,14 +198,13 @@
 &text=Individual%20hours%20Dave%20and%20Ann
 &dates=20250731T170000Z/20250731T190000Z
 &location=Ravenna%20Park"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
-      
+        
         <tr>
           <td>
-            Thu 7/31<br>
             <small>10:00am - 1:00pm</small>
           </td>
           <td><a href="https://www.seattleparksfoundation.org/event/partner-in-employments-community-volunteer-day">Partner in Employment&#8217;s Community Volunteer Day!</a></td>
@@ -189,14 +219,13 @@
 &text=Partner%20in%20Employment%26%238217%3Bs%20Community%20Volunteer%20Day%21
 &dates=20250731T170000Z/20250731T200000Z
 &location="
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
-      
+        
         <tr>
           <td>
-            Thu 7/31<br>
             <small>6:00pm - 8:30pm</small>
           </td>
           <td><a href="https://www.seattleparksfoundation.org/event/volunteer-park-trusts-summer-series-at-the-amphitheater-picnic-in-the-park-leroy-bell-and-his-only-friends">Volunteer Park Trust&#8217;s Summer Series at the Amphitheater &#038; Picnic in the Park: LeRoy Bell and His Only Friends</a></td>
@@ -212,14 +241,18 @@
 &text=Volunteer%20Park%20Trust%26%238217%3Bs%20Summer%20Series%20at%20the%20Amphitheater%20%26%23038%3B%20Picnic%20in%20the%20Park%3A%20LeRoy%20Bell%20and%20His%20Only%20Friends
 &dates=20250801T010000Z/20250801T033000Z
 &location=1139-1157%20Volunteer%20Park%20Rd%2C%20Seattle%2C%20WA"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
+        
       
+        <tr class="date-header">
+          <td colspan="4">Saturday, 8/2</td>
+        </tr>
+        
         <tr>
           <td>
-            Sat 8/2<br>
             <small>10:00am - 2:00pm</small>
           </td>
           <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d186950305">Volunteer Work Party</a></td>
@@ -235,14 +268,18 @@
 &text=Volunteer%20Work%20Party
 &dates=20250802T170000Z/20250802T210000Z
 &location=Ballard%20Corners%20Park1702%20NW%2062nd%20StSeattle%2C%20WA%2098107"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
+        
       
+        <tr class="date-header">
+          <td colspan="4">Sunday, 8/3</td>
+        </tr>
+        
         <tr>
           <td>
-            Sun 8/3<br>
             <small>8:45am - 11:00am</small>
           </td>
           <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079829">Green Lake Litter Patrol</a></td>
@@ -258,14 +295,13 @@
 &text=Green%20Lake%20Litter%20Patrol
 &dates=20250803T154500Z/20250803T180000Z
 &location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
-      
+        
         <tr>
           <td>
-            Sun 8/3<br>
             <small>10:00am - 12:30pm</small>
           </td>
           <td><a href="https://www.seattleparksfoundation.org/event/peppis-watering-and-weeding">Peppi&#8217;s Watering and Weeding</a></td>
@@ -280,14 +316,18 @@
 &text=Peppi%26%238217%3Bs%20Watering%20and%20Weeding
 &dates=20250803T170000Z/20250803T193000Z
 &location="
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
+        
       
+        <tr class="date-header">
+          <td colspan="4">Wednesday, 8/6</td>
+        </tr>
+        
         <tr>
           <td>
-            Wed 8/6<br>
             <small>6:30pm - 8:00pm</small>
           </td>
           <td><a href="https://www.seattleparksfoundation.org/event/spf-pop-up-kubota-garden-terrace-overlook">SPF Pop-Up Concerts in the Park: Elnah Jordan at Kubota Garden Terrace Overlook</a></td>
@@ -303,14 +343,18 @@
 &text=SPF%20Pop-Up%20Concerts%20in%20the%20Park%3A%20Elnah%20Jordan%20at%20Kubota%20Garden%20Terrace%20Overlook
 &dates=20250807T013000Z/20250807T030000Z
 &location=9817%2055th%20Ave%20S%2C%20Seattle%2C%20WA"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
+        
       
+        <tr class="date-header">
+          <td colspan="4">Thursday, 8/7</td>
+        </tr>
+        
         <tr>
           <td>
-            Thu 8/7<br>
             <small>6:00pm - 8:30pm</small>
           </td>
           <td><a href="https://www.seattleparksfoundation.org/event/volunteer-park-trusts-summer-series-at-the-amphitheater-picnic-in-the-park-quincy-jones-tribute-with-the-seattle-repertory-jazz-orchestra">Volunteer Park Trust&#8217;s Summer Series at the Amphitheater &#038; Picnic in the Park: Quincy Jones Tribute with the Seattle Repertory Jazz Orchestra</a></td>
@@ -326,14 +370,18 @@
 &text=Volunteer%20Park%20Trust%26%238217%3Bs%20Summer%20Series%20at%20the%20Amphitheater%20%26%23038%3B%20Picnic%20in%20the%20Park%3A%20Quincy%20Jones%20Tribute%20with%20the%20Seattle%20Repertory%20Jazz%20Orchestra
 &dates=20250808T010000Z/20250808T033000Z
 &location=1139-1157%20Volunteer%20Park%20Rd%2C%20Seattle%2C%20WA"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
+        
       
+        <tr class="date-header">
+          <td colspan="4">Friday, 8/8</td>
+        </tr>
+        
         <tr>
           <td>
-            Fri 8/8<br>
             <small>10:00am - 2:00pm</small>
           </td>
           <td><a href="https://www.seattleparksfoundation.org/event/herons-nest-healing-the-forest">Heron&#8217;s Nest  Healing the Forest</a></td>
@@ -348,14 +396,18 @@
 &text=Heron%26%238217%3Bs%20Nest%20%20Healing%20the%20Forest
 &dates=20250808T170000Z/20250808T210000Z
 &location="
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
+        
       
+        <tr class="date-header">
+          <td colspan="4">Saturday, 8/9</td>
+        </tr>
+        
         <tr>
           <td>
-            Sat 8/9<br>
             <small>12:00am - 11:59pm</small>
           </td>
           <td><a href="https://www.seattleparksfoundation.org/event/whats-good-the-hillman-city-block-party-2025">What&#8217;s Good: The Hillman City Block Party 2025</a></td>
@@ -370,14 +422,13 @@
 &text=What%26%238217%3Bs%20Good%3A%20The%20Hillman%20City%20Block%20Party%202025
 &dates=20250809T070000Z/20250810T065959Z
 &location="
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
-      
+        
         <tr>
           <td>
-            Sat 8/9<br>
             <small>10:00am - 12:00pm</small>
           </td>
           <td><a href="https://www.seattleparksfoundation.org/event/2nd-saturday-work-party-in-volunteer-park-9">2nd Saturday Work Party in Volunteer Park</a></td>
@@ -393,14 +444,18 @@
 &text=2nd%20Saturday%20Work%20Party%20in%20Volunteer%20Park
 &dates=20250809T170000Z/20250809T190000Z
 &location=1247%2015th%20Ave%20E%2C%20Seattle%2C%20WA"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
+        
       
+        <tr class="date-header">
+          <td colspan="4">Sunday, 8/10</td>
+        </tr>
+        
         <tr>
           <td>
-            Sun 8/10<br>
             <small>8:45am - 11:00am</small>
           </td>
           <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079830">Green Lake Litter Patrol</a></td>
@@ -416,14 +471,18 @@
 &text=Green%20Lake%20Litter%20Patrol
 &dates=20250810T154500Z/20250810T180000Z
 &location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
+        
       
+        <tr class="date-header">
+          <td colspan="4">Sunday, 8/17</td>
+        </tr>
+        
         <tr>
           <td>
-            Sun 8/17<br>
             <small>8:45am - 11:00am</small>
           </td>
           <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079831">Green Lake Litter Patrol</a></td>
@@ -439,14 +498,18 @@
 &text=Green%20Lake%20Litter%20Patrol
 &dates=20250817T154500Z/20250817T180000Z
 &location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
+        
       
+        <tr class="date-header">
+          <td colspan="4">Sunday, 8/24</td>
+        </tr>
+        
         <tr>
           <td>
-            Sun 8/24<br>
             <small>8:45am - 11:00am</small>
           </td>
           <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079832">Green Lake Litter Patrol</a></td>
@@ -462,723 +525,11 @@
 &text=Green%20Lake%20Litter%20Patrol
 &dates=20250824T154500Z/20250824T180000Z
 &location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
+              class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
           </td>
         </tr>
-      
-        <tr>
-          <td>
-            Sun 8/31<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079833">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20250831T154500Z/20250831T180000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 9/7<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079834">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20250907T154500Z/20250907T180000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 9/14<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079835">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20250914T154500Z/20250914T180000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 9/21<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079836">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20250921T154500Z/20250921T180000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 9/28<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079837">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20250928T154500Z/20250928T180000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 10/5<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079838">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20251005T154500Z/20251005T180000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 10/12<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079839">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20251012T154500Z/20251012T180000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 10/19<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079840">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20251019T154500Z/20251019T180000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 10/26<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079841">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20251026T154500Z/20251026T180000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 11/2<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079842">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20251102T164500Z/20251102T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 11/9<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079843">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20251109T164500Z/20251109T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 11/16<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079844">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20251116T164500Z/20251116T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 11/23<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079845">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20251123T164500Z/20251123T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 11/30<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079846">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20251130T164500Z/20251130T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 12/7<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079847">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20251207T164500Z/20251207T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 12/14<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079848">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20251214T164500Z/20251214T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 12/21<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079849">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20251221T164500Z/20251221T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 12/28<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079850">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20251228T164500Z/20251228T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 1/4<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079851">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20260104T164500Z/20260104T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 1/11<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079852">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20260111T164500Z/20260111T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 1/18<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079853">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20260118T164500Z/20260118T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 1/25<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079854">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20260125T164500Z/20260125T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 2/1<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079855">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20260201T164500Z/20260201T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 2/8<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079856">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20260208T164500Z/20260208T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 2/15<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079857">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20260215T164500Z/20260215T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 2/22<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079858">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20260222T164500Z/20260222T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 3/1<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079859">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20260301T164500Z/20260301T190000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 3/8<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079860">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20260308T154500Z/20260308T180000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 3/15<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079861">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20260315T154500Z/20260315T180000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 3/22<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079862">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20260322T154500Z/20260322T180000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
-      
-        <tr>
-          <td>
-            Sun 3/29<br>
-            <small>8:45am - 11:00am</small>
-          </td>
-          <td><a href="https://www.seattle.gov/parks/volunteer/trail-building-and-park-clean-up/volunteer-calendar?trumbaEmbed=view%3devent%26eventid%3d180079863">Green Lake Litter Patrol</a></td>
-          <td>
-            
-              Green Lake Park
-               (<a href="https://www.google.com/maps/search/7312+West+Green+Lake+Dr+N%2C+Seattle%2C+WA+98103" target="_blank">7312 West Green Lake Dr N, Seattle, WA 98103</a>)
-            
-          </td>
-          <td>
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE
-&text=Green%20Lake%20Litter%20Patrol
-&dates=20260329T154500Z/20260329T180000Z
-&location=7312%20West%20Green%20Lake%20Dr%20N%2C%20Seattle%2C%20WA%2098103"
-              role="button" target="_blank">Add to Google</a>
-            <!-- TODO: Outlook, Apple -->
-          </td>
-        </tr>
+        
       
       </tbody>
     </table>

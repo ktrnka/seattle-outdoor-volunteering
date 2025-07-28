@@ -1,23 +1,19 @@
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import timezone
 from urllib.parse import quote_plus
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from ..database import get_all_events_sorted
-from ..models import SEATTLE_TZ
+from itertools import groupby
+from ..database import get_upcoming_events
 from ..models import SEATTLE_TZ
 
 
 def build(output_dir: Path):
-    # Get all events and filter out past events
-    all_events = get_all_events_sorted()
-    now_utc = datetime.now(timezone.utc)
-
-    # Filter out past events (events that have already ended)
-    future_events = [event for event in all_events if event.end.replace(
-        tzinfo=timezone.utc) >= now_utc]
+    # Get upcoming events for the next 30 days (canonical only)
+    upcoming_events = get_upcoming_events(days_ahead=30)
 
     # Filter out duplicate events
-    canonical_events = [event for event in future_events if not event.same_as]
+    canonical_events = [
+        event for event in upcoming_events if not event.same_as]
 
     # Convert events to dict format for template compatibility
     event_dicts = []
@@ -52,11 +48,22 @@ def build(output_dir: Path):
         }
         event_dicts.append(event_dict)
 
+    # Sort events by start time
+    event_dicts.sort(key=lambda e: e['start'])
+
+    # Group events by date
+    events_by_date = []
+    for date, events in groupby(event_dicts, key=lambda e: e['start'].date()):
+        events_by_date.append({
+            'date': date,
+            'events': list(events)
+        })
+
     env = Environment(
         loader=FileSystemLoader(Path(__file__).parent / "templates"),
         autoescape=select_autoescape()
     )
     tmpl = env.get_template("index.html.j2")
-    html = tmpl.render(events=event_dicts)
+    html = tmpl.render(events_by_date=events_by_date)
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "index.html").write_text(html, encoding="utf-8")
