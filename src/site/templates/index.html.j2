@@ -72,7 +72,19 @@
       {% endfor %}
       </tbody>
     </table>
-    <footer><small>Built automatically every night.  Data may lag sources.</small></footer>
+    <footer>
+      <small>Built automatically every night. Data may lag sources.</small>
+      {% if source_stats %}
+      <div style="margin-top: 1rem;">
+        <small><strong>Data Source Updates:</strong></small>
+        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+        {% for source, last_updated in source_stats.items() %}
+          <li><small><strong>{{ source }}:</strong> {{ last_updated.strftime('%-m/%-d/%Y at %-I:%M%p')|lower }}</small></li>
+        {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </footer>
   </main>
 </body>
 </html>

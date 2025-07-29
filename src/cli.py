@@ -40,10 +40,28 @@ def etl():
     source_events = []
 
     for extractor_class in [GSPExtractor, SPRExtractor, SPFExtractor]:
-        extractor = extractor_class.fetch()
-        events = extractor.extract()
-        source_events.extend(events)
-        click.echo(f"{extractor_class.__name__}: {len(events)} events")
+        try:
+            extractor = extractor_class.fetch()
+            events = extractor.extract()
+            source_events.extend(events)
+            click.echo(f"{extractor_class.__name__}: {len(events)} events")
+
+            # Record successful ETL run
+            database.record_etl_run(
+                source=extractor.source,
+                status="success",
+                num_rows=len(events)
+            )
+        except Exception as e:
+            click.echo(f"{extractor_class.__name__}: ERROR - {str(e)}")
+            # Record failed ETL run
+            database.record_etl_run(
+                source=extractor_class.source,  # Use class attribute since instance may not exist
+                status="failure",
+                num_rows=0
+            )
+            # Continue in case the next extractor can still run
+            continue
 
     # Run deduplication to create canonical events
     click.echo("Running deduplication...")

@@ -3,7 +3,7 @@ from datetime import timezone
 from urllib.parse import quote_plus
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from itertools import groupby
-from ..database import get_future_canonical_events
+from ..database import get_future_canonical_events, get_source_updated_stats
 from ..models import SEATTLE_TZ
 
 
@@ -58,11 +58,23 @@ def build(output_dir: Path):
             'events': list(events)
         })
 
+    # Get source update statistics
+    source_stats = get_source_updated_stats()
+
+    # Convert UTC times to Pacific time for display
+    source_stats_pacific = {}
+    for source, utc_datetime in source_stats.items():
+        pacific_datetime = utc_datetime.astimezone(SEATTLE_TZ)
+        source_stats_pacific[source] = pacific_datetime
+
     env = Environment(
         loader=FileSystemLoader(Path(__file__).parent / "templates"),
         autoescape=select_autoescape()
     )
     tmpl = env.get_template("index.html.j2")
-    html = tmpl.render(events_by_date=events_by_date)
+    html = tmpl.render(
+        events_by_date=events_by_date,
+        source_stats=source_stats_pacific
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "index.html").write_text(html, encoding="utf-8")

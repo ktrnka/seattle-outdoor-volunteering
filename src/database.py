@@ -2,12 +2,12 @@
 
 from typing import List, Dict, Tuple
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import create_engine, Column, String, DateTime, Float, Text, PrimaryKeyConstraint
+from sqlalchemy import create_engine, Column, String, DateTime, Float, Text, Integer, PrimaryKeyConstraint
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from sqlalchemy.dialects.sqlite import insert
 
 from .config import DB_PATH, ensure_database_exists
-from .models import Event as PydanticEvent, CanonicalEvent as PydanticCanonicalEvent, EventGroupMembership as PydanticEventGroupMembership
+from .models import Event as PydanticEvent, CanonicalEvent as PydanticCanonicalEvent, EventGroupMembership as PydanticEventGroupMembership, ETLRun as PydanticETLRun
 
 Base = declarative_base()
 
@@ -130,6 +130,26 @@ class EventGroupMembership(Base):
         )
 
 
+class ETLRun(Base):
+    """SQLAlchemy model for tracking ETL runs for each data source."""
+    __tablename__ = 'etl_runs'
+
+    id = Column(String, primary_key=True)  # Auto-generated unique ID
+    source = Column(String, nullable=False)
+    run_datetime = Column(DateTime, nullable=False)
+    status = Column(String, nullable=False)  # "success" or "failure"
+    num_rows = Column(Integer, nullable=False, default=0)
+
+    def to_pydantic(self) -> PydanticETLRun:
+        """Convert SQLAlchemy model to Pydantic model."""
+        return PydanticETLRun(
+            source=self.source,
+            run_datetime=read_utc(self.run_datetime),
+            status=self.status,
+            num_rows=self.num_rows
+        )
+
+
 def get_engine():
     """Create and return a SQLAlchemy engine for the SQLite database."""
     ensure_database_exists()
@@ -154,6 +174,7 @@ def init_database(reset: bool = False) -> None:
             session.query(Event).delete()
             session.query(CanonicalEvent).delete()
             session.query(EventGroupMembership).delete()
+            session.query(ETLRun).delete()
             session.commit()
 
 
@@ -380,5 +401,60 @@ def get_events_by_canonical_id(canonical_id: str) -> List[PydanticEvent]:
                 source_events.append(event.to_pydantic())
 
         return source_events
+    finally:
+        session.close()
+
+
+def record_etl_run(source: str, status: str, num_rows: int) -> None:
+    """Record an ETL run for a data source."""
+    import uuid
+    session = get_session()
+
+    try:
+        etl_run = ETLRun(
+            id=str(uuid.uuid4()),
+            source=source,
+            run_datetime=datetime.now(timezone.utc),
+            status=status,
+            num_rows=num_rows
+        )
+        session.add(etl_run)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def get_source_updated_stats() -> Dict[str, datetime]:
+    """Get the most recent successful ETL run datetime for each source."""
+    session = get_session()
+
+    try:
+        # Get the most recent successful run for each source
+        from sqlalchemy.sql import func
+
+        # Subquery to get the max datetime for each source where status = 'success'
+        max_datetimes = session.query(
+            ETLRun.source,
+            func.max(ETLRun.run_datetime).label('max_datetime')
+        ).filter(
+            ETLRun.status == 'success'
+        ).group_by(ETLRun.source).subquery()
+
+        # Get the actual ETL run records for those max datetimes
+        runs = session.query(ETLRun).join(
+            max_datetimes,
+            (ETLRun.source == max_datetimes.c.source) &
+            (ETLRun.run_datetime == max_datetimes.c.max_datetime)
+        ).all()
+
+        # Convert to dict of source -> datetime
+        result = {}
+        for run in runs:
+            result[run.source] = read_utc(run.run_datetime)
+
+        return result
     finally:
         session.close()

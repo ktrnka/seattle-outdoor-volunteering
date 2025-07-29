@@ -70,3 +70,13 @@ class EventGroupMembership(BaseModel):
     canonical_id: str
     source: str
     source_id: str
+
+
+class ETLRun(BaseModel):
+    """Tracks ETL runs for each data source."""
+    model_config = ConfigDict(from_attributes=True)
+
+    source: str  # Data source identifier (e.g., "GSP", "SPR", "SPF")
+    run_datetime: datetime  # When the ETL run occurred (UTC timezone-aware)
+    status: str  # "success" or "failure"
+    num_rows: int = 0  # Number of events retrieved
