@@ -3,6 +3,7 @@ from pathlib import Path
 
 from pydantic import HttpUrl
 from src.etl.gsp import GSPExtractor, GSPCalendarExtractor, GSPAPIExtractor
+from src.models import SEATTLE_TZ
 
 data_path = Path(__file__).parent / "data"
 
@@ -20,11 +21,20 @@ def test_parse_calendar_fixture():
     # Basic checks on the first event
     first_event = events[0]
     assert first_event.title == "Weeding south of 70th St. again"
-    assert first_event.start.year == 2025
-    assert first_event.start.month == 7
-    assert first_event.start.day == 28
     assert first_event.url == HttpUrl(
         "https://seattle.greencitypartnerships.org/event/42093")
+
+    # July 28, 9am-12:30pm @ Burke-Gilman Trail in local time
+    local_start = first_event.start.astimezone(SEATTLE_TZ)
+    assert local_start.year == 2025
+    assert local_start.month == 7
+    assert local_start.day == 28
+    assert local_start.hour == 9  # 9am local time
+    assert local_start.minute == 0
+
+    local_end = first_event.end.astimezone(SEATTLE_TZ)
+    assert local_end.hour == 12  # 12:30pm local time
+    assert local_end.minute == 30
 
 
 def test_parse_api_fixture():

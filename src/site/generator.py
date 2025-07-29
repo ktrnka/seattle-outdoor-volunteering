@@ -15,10 +15,8 @@ def build(output_dir: Path):
     event_dicts = []
     for event in canonical_events:
         # Convert UTC times to Pacific time for display
-        start_utc = event.start.replace(
-            tzinfo=timezone.utc) if event.start.tzinfo is None else event.start.astimezone(timezone.utc)
-        end_utc = event.end.replace(
-            tzinfo=timezone.utc) if event.end.tzinfo is None else event.end.astimezone(timezone.utc)
+        start_utc = event.start
+        end_utc = event.end
 
         # Convert to Pacific time for display
         start_pacific = start_utc.astimezone(SEATTLE_TZ)

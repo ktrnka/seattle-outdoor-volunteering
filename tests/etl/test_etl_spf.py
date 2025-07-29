@@ -1,6 +1,9 @@
 # tests/test_etl_spf.py
 from pathlib import Path
+
+from pydantic import HttpUrl
 from src.etl.spf import SPFExtractor
+from src.models import SEATTLE_TZ
 
 data_path = Path(__file__).parent / "data"
 
@@ -17,11 +20,17 @@ def test_parse_fixture():
     # Check that we can parse the first event from the JSON-LD data
     first_event = events[0]
     assert first_event.title == "Pigeon Point Park Restoration Event"
-    assert first_event.start.year == 2025
-    assert first_event.start.month == 7
-    assert first_event.start.day == 29
-    assert "Pigeon Point" in first_event.title
-    assert first_event.url
+    assert first_event.url == HttpUrl(
+        "https://www.seattleparksfoundation.org/event/pigeon-point-park-restoration-event-41")
+
+    # "startDate":"2025-07-29T10:00:00-07:00","endDate":"2025-07-29T13:00:00-07:00"
+
+    local_start = first_event.start.astimezone(SEATTLE_TZ)
+    assert local_start.year == 2025
+    assert local_start.month == 7
+    assert local_start.day == 29
+    assert local_start.hour == 10  # 10am local time
+    assert local_start.minute == 0
 
     # Ideally we'd like to get the registration link, but it's not present in the JSON-LD data
 

@@ -3,6 +3,7 @@ from pathlib import Path
 
 from pydantic import HttpUrl
 from src.etl.spr import SPRExtractor
+from src.models import SEATTLE_TZ
 
 data_path = Path(__file__).parent / "data"
 
@@ -28,13 +29,20 @@ def test_parse_fixture():
     # Verify the first event matches our RSS fixture
     assert first_event.title == "Preparing for Fall Planting"
     assert first_event.address == "5921 Aurora Ave N, Seattle, WA 98103"
-    assert first_event.start.year == 2025
-    assert first_event.start.month == 7
-    assert first_event.start.day == 27
-    assert first_event.start.hour == 15  # 8am local time, which is 3pm UTC
-    assert first_event.end.hour == 18  # 11am local time, which is 6pm UTC
     assert first_event.same_as == HttpUrl(
         "http://seattle.greencitypartnerships.org/event/42030")
+
+    # Sunday, July 27, 2025, 8&amp;nbsp;&amp;ndash;&amp;nbsp;11am
+    local_start = first_event.start.astimezone(SEATTLE_TZ)
+    assert local_start.year == 2025
+    assert local_start.month == 7
+    assert local_start.day == 27
+    assert local_start.hour == 8  # 8am local time
+    assert local_start.minute == 0
+
+    local_end = first_event.end.astimezone(SEATTLE_TZ)
+    assert local_end.hour == 11  # 11am local time
+    assert local_end.minute == 0
 
     # Verify URL format
     assert "trumbaEmbed" in str(first_event.url)
