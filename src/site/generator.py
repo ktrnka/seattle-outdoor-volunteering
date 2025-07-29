@@ -47,8 +47,8 @@ def build(output_dir: Path):
         }
         event_dicts.append(event_dict)
 
-    # Sort events by start time
-    event_dicts.sort(key=lambda e: e['start'])
+    # Sort events by start time, then by title for events with the same start time
+    event_dicts.sort(key=lambda e: (e['start'], e['title']))
 
     # Group events by date
     events_by_date = []

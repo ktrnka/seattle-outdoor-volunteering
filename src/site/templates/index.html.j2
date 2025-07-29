@@ -59,6 +59,7 @@
             {% endif %}
           </td>
           <td>
+            {% if not e.is_date_only %}
             <a
               href="https://calendar.google.com/calendar/render?action=TEMPLATE
 &text={{ e.title|urlencode }}
@@ -66,6 +67,7 @@
 &location={{ (e.address or e.venue or '')|urlencode }}"
               class="add-to-calendar" role="button" target="_blank">Add to Google</a>
             <!-- TODO: Outlook, Apple -->
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
