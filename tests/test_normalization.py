@@ -1,6 +1,6 @@
 """Quick test of title normalization edge cases."""
 
-from src.etl.new_deduplication import normalize_title
+from src.etl.deduplication import normalize_title
 
 
 def test_normalization_edge_cases():

@@ -1,6 +1,6 @@
 """Test for smart quotes and HTML entity handling in title normalization."""
 
-from src.etl.new_deduplication import normalize_title
+from src.etl.deduplication import normalize_title
 
 
 def test_smart_quotes_normalization():

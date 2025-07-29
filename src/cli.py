@@ -9,7 +9,7 @@ from .config import DB_PATH, DB_GZ
 from .etl.gsp import GSPExtractor
 from .etl.spf import SPFExtractor
 from .etl.spr import SPRExtractor
-from .etl.new_deduplication import deduplicate_events_new
+from .etl.new_deduplication import deduplicate_events
 from .site import generator
 from . import database
 
@@ -45,7 +45,7 @@ def etl():
 
     # Run deduplication to create canonical events
     click.echo("Running deduplication...")
-    canonical_events, membership_map = deduplicate_events_new(source_events)
+    canonical_events, membership_map = deduplicate_events(source_events)
 
     # Show summary
     total_groups_with_duplicates = sum(
@@ -92,7 +92,7 @@ def deduplicate(show_examples, verbose):
 
     # Run deduplication
     click.echo("Running deduplication...")
-    canonical_events, membership_map = deduplicate_events_new(source_events)
+    canonical_events, membership_map = deduplicate_events(source_events)
 
     # Show summary
     total_groups_with_duplicates = sum(

@@ -7,7 +7,7 @@ import pytest
 from pydantic import HttpUrl
 
 from src.models import Event
-from src.etl.new_deduplication import (
+from src.etl.deduplication import (
     normalize_title,
     get_event_date,
     group_events_by_title_and_date,
@@ -18,7 +18,7 @@ from src.etl.new_deduplication import (
     select_preferred_url,
     generate_canonical_id,
     create_canonical_event,
-    deduplicate_events_new,
+    deduplicate_events,
 )
 
 # Test timezone
@@ -369,7 +369,7 @@ def test_deduplicate_events_new():
         ),
     ]
 
-    canonical_events, membership_map = deduplicate_events_new(events)
+    canonical_events, membership_map = deduplicate_events(events)
 
     # Should have 2 canonical events
     assert len(canonical_events) == 2

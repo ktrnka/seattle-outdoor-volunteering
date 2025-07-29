@@ -242,7 +242,7 @@ def create_canonical_event(event_group: List[Event], normalized_title: str, even
     )
 
 
-def deduplicate_events_new(events: List[Event]) -> Tuple[List[CanonicalEvent], Dict[Tuple[str, str], str]]:
+def deduplicate_events(events: List[Event]) -> Tuple[List[CanonicalEvent], Dict[Tuple[str, str], str]]:
     """
     New deduplication system that groups events by normalized title and date.
 

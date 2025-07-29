@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from pydantic import HttpUrl
 
 from src.models import Event
-from src.etl.new_deduplication import deduplicate_events_new
+from src.etl.deduplication import deduplicate_events
 from src import database
 
 UTC = ZoneInfo('UTC')
@@ -46,7 +46,7 @@ def test_canonical_events_database_integration():
     ]
 
     # Run deduplication
-    canonical_events, membership_map = deduplicate_events_new(events)
+    canonical_events, membership_map = deduplicate_events(events)
 
     # Should create 2 canonical events
     assert len(canonical_events) == 2
