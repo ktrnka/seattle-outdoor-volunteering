@@ -4,6 +4,7 @@ import shutil
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 from src.etl.dnda import DNDAExtractor
 
@@ -11,6 +12,7 @@ from .config import DB_PATH, DB_GZ
 from .etl.gsp import GSPExtractor
 from .etl.spf import SPFExtractor
 from .etl.spr import SPRExtractor
+from .etl.spu import SPUExtractor
 from .etl.earthcorps import EarthCorpsExtractor
 from .etl.deduplication import deduplicate_events
 from .site import generator
@@ -37,12 +39,35 @@ def init_db(reset: bool = False):
 
 
 @cli.command()
-def etl():
+@click.option("--only-run", type=str, help="Run only the specified extractor (e.g., SPU, GSP, SPR, SPF, DNDA, EarthCorps)")
+def etl(only_run: Optional[str] = None):
     """Run all extractors, deduplication, and build/compact DB."""
-    # Fetch source events from all extractors
+    # Map extractor names to classes
+    extractor_map = {
+        "GSP": GSPExtractor,
+        "SPR": SPRExtractor,
+        "SPF": SPFExtractor,
+        "SPU": SPUExtractor,
+        "DNDA": DNDAExtractor,
+        "EarthCorps": EarthCorpsExtractor,
+    }
+
+    # Determine which extractors to run
+    if only_run:
+        if only_run not in extractor_map:
+            click.echo(
+                f"Error: Unknown extractor '{only_run}'. Available: {', '.join(extractor_map.keys())}")
+            return
+        extractors_to_run = [extractor_map[only_run]]
+        click.echo(f"Running only {only_run} extractor...")
+    else:
+        extractors_to_run = list(extractor_map.values())
+        click.echo("Running all extractors...")
+
+    # Fetch source events from specified extractors
     source_events = []
 
-    for extractor_class in [GSPExtractor, SPRExtractor, SPFExtractor, DNDAExtractor, EarthCorpsExtractor]:
+    for extractor_class in extractors_to_run:
         try:
             extractor = extractor_class.fetch()
             events = extractor.extract()
@@ -66,21 +91,33 @@ def etl():
             # Continue in case the next extractor can still run
             continue
 
-    # Run deduplication to create canonical events
-    click.echo("Running deduplication...")
-    canonical_events, membership_map = deduplicate_events(source_events)
+    # Save newly extracted events to database
+    click.echo("Saving new events to database...")
+    database.upsert_source_events(source_events)
+
+    # Now run deduplication on ALL events in the database
+    click.echo("Loading all source events from database...")
+    all_source_events = database.get_source_events()
+
+    if not all_source_events:
+        click.echo(
+            "No source events found in database after upsert. Something went wrong.")
+        return
+
+    click.echo(
+        f"Running deduplication on {len(all_source_events)} total events...")
+    canonical_events, membership_map = deduplicate_events(all_source_events)
 
     # Show summary
     total_groups_with_duplicates = sum(
         1 for canonical in canonical_events if len(canonical.source_events) > 1)
     click.echo(
-        f"Created {len(canonical_events)} canonical events from {len(source_events)} source events")
+        f"Created {len(canonical_events)} canonical events from {len(all_source_events)} source events")
     click.echo(
         f"Found {total_groups_with_duplicates} groups with multiple sources")
 
-    # Save to database
-    click.echo("Saving to database...")
-    database.upsert_source_events(source_events)
+    # Save canonical events and memberships to database
+    click.echo("Updating canonical events in database...")
     database.overwrite_canonical_events(canonical_events)
     database.overwrite_event_group_memberships(membership_map)
 

@@ -45,7 +45,8 @@ Events are deduplicated using a precedence-based approach that groups similar ev
 **Source Precedence (lower number = higher precedence):**
 1. **SPR**: Preferred as canonical (has time-of-day information, often links to GSP for registration)
 2. **GSP**: Often only has date information without specific times
-3. **SPF**: Messiest data source
+3. **SPU**: Cleanup events with good time/location data, but distinct event type
+4. **SPF**: Messiest data source
 
 When duplicate events are found across sources:
 - The highest-precedence source becomes canonical (no `same_as` field)
@@ -130,7 +131,12 @@ Tests use fixtures in `tests/fixtures/` with real HTML/XML samples. Run with `uv
 ### Event Enhancement
 - **Standardize titles**: Use LLM to create more informative titles like "Park restoration at Woodland Park with Greg"
 - **Event categorization**: Support both parks work and litter cleanup work with user filtering options
+  - **SPU cleanup events**: Currently tagged as "cleanup", "neighborhood", "utilities" - these are distinct from parks restoration work
+  - **Future differentiation**: May want to distinguish cleanup events from parks/habitat restoration events for user filtering
 - **Enhanced details**: Standardize event information to cover who/what/why/how/when (explaining "why" invasive species removal matters will be challenging)
+- **Crawling frequency optimization**: Different sources may need different update frequencies
+  - **SPU**: Less frequent (weekly/monthly) - fewer events, more stable schedule
+  - **GSP/SPR/SPF**: More frequent (daily) - more events, dynamic scheduling
 
 ### User Experience
 - **Geographic filtering**: Add distance-based filtering with user location (cookie storage vs neighborhood selector)
