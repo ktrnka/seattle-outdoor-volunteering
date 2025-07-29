@@ -1,7 +1,7 @@
 """Database module using SQLAlchemy for managing the events database."""
 
 from typing import List, Dict, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine, Column, String, DateTime, Float, Text, PrimaryKeyConstraint
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from sqlalchemy.dialects.sqlite import insert
@@ -42,8 +42,8 @@ class Event(Base):
             source=self.source,
             source_id=self.source_id,
             title=self.title,
-            start=self.start,
-            end=self.end,
+            start=self.start.astimezone(timezone.utc),
+            end=self.end.astimezone(timezone.utc),
             venue=self.venue,
             address=self.address,
             url=self.url,
@@ -87,8 +87,8 @@ class CanonicalEvent(Base):
         return PydanticCanonicalEvent(
             canonical_id=self.canonical_id,
             title=self.title,
-            start=self.start,
-            end=self.end,
+            start=self.start.astimezone(timezone.utc),
+            end=self.end.astimezone(timezone.utc),
             venue=self.venue,
             address=self.address,
             url=self.url,
@@ -134,10 +134,18 @@ def get_session() -> Session:
     return SessionLocal()
 
 
-def init_database() -> None:
+def init_database(reset: bool = False) -> None:
     """Initialize the database by creating all tables."""
     engine = get_engine()
     Base.metadata.create_all(bind=engine)
+
+    if reset:
+        # If reset is True, clear existing data
+        with get_session() as session:
+            session.query(Event).delete()
+            session.query(CanonicalEvent).delete()
+            session.query(EventGroupMembership).delete()
+            session.commit()
 
 
 def upsert_source_events(events: List[PydanticEvent]) -> None:

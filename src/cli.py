@@ -26,9 +26,10 @@ def dev():
 
 
 @cli.command()
-def init_db():
+@click.option("--reset", is_flag=True, help="Reset the database before initializing")
+def init_db(reset: bool = False):
     """Initialize the database by creating tables."""
-    database.init_database()
+    database.init_database(reset=reset)
     click.echo(f"Database initialized at {DB_PATH}")
 
 
@@ -194,13 +195,21 @@ def debug_date(date):
 
     click.echo(f"# Source events for {target_date}: {len(source_events)}")
     for event in source_events:
-        click.echo(f"\n## {event.title} ({event.start})")
+        utc_start = event.start
+        local_start = utc_start.astimezone(SEATTLE_TZ)
+
+        click.echo(
+            f"\n## {event.title} (UTC {utc_start}, Local {local_start}, TZ={event.start.tzinfo})")
         click.echo(f"{event.source} - {event.url})")
 
     click.echo(
         f"\n# Canonical events for {target_date}: {len(canonical_events)}")
     for event in canonical_events:
-        click.echo(f"\n## {event.title} ({event.start})")
+        utc_start = event.start
+        local_start = utc_start.astimezone(SEATTLE_TZ)
+
+        click.echo(
+            f"\n## {event.title} (UTC {utc_start}, Local {local_start}, TZ={event.start.tzinfo})")
         click.echo(f"Sources: {', '.join(event.source_events)}")
         click.echo(f"URL: {event.url}")
 

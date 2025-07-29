@@ -78,21 +78,22 @@ class SPFExtractor(BaseExtractor):
                 return None
 
             # Parse dates
-            start_date = parser.isoparse(start_date_str)
-            end_date = parser.isoparse(end_date_str)
+            start_date = parser.isoparse(
+                start_date_str).astimezone(timezone.utc)
+            end_date = parser.isoparse(end_date_str).astimezone(timezone.utc)
 
-            # Convert to UTC if timezone-naive (assume Seattle local time)
-            if start_date.tzinfo is None:
-                start_date = start_date.replace(
-                    tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-            else:
-                start_date = start_date.astimezone(timezone.utc)
+            # # Convert to UTC if timezone-naive (assume Seattle local time)
+            # if start_date.tzinfo is None:
+            #     start_date = start_date.replace(
+            #         tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+            # else:
+            #     start_date = start_date.astimezone(timezone.utc)
 
-            if end_date.tzinfo is None:
-                end_date = end_date.replace(
-                    tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-            else:
-                end_date = end_date.astimezone(timezone.utc)
+            # if end_date.tzinfo is None:
+            #     end_date = end_date.replace(
+            #         tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+            # else:
+            #     end_date = end_date.astimezone(timezone.utc)
 
             # Optional fields
             venue = None
