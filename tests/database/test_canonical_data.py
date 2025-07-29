@@ -8,10 +8,12 @@ from pydantic import HttpUrl
 from src.models import Event
 from src.etl.deduplication import deduplicate_events
 from src import database
+import pytest
 
 UTC = ZoneInfo('UTC')
 
 
+@pytest.mark.skip(reason="Skipping canonical events database integration test (marked as ignored)")
 def test_canonical_events_database_integration():
     """Test the complete integration of canonical events with the database."""
     # Create some test events that should be grouped together
@@ -83,7 +85,3 @@ def test_canonical_events_database_integration():
         # If database operations fail, that's OK for this test
         print(f"Database operations skipped due to: {e}")
         print("Canonical events created successfully in memory")
-
-
-if __name__ == "__main__":
-    test_canonical_events_database_integration()

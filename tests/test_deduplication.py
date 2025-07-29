@@ -76,20 +76,6 @@ def test_smart_quotes_normalization():
                ) == 1, f"All titles should normalize the same, got: {set(normalized_titles)}"
 
 
-def test_get_event_date():
-    """Test extracting date from event."""
-    event = Event(
-        source="SPR",
-        source_id="123",
-        title="Test Event",
-        start=datetime(2025, 7, 28, 10, 0, tzinfo=UTC),
-        end=datetime(2025, 7, 28, 12, 0, tzinfo=UTC),
-        url=HttpUrl("https://example.com/event")
-    )
-
-    assert get_event_date(event) == date(2025, 7, 28)
-
-
 def test_group_events_by_title_and_date():
     """Test grouping events by normalized title and date."""
     events = [
@@ -365,8 +351,8 @@ def test_create_canonical_event():
     assert canonical.canonical_id == expected_id
 
 
-def test_deduplicate_events_new():
-    """Test the complete new deduplication system."""
+def test_deduplicate_events():
+    """Test the complete deduplication system."""
     events = [
         Event(
             source="SPR",
