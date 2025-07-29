@@ -12,6 +12,14 @@ from .models import Event as PydanticEvent, CanonicalEvent as PydanticCanonicalE
 Base = declarative_base()
 
 
+def read_utc(db_datetime_value: datetime) -> datetime:
+    """Repair a tz-stripped datetime read from sqlite"""
+    if db_datetime_value.tzinfo:
+        return db_datetime_value
+
+    return db_datetime_value.replace(tzinfo=timezone.utc)
+
+
 class Event(Base):
     """SQLAlchemy model for events table."""
     __tablename__ = 'events'
@@ -38,12 +46,13 @@ class Event(Base):
     def to_pydantic(self) -> PydanticEvent:
         """Convert SQLAlchemy model to Pydantic model."""
         tags = self.tags.split(',') if self.tags else []
+
         return PydanticEvent(
             source=self.source,
             source_id=self.source_id,
             title=self.title,
-            start=self.start.astimezone(timezone.utc),
-            end=self.end.astimezone(timezone.utc),
+            start=read_utc(self.start),
+            end=read_utc(self.end),
             venue=self.venue,
             address=self.address,
             url=self.url,
@@ -87,8 +96,8 @@ class CanonicalEvent(Base):
         return PydanticCanonicalEvent(
             canonical_id=self.canonical_id,
             title=self.title,
-            start=self.start.astimezone(timezone.utc),
-            end=self.end.astimezone(timezone.utc),
+            start=read_utc(self.start),
+            end=read_utc(self.end),
             venue=self.venue,
             address=self.address,
             url=self.url,
@@ -159,8 +168,8 @@ def upsert_source_events(events: List[PydanticEvent]) -> None:
                 'source': event.source,
                 'source_id': event.source_id,
                 'title': event.title,
-                'start': event.start,
-                'end': event.end,
+                'start': event.start.astimezone(timezone.utc),
+                'end': event.end.astimezone(timezone.utc),
                 'venue': event.venue,
                 'address': event.address,
                 'url': str(event.url),
@@ -265,8 +274,8 @@ def overwrite_canonical_events(canonical_events: List[PydanticCanonicalEvent]) -
             event_data = {
                 'canonical_id': canonical_event.canonical_id,
                 'title': canonical_event.title,
-                'start': canonical_event.start,
-                'end': canonical_event.end,
+                'start': canonical_event.start.astimezone(timezone.utc),
+                'end': canonical_event.end.astimezone(timezone.utc),
                 'venue': canonical_event.venue,
                 'address': canonical_event.address,
                 'url': str(canonical_event.url),
