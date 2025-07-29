@@ -11,6 +11,7 @@ from .etl.spf import SPFExtractor
 from .etl.spr import SPRExtractor
 from .etl.deduplication import deduplicate_events
 from .site import generator
+from .models import SEATTLE_TZ
 from . import database
 
 
@@ -184,11 +185,12 @@ def list_canonical_events(all: bool = False):
 def debug_date(date):
     target_date = datetime.strptime(date, '%Y-%m-%d').date()
 
+    # Convert UTC times to Pacific time for date comparison
     source_events = [e for e in database.get_source_events()
-                     if e.start.date() == target_date]
+                     if e.start.astimezone(SEATTLE_TZ).date() == target_date]
 
     canonical_events = [e for e in database.get_canonical_events()
-                        if e.start.date() == target_date]
+                        if e.start.astimezone(SEATTLE_TZ).date() == target_date]
 
     click.echo(f"# Source events for {target_date}: {len(source_events)}")
     for event in source_events:
