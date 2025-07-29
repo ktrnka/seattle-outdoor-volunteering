@@ -9,7 +9,7 @@ from .config import DB_PATH, DB_GZ
 from .etl.gsp import GSPExtractor
 from .etl.spf import SPFExtractor
 from .etl.spr import SPRExtractor
-from .etl.new_deduplication import deduplicate_events
+from .etl.deduplication import deduplicate_events
 from .site import generator
 from . import database
 
