@@ -5,10 +5,13 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
+from src.etl.dnda import DNDAExtractor
+
 from .config import DB_PATH, DB_GZ
 from .etl.gsp import GSPExtractor
 from .etl.spf import SPFExtractor
 from .etl.spr import SPRExtractor
+from .etl.earthcorps import EarthCorpsExtractor
 from .etl.deduplication import deduplicate_events
 from .site import generator
 from .models import SEATTLE_TZ
@@ -39,7 +42,7 @@ def etl():
     # Fetch source events from all extractors
     source_events = []
 
-    for extractor_class in [GSPExtractor, SPRExtractor, SPFExtractor]:
+    for extractor_class in [GSPExtractor, SPRExtractor, SPFExtractor, DNDAExtractor, EarthCorpsExtractor]:
         try:
             extractor = extractor_class.fetch()
             events = extractor.extract()
