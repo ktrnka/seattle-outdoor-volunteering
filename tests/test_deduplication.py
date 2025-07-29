@@ -48,6 +48,34 @@ def test_normalize_title():
         "Lincoln Park: Tree-Planting & Invasive Removal") == "lincoln park tree planting invasive removal"
 
 
+def test_smart_quotes_normalization():
+    """Test that different quote types in titles normalize to the same string."""
+
+    # All these variations should normalize to the same string
+    titles = [
+        "Heron s Nest Event",           # No quotes - baseline
+        "Heron's Nest Event",         # Regular apostrophe
+        "Heron's Nest Event",         # Smart quote/curly apostrophe (U+2019)
+        # HTML entity for smart quote - this is the problematic one from SPF
+        "Heron&#8217;s Nest Event",
+    ]
+
+    normalized_titles = [normalize_title(title) for title in titles]
+
+    print("Title normalization results:")
+    for original, normalized in zip(titles, normalized_titles):
+        print(f"  {original!r} -> {normalized!r}")
+
+    # All normalized titles should be identical
+    expected = "heron s nest event"
+    for i, normalized in enumerate(normalized_titles):
+        assert normalized == expected, f"Title {i} ({titles[i]!r}) normalized to {normalized!r}, expected {expected!r}"
+
+    # All should be the same
+    assert len(set(normalized_titles)
+               ) == 1, f"All titles should normalize the same, got: {set(normalized_titles)}"
+
+
 def test_get_event_date():
     """Test extracting date from event."""
     event = Event(
