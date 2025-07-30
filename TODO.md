@@ -18,7 +18,6 @@
 - **Facebook Groups**:
   - Sparkling Wallingford: https://www.facebook.com/groups/1192189949067573/events
   - We Heart Seattle cleanups: https://www.facebook.com/groups/weheartseattle/events
-- **City email-only events**: Manual YAML entry for now?
 - **RSS/Blog support**: Once LLM integration is ready, add support for RSS feeds and event calendars
 - **Incremental crawling of detail pages**: Fill in missing details for events, enriching the data, and unlocking a click-to-expand feature for more information
 - Other
@@ -46,6 +45,3 @@
 - **UI testing**: Automated UI preview testing to ensure site looks good on all devices
 - **LLM integration**: Foundation for classification, title standardization, and content enhancement
 
-## Completed ✅
-- **Expand GSP data**: ~~Currently only fetching first 5 events, but many more are available~~ → Now fetching 66 events via API endpoint
-- **Complete DNDA integration**
