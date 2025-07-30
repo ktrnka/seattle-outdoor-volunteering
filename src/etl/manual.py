@@ -143,12 +143,13 @@ class ManualExtractor(BaseExtractor):
         # Create a unique source_id based on the stable event ID and date
         source_id = f"{event_def.id}_{event_date.strftime('%Y_%m_%d')}"
 
-        # Convert date to UTC datetime (date-only event at midnight in Seattle time, then to UTC)
-        # This ensures that when converted back to Seattle time for display, it shows the correct date
+        # Convert date to UTC datetime (date-only event - same start/end time)
+        # Create at midnight Seattle time, then convert to UTC for proper timezone handling
         start_seattle = datetime.combine(
             event_date, datetime.min.time()).replace(tzinfo=SEATTLE_TZ)
         start_utc = start_seattle.astimezone(timezone.utc)
-        end_utc = start_utc  # Date-only events have same start/end
+        # Date-only events have same start/end (zero duration)
+        end_utc = start_utc
 
         return Event(
             source=self.source,

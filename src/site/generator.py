@@ -22,9 +22,8 @@ def build(output_dir: Path):
         start_pacific = start_utc.astimezone(SEATTLE_TZ)
         end_pacific = end_utc.astimezone(SEATTLE_TZ)
 
-        # Check if this is a date-only event (midnight UTC with zero duration)
-        is_date_only = (event.start.hour == 0 and event.start.minute == 0 and
-                        event.start.second == 0 and event.start == event.end)
+        # Use the Event model's is_date_only method for proper timezone handling
+        is_date_only = event.is_date_only()
 
         event_dict = {
             "canonical_id": event.canonical_id,

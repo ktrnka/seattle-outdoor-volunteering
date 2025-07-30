@@ -45,9 +45,9 @@ class GSPBaseExtractor(BaseExtractor):
 
     @staticmethod
     def _create_date_only_times(year, month, day):
-        """Create zero-duration start/end times at midnight UTC for date-only events."""
+        """Create zero-duration start/end times for date-only events."""
         # Create midnight in Seattle time first, then convert to UTC
-        # This ensures that when converted back to Seattle time for display, it shows the correct date
+        # Date-only events have zero duration (same start/end time)
         start_seattle = datetime.datetime(
             year, month, day, 0, 0, 0, tzinfo=SEATTLE_TZ)
         start_utc = start_seattle.astimezone(timezone.utc)

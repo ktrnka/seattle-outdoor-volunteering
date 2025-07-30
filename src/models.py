@@ -66,17 +66,10 @@ class Event(BaseModel):
         Check if this event has actual time information or is date-only.
 
         Returns True if the event has specific time information,
-        False if it's a date-only event (zero duration at midnight in Seattle time).
+        False if it's a date-only event (zero duration).
         """
-        # Convert UTC time to Seattle time to check if it's midnight
-        start_seattle = self.start.astimezone(SEATTLE_TZ)
-
-        # Check if it's a zero-duration event at midnight Seattle time
-        # This indicates a date-only event
-        return not (self.start == self.end and
-                    start_seattle.hour == 0 and
-                    start_seattle.minute == 0 and
-                    start_seattle.second == 0)
+        # Events with zero duration are date-only events
+        return self.start != self.end
 
     def is_date_only(self) -> bool:
         """Check if this is a date-only event (time unknown/not specified)."""
@@ -99,6 +92,20 @@ class CanonicalEvent(BaseModel):
     longitude: Optional[float] = None
     tags: Optional[List[str]] = []
     source_events: List[str] = []  # List of (source, source_id) pairs
+
+    def has_time_info(self) -> bool:
+        """
+        Check if this event has actual time information or is date-only.
+
+        Returns True if the event has specific time information,
+        False if it's a date-only event (zero duration).
+        """
+        # Events with zero duration are date-only events
+        return self.start != self.end
+
+    def is_date_only(self) -> bool:
+        """Check if this is a date-only event (time unknown/not specified)."""
+        return not self.has_time_info()
 
 
 class EventGroupMembership(BaseModel):
