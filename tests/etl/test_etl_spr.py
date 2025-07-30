@@ -1,9 +1,10 @@
 # tests/test_etl_spr.py
+import json
 from pathlib import Path
 
 from pydantic import HttpUrl
 from src.etl.spr import SPRExtractor
-from src.models import SEATTLE_TZ
+from src.models import SEATTLE_TZ, SPRSourceData
 
 data_path = Path(__file__).parent / "data"
 
@@ -128,3 +129,85 @@ def test_malformed_rss():
     extractor = SPRExtractor("not xml at all")
     events = extractor.extract()
     assert events == []
+
+
+def test_source_dict_structure():
+    """Test that source_dict contains properly structured SPR data"""
+    rss_content = (data_path / "spr_volunteer.rss").read_text()
+    extractor = SPRExtractor(rss_content)
+    events = extractor.extract()
+
+    # Check the first event's source_dict
+    first_event = events[0]
+    assert first_event.source_dict is not None
+
+    # Parse the JSON source_dict
+    source_data = json.loads(first_event.source_dict)
+
+    # Verify it's a valid SPRSourceData structure
+    spr_data = SPRSourceData(**source_data)
+
+    # Check key fields are populated
+    assert spr_data.title == "Preparing for Fall Planting"
+    assert spr_data.location == "5921 Aurora Ave N, Seattle, WA 98103"
+    assert spr_data.event_types == "Volunteer/Work Party"
+    assert spr_data.neighborhoods == "Greenwood/Phinney Ridge"
+    assert spr_data.sponsoring_organization == "Green Seattle Partnership"
+    assert spr_data.contact == "Greg Netols"
+    assert spr_data.contact_phone == "2243889145"
+    assert spr_data.contact_email == "gregnetols@gmail.com"
+    assert spr_data.audience == "All"
+    assert spr_data.pre_register == "No"
+    assert spr_data.link == "http://seattle.greencitypartnerships.org/event/42030/"
+
+    # Check that description contains the main event text
+    assert "Join us for a restoration work party at Woodland Park" in spr_data.description
+
+
+def test_source_dict_green_lake_event():
+    """Test source_dict for the Green Lake Litter Patrol event"""
+    rss_content = (data_path / "spr_volunteer.rss").read_text()
+    extractor = SPRExtractor(rss_content)
+    events = extractor.extract()
+
+    # Find the Green Lake event
+    green_lake_event = next(
+        (e for e in events if "Green Lake Litter Patrol" in e.title), None)
+    assert green_lake_event is not None
+    assert green_lake_event.source_dict is not None
+
+    # Parse the JSON source_dict
+    source_data = json.loads(green_lake_event.source_dict)
+    spr_data = SPRSourceData(**source_data)
+
+    # Check specific fields for this event
+    assert spr_data.title == "Green Lake Litter Patrol"
+    assert spr_data.location == "7312 West Green Lake Dr N, Seattle, WA 98103"
+    assert spr_data.parks == "Green Lake Park"
+    assert spr_data.contact == "G Todd Young"
+    assert spr_data.contact_phone == "206-300-1268"
+    assert spr_data.contact_email == "gtoddyoung@gmail.com"
+    assert spr_data.cost == "Free"
+    assert spr_data.audience is not None
+    assert "Adults, All, Children, Family, Pets, Senior, Special Needs, Teen" in spr_data.audience
+
+
+def test_source_dict_all_events_have_structure():
+    """Test that all parsed events have valid source_dict structure"""
+    rss_content = (data_path / "spr_volunteer.rss").read_text()
+    extractor = SPRExtractor(rss_content)
+    events = extractor.extract()
+
+    for event in events:
+        # Every event should have a source_dict
+        assert event.source_dict is not None
+
+        # It should be valid JSON
+        source_data = json.loads(event.source_dict)
+
+        # It should be a valid SPRSourceData structure
+        spr_data = SPRSourceData(**source_data)
+
+        # Basic required fields should be present
+        assert spr_data.title is not None
+        assert spr_data.title != ""

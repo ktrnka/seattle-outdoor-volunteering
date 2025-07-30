@@ -43,6 +43,26 @@ class ManualEventsConfig(BaseModel):
     recurring_events: List[ManualEventDefinition] = []
 
 
+class SPRSourceData(BaseModel):
+    """Structured data extracted from SPR RSS feed."""
+    model_config = ConfigDict(from_attributes=True)
+
+    title: str
+    description: str
+    location: Optional[str] = None
+    event_types: Optional[str] = None
+    neighborhoods: Optional[str] = None
+    parks: Optional[str] = None
+    sponsoring_organization: Optional[str] = None
+    contact: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    audience: Optional[str] = None
+    pre_register: Optional[str] = None
+    cost: Optional[str] = None
+    link: Optional[str] = None
+
+
 class Event(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -60,6 +80,8 @@ class Event(BaseModel):
     tags:     Optional[List[str]] = []
     # URL of the canonical/primary version of this event (from raw source data)
     same_as: Optional[HttpUrl] = None
+    # Source-specific structured data as JSON dict
+    source_dict: Optional[str] = None
 
     def has_time_info(self) -> bool:
         """

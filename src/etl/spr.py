@@ -1,5 +1,6 @@
 import re
 import xml.etree.ElementTree as ET
+import json
 from datetime import datetime, timezone
 from typing import List
 import requests
@@ -8,7 +9,7 @@ from pydantic import HttpUrl
 
 from .base import BaseExtractor
 from .url_utils import normalize_url
-from ..models import Event, SEATTLE_TZ
+from ..models import Event, SPRSourceData, SEATTLE_TZ
 
 RSS_URL = "https://www.trumba.com/calendars/volunteer-1.rss"
 
@@ -81,6 +82,10 @@ class SPRExtractor(BaseExtractor):
         address, venue, cost, start_dt, end_dt, tags = self._parse_description(
             description)
 
+        # Build structured source data
+        source_data = self._build_source_data(
+            title, description, address, tags)
+
         # Ensure we have valid datetime values
         if start_dt is None:
             start_dt = datetime.now().replace(hour=9, minute=0, second=0, microsecond=0)
@@ -116,7 +121,9 @@ class SPRExtractor(BaseExtractor):
             url=HttpUrl(normalize_url(event_url)),
             cost=cost,
             tags=tags,
-            same_as=same_as_url
+            same_as=same_as_url,
+            source_dict=json.dumps(
+                source_data.model_dump()) if source_data else None
         )
 
     def _parse_description(self, description: str):
@@ -245,3 +252,96 @@ class SPRExtractor(BaseExtractor):
             end_dt = end_dt.replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
 
         return start_dt, end_dt
+
+    def _build_source_data(self, title: str, description: str, address: str, tags: List[str]) -> SPRSourceData:
+        """Build structured source data from parsed RSS item."""
+        # Initialize all fields
+        source_data = {
+            'title': title,
+            'description': self._extract_description_text(description),
+            'location': address if address else None,
+            'event_types': None,
+            'neighborhoods': None,
+            'parks': None,
+            'sponsoring_organization': None,
+            'contact': None,
+            'contact_phone': None,
+            'contact_email': None,
+            'audience': None,
+            'pre_register': None,
+            'cost': None,
+            'link': None
+        }
+
+        # Parse structured fields from description
+        lines = description.replace(
+            '<br/>', '\n').replace('<br>', '\n').split('\n')
+        lines = [line.strip() for line in lines if line.strip()]
+
+        for line in lines:
+            original_line = line  # Keep the original before cleaning
+            line = self._clean_html(line)
+
+            # Extract structured fields
+            if ':' in line:
+                field, value = line.split(':', 1)
+                field = field.strip().lower()
+                value = value.strip()
+
+                if field == "event types":
+                    source_data['event_types'] = value
+                elif field == "neighborhoods":
+                    source_data['neighborhoods'] = value
+                elif field == "parks":
+                    source_data['parks'] = value
+                elif field == "sponsoring organization":
+                    source_data['sponsoring_organization'] = value
+                elif field == "contact":
+                    source_data['contact'] = value
+                elif field == "contact phone":
+                    source_data['contact_phone'] = value
+                elif field == "contact email":
+                    # Extract email from potential HTML link
+                    email_match = re.search(
+                        r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', value)
+                    if email_match:
+                        source_data['contact_email'] = email_match.group(1)
+                    else:
+                        source_data['contact_email'] = value
+                elif field == "audience":
+                    source_data['audience'] = value
+                elif field == "pre-register":
+                    source_data['pre_register'] = value
+                elif field == "cost":
+                    source_data['cost'] = value
+                elif field == "more info":
+                    # Extract the raw URL from the "More info" field without normalization
+                    # Use the original line to get the raw href value
+                    url_match = re.search(r'href="([^"]+)"', original_line)
+                    if url_match:
+                        source_data['link'] = url_match.group(1)
+
+        return SPRSourceData(**source_data)
+
+    def _extract_description_text(self, description: str) -> str:
+        """Extract the main description text, skipping address/date and structured fields."""
+        lines = description.replace(
+            '<br/>', '\n').replace('<br>', '\n').split('\n')
+        lines = [self._clean_html(line.strip())
+                 for line in lines if line.strip()]
+
+        # Skip first two lines (address and date/time)
+        # Find lines that are plain text description (not structured fields)
+        description_lines = []
+        for i, line in enumerate(lines):
+            if i < 2:  # Skip address and date lines
+                continue
+            if ':' in line and any(field in line.lower() for field in
+                                   ['event types', 'neighborhoods', 'parks', 'sponsoring organization',
+                                   'contact', 'audience', 'pre-register', 'cost', 'more info']):
+                # This is a structured field, stop collecting description
+                break
+            if line and not line.startswith('<'):  # Skip HTML tags
+                description_lines.append(line)
+
+        return ' '.join(description_lines).strip()
