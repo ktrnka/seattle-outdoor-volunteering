@@ -38,6 +38,8 @@ class Event(Base):
     tags = Column(Text, nullable=True)  # Stored as comma-separated string
     # URL of the canonical/primary version of this event
     same_as = Column(String, nullable=True)
+    # Source-specific structured data as JSON string
+    source_dict = Column(Text, nullable=True)
 
     __table_args__ = (
         PrimaryKeyConstraint('source', 'source_id'),
@@ -60,7 +62,8 @@ class Event(Base):
             latitude=self.latitude,
             longitude=self.longitude,
             tags=tags,
-            same_as=self.same_as
+            same_as=self.same_as,
+            source_dict=self.source_dict
         )
 
 
@@ -178,6 +181,26 @@ def init_database(reset: bool = False) -> None:
             session.commit()
 
 
+def migrate_add_source_dict_column() -> None:
+    """Add source_dict column to events table if it doesn't exist."""
+    engine = get_engine()
+
+    # Check if column already exists
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        result = conn.execute(text("PRAGMA table_info(events)"))
+        columns = [row[1] for row in result.fetchall()]
+
+        if 'source_dict' not in columns:
+            # Add the column
+            conn.execute(
+                text("ALTER TABLE events ADD COLUMN source_dict TEXT"))
+            conn.commit()
+            print("Added source_dict column to events table")
+        else:
+            print("source_dict column already exists in events table")
+
+
 def upsert_source_events(events: List[PydanticEvent]) -> None:
     """Insert or update source events in the database using SQLAlchemy."""
     session = get_session()
@@ -198,7 +221,8 @@ def upsert_source_events(events: List[PydanticEvent]) -> None:
                 'latitude': event.latitude,
                 'longitude': event.longitude,
                 'tags': ','.join(event.tags) if event.tags else '',
-                'same_as': str(event.same_as) if event.same_as else None
+                'same_as': str(event.same_as) if event.same_as else None,
+                'source_dict': event.source_dict
             }
 
             # Use SQLite-specific upsert syntax

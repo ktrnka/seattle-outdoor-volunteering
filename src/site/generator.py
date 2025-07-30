@@ -41,7 +41,8 @@ def build(output_dir: Path):
                 "address": se.address,
                 "url": str(se.url),
                 "tags": se.tags,
-                "same_as": str(se.same_as) if se.same_as else None
+                "same_as": str(se.same_as) if se.same_as else None,
+                "source_dict": se.source_dict
             })
 
         event_dict = {

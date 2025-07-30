@@ -200,6 +200,18 @@
       return tags.map(tag => `<code>${tag}</code>`).join(', ');
     }
     
+    // Helper function to format source_dict JSON
+    function formatSourceDict(sourceDict) {
+      if (!sourceDict) return '<em>None</em>';
+      try {
+        const parsed = JSON.parse(sourceDict);
+        return `<pre style="font-size: 0.8em; max-height: 200px; overflow-y: auto; background-color: #f8f9fa; padding: 0.5rem; border-radius: 0.25rem; white-space: pre-wrap;">${JSON.stringify(parsed, null, 2)}</pre>`;
+      } catch (e) {
+        // If it's not valid JSON, just display as text
+        return `<code style="word-break: break-all;">${sourceDict}</code>`;
+      }
+    }
+    
     // Open modal when debug button is clicked
     document.addEventListener('click', (e) => {
       if (e.target.classList.contains('debug-btn')) {
@@ -232,6 +244,7 @@
                   <tr><td><strong>URL:</strong></td><td><a href="${event.url}" target="_blank">${event.url}</a></td></tr>
                   <tr><td><strong>Tags:</strong></td><td>${formatTags(event.tags)}</td></tr>
                   ${event.same_as ? `<tr><td><strong>Same As:</strong></td><td><a href="${event.same_as}" target="_blank">${event.same_as}</a></td></tr>` : ''}
+                  <tr><td><strong>Source Data:</strong></td><td>${formatSourceDict(event.source_dict)}</td></tr>
                 </table>
               </div>
             `;

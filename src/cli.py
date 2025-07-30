@@ -282,6 +282,17 @@ def etl_stats(days: int):
 
 
 @dev.command()
+def migrate():
+    """Run database migrations for development."""
+    click.echo("Running database migrations...")
+
+    # Add source_dict column to events table
+    database.migrate_add_source_dict_column()
+
+    click.echo("Migrations completed successfully!")
+
+
+@dev.command()
 @click.argument('date', required=True)
 def debug_date(date):
     target_date = datetime.strptime(date, '%Y-%m-%d').date()
