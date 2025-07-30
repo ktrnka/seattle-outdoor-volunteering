@@ -10,7 +10,7 @@ from pydantic import HttpUrl
 
 from .base import BaseExtractor
 from .url_utils import normalize_url
-from ..models import Event
+from ..models import Event, DNDASourceEvent
 
 # DNDA API endpoint for events
 # Base URL with dynamic date range - we'll build this in fetch()
@@ -35,11 +35,68 @@ class DNDAExtractor(BaseExtractor):
             if not self._is_volunteer_event(title):
                 continue
 
-            event = self._parse_event(event_data)
-            if event:
-                events.append(event)
+            # Step 1: Extract DNDASourceEvent from JSON data
+            dnda_event = self._extract_dnda_source_event(event_data)
+            if dnda_event:
+                # Step 2: Convert DNDASourceEvent to Event
+                event = self._convert_to_event(dnda_event)
+                if event:
+                    events.append(event)
 
         return events
+
+    def _extract_dnda_source_event(self, event_data: dict) -> Optional[DNDASourceEvent]:
+        """Extract structured DNDASourceEvent from JSON data."""
+        try:
+            # Required fields
+            event_id = event_data.get('id')
+            title = event_data.get('title', '').strip()
+            url = event_data.get('url', '')
+            start = event_data.get('start', '')
+            end = event_data.get('end', '')
+
+            if not all([event_id, title, url, start, end]):
+                return None
+
+            # Ensure event_id is an integer
+            if not isinstance(event_id, int):
+                if event_id is None:
+                    return None
+                try:
+                    event_id = int(event_id)
+                except (ValueError, TypeError):
+                    return None
+
+            return DNDASourceEvent(
+                id=event_id,
+                title=title,
+                start=start,
+                end=end,
+                start_str=event_data.get('startStr'),
+                end_str=event_data.get('endStr'),
+                image=event_data.get('image'),
+                url=url,
+                background_color=event_data.get('backgroundColor'),
+                border_color=event_data.get('borderColor'),
+                description=event_data.get('description'),
+                localtime=event_data.get('localtime'),
+                location=event_data.get('location'),
+                start_date=event_data.get('start_date'),
+                start_time=event_data.get('start_time'),
+                end_date=event_data.get('end_date'),
+                end_time=event_data.get('end_time'),
+                start_date_str=event_data.get('startDateStr'),
+                end_date_str=event_data.get('endDateStr'),
+                start_day=event_data.get('startDay'),
+                labels=event_data.get('labels'),
+                reason_for_cancellation=event_data.get(
+                    'reason_for_cancellation'),
+                loca_time_html=event_data.get('locaTimeHtml'),
+                gridsquare=event_data.get('gridsquare')
+            )
+
+        except Exception:
+            return None
 
     @classmethod
     def fetch(cls) -> 'DNDAExtractor':
@@ -107,65 +164,48 @@ class DNDAExtractor(BaseExtractor):
         title_lower = title.lower()
         return any(keyword in title_lower for keyword in volunteer_keywords)
 
-    def _parse_event(self, event_data: dict) -> Optional[Event]:
-        """Parse a single event from DNDA JSON data."""
+    def _convert_to_event(self, dnda_event: DNDASourceEvent) -> Optional[Event]:
+        """Convert DNDASourceEvent to Event model."""
         try:
-            # Extract basic fields
-            event_id = event_data.get('id')
-            title = event_data.get('title', '').strip()
-            url = event_data.get('url', '')
-
-            # Create source_id from event ID
-            source_id = str(
-                event_id) if event_id else self._create_fallback_source_id(title)
-
             # Parse start and end times (already in Pacific timezone)
-            start_str = event_data.get('start', '')
-            end_str = event_data.get('end', '')
-
-            start = parser.parse(start_str).astimezone(timezone.utc)
-            end = parser.parse(end_str).astimezone(timezone.utc)
+            start = parser.parse(dnda_event.start).astimezone(timezone.utc)
+            end = parser.parse(dnda_event.end).astimezone(timezone.utc)
 
             # Extract venue/location information
-            venue = self._extract_venue(event_data)
-            address = event_data.get('location', '').strip() or None
+            venue = self._extract_venue_from_dnda_event(dnda_event)
+            address = dnda_event.location
+
+            # Create source_id from event ID
+            source_id = str(dnda_event.id)
 
             return Event(
                 source=self.source,
                 source_id=source_id,
-                title=title,
+                title=dnda_event.title,
                 start=start,
                 end=end,
                 venue=venue,
                 address=address,
-                url=HttpUrl(normalize_url(url)),
-                cost=None,  # DNDA events appear to be free
-                latitude=None,
-                longitude=None,
-                tags=[],
-                same_as=None
+                url=HttpUrl(normalize_url(dnda_event.url)),
+                source_dict=dnda_event.model_dump_json()
             )
 
-        except Exception as e:
-            # Log the error but continue processing other events
-            print(
-                f"Error parsing DNDA event {event_data.get('id', 'unknown')}: {e}")
+        except Exception:
             return None
 
-    def _extract_venue(self, event_data: dict) -> str:
-        """Extract venue name from event data."""
+    def _extract_venue_from_dnda_event(self, dnda_event: DNDASourceEvent) -> str:
+        """Extract venue name from DNDASourceEvent data."""
         # First try to extract from description
-        description = event_data.get('description', '')
-        if description:
-            venue = self._extract_venue_from_description(description)
+        if dnda_event.description:
+            venue = self._extract_venue_from_description(
+                dnda_event.description)
             if venue:
                 return venue
 
         # Fallback to location field or a default
-        location = event_data.get('location', '').strip()
-        if location:
+        if dnda_event.location:
             # Try to extract park/venue name from address
-            venue = self._extract_venue_from_address(location)
+            venue = self._extract_venue_from_address(dnda_event.location)
             if venue:
                 return venue
 
@@ -213,7 +253,3 @@ class DNDAExtractor(BaseExtractor):
                 return match.group(1).strip()
 
         return None
-
-    def _create_fallback_source_id(self, title: str) -> str:
-        """Create a fallback source_id from title."""
-        return re.sub(r'[^a-z0-9]+', '-', title.lower())[:64].strip('-')

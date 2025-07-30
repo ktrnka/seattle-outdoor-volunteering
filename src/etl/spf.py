@@ -9,7 +9,7 @@ from pydantic import HttpUrl
 
 from .base import BaseExtractor
 from .url_utils import normalize_url
-from ..models import Event, SEATTLE_TZ
+from ..models import Event, SPFSourceEvent, SPFOrganizer, SPFLocation, SPFAddress
 
 SPF_EVENTS_URL = "https://www.seattleparksfoundation.org/events/"
 
@@ -47,9 +47,13 @@ class SPFExtractor(BaseExtractor):
 
                 for event_data in event_list:
                     if event_data.get("@type") == "Event":
-                        event = self._parse_event(event_data)
-                        if event:
-                            events.append(event)
+                        # Step 1: Extract SPFSourceEvent from JSON-LD
+                        spf_event = self._extract_spf_source_event(event_data)
+                        if spf_event:
+                            # Step 2: Convert SPFSourceEvent to Event
+                            event = self._convert_to_event(spf_event)
+                            if event:
+                                events.append(event)
 
             except (json.JSONDecodeError, KeyError):
                 # Skip malformed JSON or missing keys
@@ -57,56 +61,106 @@ class SPFExtractor(BaseExtractor):
 
         return events
 
-        return events
-
-    def _parse_event(self, event_data: dict) -> Optional[Event]:
-        """Parse a single event from schema.org JSON-LD data."""
+    def _extract_spf_source_event(self, event_data: dict) -> Optional[SPFSourceEvent]:
+        """Extract structured SPFSourceEvent from schema.org JSON-LD data."""
         try:
             # Required fields
-            title = event_data.get("name", "").strip()
-            if not title:
+            name = event_data.get("name", "").strip()
+            if not name:
                 return None
 
             url = event_data.get("url", "").strip()
             if not url:
                 return None
 
-            start_date_str = event_data.get("startDate", "")
-            end_date_str = event_data.get("endDate", "")
+            start_date = event_data.get("startDate", "")
+            end_date = event_data.get("endDate", "")
 
-            if not start_date_str or not end_date_str:
+            if not start_date or not end_date:
                 return None
 
-            # Parse dates
+            # Extract optional fields with minimal processing
+            description = event_data.get("description", "")
+            image = event_data.get("image", "")
+            event_attendance_mode = event_data.get("eventAttendanceMode", "")
+            event_status = event_data.get("eventStatus", "")
+            performer = event_data.get("performer", "")
+
+            # Extract location data
+            location_data = None
+            location_raw = event_data.get("location")
+            if location_raw and isinstance(location_raw, dict):
+                # Parse address if present
+                address_data = None
+                address_raw = location_raw.get("address")
+                if address_raw and isinstance(address_raw, dict):
+                    address_data = SPFAddress(
+                        type=address_raw.get("@type"),
+                        street_address=address_raw.get("streetAddress"),
+                        address_locality=address_raw.get("addressLocality"),
+                        address_region=address_raw.get("addressRegion"),
+                        postal_code=address_raw.get("postalCode"),
+                        address_country=address_raw.get("addressCountry")
+                    )
+
+                location_data = SPFLocation(
+                    name=location_raw.get("name"),
+                    description=location_raw.get("description"),
+                    url=location_raw.get("url"),
+                    address=address_data,
+                    telephone=location_raw.get("telephone"),
+                    same_as=location_raw.get("sameAs")
+                )
+
+            # Extract organizer data
+            organizer_data = None
+            organizer_raw = event_data.get("organizer")
+            if organizer_raw and isinstance(organizer_raw, dict):
+                organizer_data = SPFOrganizer(
+                    name=organizer_raw.get("name"),
+                    description=organizer_raw.get("description"),
+                    url=organizer_raw.get("url"),
+                    telephone=organizer_raw.get("telephone"),
+                    email=organizer_raw.get("email"),
+                    same_as=organizer_raw.get("sameAs")
+                )
+
+            return SPFSourceEvent(
+                name=name,
+                description=description,
+                image=image,
+                url=url,
+                event_attendance_mode=event_attendance_mode,
+                event_status=event_status,
+                start_date=start_date,
+                end_date=end_date,
+                location=location_data,
+                organizer=organizer_data,
+                performer=performer
+            )
+
+        except (ValueError, TypeError, KeyError):
+            return None
+
+    def _convert_to_event(self, spf_event: SPFSourceEvent) -> Optional[Event]:
+        """Convert SPFSourceEvent to Event model."""
+        try:
+            # Parse dates - these should already be in proper format
             start_date = parser.isoparse(
-                start_date_str).astimezone(timezone.utc)
-            end_date = parser.isoparse(end_date_str).astimezone(timezone.utc)
+                spf_event.start_date).astimezone(timezone.utc)
+            end_date = parser.isoparse(
+                spf_event.end_date).astimezone(timezone.utc)
 
-            # # Convert to UTC if timezone-naive (assume Seattle local time)
-            # if start_date.tzinfo is None:
-            #     start_date = start_date.replace(
-            #         tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-            # else:
-            #     start_date = start_date.astimezone(timezone.utc)
-
-            # if end_date.tzinfo is None:
-            #     end_date = end_date.replace(
-            #         tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-            # else:
-            #     end_date = end_date.astimezone(timezone.utc)
-
-            # Optional fields
+            # Extract venue and address from location
             venue = None
             address = None
-
-            location = event_data.get("location")
-            if location and isinstance(location, dict):
-                venue = location.get("name", "").strip()
-                address_obj = location.get("address")
-                if address_obj and isinstance(address_obj, dict):
-                    street = address_obj.get("streetAddress", "")
-                    locality = address_obj.get("addressLocality", "")
-                    region = address_obj.get("addressRegion", "")
+            if spf_event.location:
+                venue = spf_event.location.name
+                if spf_event.location.address:
+                    address_obj = spf_event.location.address
+                    street = address_obj.street_address or ""
+                    locality = address_obj.address_locality or ""
+                    region = address_obj.address_region or ""
 
                     address_parts = [part for part in [
                         street, locality, region] if part]
@@ -114,37 +168,34 @@ class SPFExtractor(BaseExtractor):
                         address_parts) if address_parts else None
 
             # Check if this is a Green Seattle Partnership event
-            organizer = event_data.get("organizer")
             is_gsp_event = False
-            if organizer and isinstance(organizer, dict):
-                organizer_name = organizer.get("name", "")
-                organizer_url = organizer.get(
-                    "sameAs", "") or organizer.get("url", "")
+            if spf_event.organizer:
+                organizer_name = spf_event.organizer.name or ""
+                organizer_url = spf_event.organizer.same_as or spf_event.organizer.url or ""
                 if "Green Seattle Partnership" in organizer_name or "greenseattle.org" in organizer_url:
                     is_gsp_event = True
 
             # Generate a source_id from URL
-            source_id = url.split(
-                "/")[-2] if url.endswith("/") else url.split("/")[-1]
+            source_id = spf_event.url.split(
+                "/")[-2] if spf_event.url.endswith("/") else spf_event.url.split("/")[-1]
             if not source_id:
-                source_id = str(hash(url))
+                source_id = str(hash(spf_event.url))
 
             return Event(
                 source=self.source,
                 source_id=source_id,
-                title=title,
+                title=spf_event.name,
                 start=start_date,
                 end=end_date,
                 venue=venue,
                 address=address,
-                url=HttpUrl(normalize_url(url)),
+                url=HttpUrl(normalize_url(spf_event.url)),
                 cost=None,  # Not available in schema.org data
                 latitude=None,  # Not available in schema.org data
                 longitude=None,  # Not available in schema.org data
-                # Tag GSP events
-                tags=["Green Seattle Partnership"] if is_gsp_event else []
+                tags=["Green Seattle Partnership"] if is_gsp_event else [],
+                source_dict=json.dumps(spf_event.model_dump())
             )
 
         except (ValueError, TypeError, KeyError):
-            # Skip events with parsing errors
             return None

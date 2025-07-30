@@ -3,12 +3,12 @@ from typing import List, Optional
 from datetime import datetime, timezone
 
 import requests
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
 from dateutil import parser
 from pydantic import HttpUrl
 
 from .base import BaseExtractor
-from ..models import Event, SEATTLE_TZ
+from ..models import Event, SPUSourceEvent, SEATTLE_TZ
 
 SPU_CLEANUP_URL = "https://www.seattle.gov/utilities/volunteer/all-hands-neighborhood-cleanup"
 
@@ -45,72 +45,80 @@ class SPUExtractor(BaseExtractor):
         for row in rows:
             cells = row.find_all(["th", "td"])
             if len(cells) >= 4:
-                event = self._parse_row(cells)
-                if event:
-                    events.append(event)
+                # Step 1: Extract SPUSourceEvent from table row
+                spu_event = self._extract_spu_source_event(cells)
+                if spu_event:
+                    # Step 2: Convert SPUSourceEvent to Event
+                    event = self._convert_to_event(spu_event)
+                    if event:
+                        events.append(event)
 
         return events
 
-    def _parse_row(self, cells) -> Optional[Event]:
-        """Parse a single table row into an Event."""
+    def _extract_spu_source_event(self, cells) -> Optional[SPUSourceEvent]:
+        """Extract structured SPUSourceEvent from table row cells."""
         try:
-            # Extract data from cells
-            date_text = cells[0].get_text(strip=True)
+            # Extract raw data from cells
+            date = cells[0].get_text(strip=True)
             neighborhood = cells[1].get_text(strip=True)
+
+            # Extract location information from the location cell
             location_cell = cells[2]
-            time_text = cells[3].get_text(strip=True)
+            location = location_cell.get_text(strip=True)
+            # Clean up location text (remove extra whitespace, line breaks)
+            location = re.sub(r'\s+', ' ', location).strip()
 
-            # Parse location - could have links or plain text
-            venue = location_cell.get_text(strip=True)
-            # Clean up venue text (remove extra whitespace, line breaks)
-            venue = re.sub(r'\s+', ' ', venue).strip()
-
-            # Extract address if there's a link
-            address = None
+            # Extract Google Maps link if present
+            google_maps_link = None
             location_link = location_cell.find("a")
             if location_link and "maps.app.goo.gl" in location_link.get("href", ""):
-                link_text = location_link.get_text(strip=True)
+                google_maps_link = location_link.get("href")
 
-                # Check if the link text looks like an address
-                # If it contains numbers and street-like words, it's probably an address
-                if re.search(r'\d+\s+.*(?:Way|St|Ave|Rd|Blvd|Dr|Ln|Ct|Pl)', link_text, re.IGNORECASE):
-                    address = link_text
-                    # Extract venue name from text before the link
-                    # Look for text before <br> or before parentheses
-                    full_html = str(location_cell)
-                    # Try to find venue name before <br> tag
-                    br_match = re.search(
-                        r'>([^<]+)<br', full_html, re.IGNORECASE)
-                    if br_match:
-                        venue = br_match.group(1).strip()
-                    else:
-                        # Fallback: look for text before parentheses in the text content
-                        paren_match = re.search(r'^([^(]+)', venue)
-                        if paren_match:
-                            venue = paren_match.group(1).strip()
-                else:
-                    # Link text is probably the venue name
-                    venue = link_text
-                    # Look for address in parentheses in the full text
-                    full_text = location_cell.get_text()
-                    address_match = re.search(r'\(([^)]+)\)', full_text)
-                    if address_match:
-                        address = address_match.group(1).strip()
+            # Extract time information
+            time_text = cells[3].get_text(strip=True)
 
-            # Parse date - convert from formats like "Saturday, August 9" to full date
+            # Parse start and end times from the time text
+            start_time = time_text
+            end_time = None
+            time_parts = re.split(r'[–\-]', time_text)
+            if len(time_parts) == 2:
+                start_time = time_parts[0].strip()
+                end_time = time_parts[1].strip()
+
+            return SPUSourceEvent(
+                date=date,
+                neighborhood=neighborhood,
+                location=location,
+                google_maps_link=google_maps_link,
+                start_time=start_time,
+                end_time=end_time
+            )
+
+        except Exception:
+            return None
+
+    def _convert_to_event(self, spu_event: SPUSourceEvent) -> Optional[Event]:
+        """Convert SPUSourceEvent to Event model."""
+        try:
+            # Parse date and time - convert from formats like "Saturday, August 9" to full date
             start_datetime, end_datetime = self._parse_date_and_time(
-                date_text, time_text)
+                spu_event.date, f"{spu_event.start_time} – {spu_event.end_time or ''}")
             if not start_datetime or not end_datetime:
                 return None
+
+            # Parse venue and address from location string
+            venue, address = self._parse_location_and_address(
+                spu_event.location)
 
             # Generate source_id from date and neighborhood
             # Format: "2025-08-09-othello"
             date_str = start_datetime.strftime("%Y-%m-%d")
-            neighborhood_clean = re.sub(r'[^a-z0-9]', '', neighborhood.lower())
+            neighborhood_clean = re.sub(
+                r'[^a-z0-9]', '', spu_event.neighborhood.lower())
             source_id = f"{date_str}-{neighborhood_clean}"
 
             # Create title
-            title = f"All Hands Neighborhood Cleanup - {neighborhood}"
+            title = f"All Hands Neighborhood Cleanup - {spu_event.neighborhood}"
 
             return Event(
                 source=self.source,
@@ -121,12 +129,36 @@ class SPUExtractor(BaseExtractor):
                 venue=venue,
                 address=address,
                 url=HttpUrl(SPU_CLEANUP_URL),
-                tags=["cleanup", "neighborhood", "utilities"]
+                source_dict=spu_event.model_dump_json()
             )
 
-        except Exception as e:
-            # Skip malformed rows
+        except Exception:
             return None
+
+    def _parse_location_and_address(self, location_text: str) -> tuple[Optional[str], Optional[str]]:
+        """Parse venue and address from location text."""
+        # Location text patterns:
+        # "Mt Baker Lightrail Station"
+        # "Akin Building\n(12360 Lake City Way NE)"
+        # "Fresh Flours\n(9410 Delridge Wy SW)"
+        # "Othello Park"
+        # "Hoa Mai Park\n(1224 S King St)"
+        # "Pratt Park"
+
+        venue = location_text
+        address = None
+
+        # Check if there's an address in parentheses
+        paren_match = re.search(r'\(([^)]+)\)', location_text)
+        if paren_match:
+            address = paren_match.group(1).strip()
+            # Remove the parentheses part to get the venue name
+            venue = re.sub(r'\s*\([^)]+\)', '', location_text).strip()
+
+        # Clean up venue name (remove line breaks, extra spaces)
+        venue = re.sub(r'\s+', ' ', venue).strip()
+
+        return venue, address
 
     def _parse_date_and_time(self, date_text: str, time_text: str) -> tuple[Optional[datetime], Optional[datetime]]:
         """Parse date and time strings into datetime objects."""
@@ -139,7 +171,7 @@ class SPUExtractor(BaseExtractor):
             try:
                 date_with_year = f"{date_text}, {current_year}"
                 parsed_date = parser.parse(date_with_year, fuzzy=True)
-            except:
+            except Exception:
                 # If that fails, try next year (events might be for next year)
                 date_with_year = f"{date_text}, {current_year + 1}"
                 parsed_date = parser.parse(date_with_year, fuzzy=True)
@@ -168,5 +200,5 @@ class SPUExtractor(BaseExtractor):
 
             return start_datetime, end_datetime
 
-        except Exception as e:
+        except Exception:
             return None, None

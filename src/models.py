@@ -63,6 +63,101 @@ class SPRSourceData(BaseModel):
     link: Optional[str] = None
 
 
+class SPFOrganizer(BaseModel):
+    """Organizer information from SPF schema.org JSON-LD."""
+    model_config = ConfigDict(from_attributes=True)
+
+    name: Optional[str] = None
+    description: Optional[str] = None
+    url: Optional[str] = None
+    telephone: Optional[str] = None
+    email: Optional[str] = None
+    same_as: Optional[str] = None
+
+
+class SPFAddress(BaseModel):
+    """Address information from SPF schema.org JSON-LD PostalAddress."""
+    model_config = ConfigDict(from_attributes=True)
+
+    type: Optional[str] = None
+    street_address: Optional[str] = None
+    address_locality: Optional[str] = None
+    address_region: Optional[str] = None
+    postal_code: Optional[str] = None
+    address_country: Optional[str] = None
+
+
+class SPFLocation(BaseModel):
+    """Location information from SPF schema.org JSON-LD."""
+    model_config = ConfigDict(from_attributes=True)
+
+    name: Optional[str] = None
+    description: Optional[str] = None
+    url: Optional[str] = None
+    address: Optional[SPFAddress] = None
+    telephone: Optional[str] = None
+    same_as: Optional[str] = None
+
+
+class SPFSourceEvent(BaseModel):
+    """Structured data extracted from SPF schema.org JSON-LD."""
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str
+    description: Optional[str] = None
+    image: Optional[str] = None
+    url: str
+    event_attendance_mode: Optional[str] = None
+    event_status: Optional[str] = None
+    start_date: str
+    end_date: str
+    location: Optional[SPFLocation] = None
+    organizer: Optional[SPFOrganizer] = None
+    performer: Optional[str] = None
+
+
+class SPUSourceEvent(BaseModel):
+    """Structured data extracted from SPU All Hands Neighborhood Cleanup table."""
+    model_config = ConfigDict(from_attributes=True)
+
+    date: str  # Raw date string like "Saturday, August 9"
+    neighborhood: str
+    location: str  # Full location text from the cell
+    google_maps_link: Optional[str] = None
+    start_time: str  # Raw time string like "10 am – 12 pm"
+    end_time: Optional[str] = None  # Parsed from start_time if available
+
+
+class DNDASourceEvent(BaseModel):
+    """Structured data extracted from DNDA JSON API."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    start: str  # ISO datetime string like "2025-08-09T10:00:00-07:00"
+    end: str  # ISO datetime string like "2025-08-09T13:00:00-07:00"
+    start_str: Optional[int] = None  # Unix timestamp
+    end_str: Optional[int] = None  # Unix timestamp
+    image: Optional[str] = None
+    url: str
+    background_color: Optional[str] = None
+    border_color: Optional[str] = None
+    description: Optional[str] = None
+    localtime: Optional[bool] = None
+    location: Optional[str] = None  # Address string
+    start_date: Optional[str] = None  # Formatted date like "August 9, 2025"
+    start_time: Optional[str] = None  # Formatted time like "10:00 am"
+    end_date: Optional[str] = None  # Formatted date like "August 9, 2025"
+    end_time: Optional[str] = None  # Formatted time like "1:00 pm"
+    start_date_str: Optional[int] = None  # Unix timestamp for date
+    end_date_str: Optional[int] = None  # Unix timestamp for date
+    start_day: Optional[str] = None  # Day of week like "Saturday"
+    labels: Optional[str] = None
+    reason_for_cancellation: Optional[str] = None
+    loca_time_html: Optional[str] = None
+    gridsquare: Optional[str] = None  # HTML img tag
+
+
 class Event(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
