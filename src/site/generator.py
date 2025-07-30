@@ -3,7 +3,7 @@ from datetime import timezone
 from urllib.parse import quote_plus
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from itertools import groupby
-from ..database import get_future_canonical_events, get_source_updated_stats
+from ..database import get_future_canonical_events, get_source_updated_stats, get_events_by_canonical_id
 from ..models import SEATTLE_TZ
 
 
@@ -25,6 +25,25 @@ def build(output_dir: Path):
         # Use the Event model's is_date_only method for proper timezone handling
         is_date_only = event.is_date_only()
 
+        # Get detailed source events for debug info
+        source_events_detail = get_events_by_canonical_id(event.canonical_id)
+        debug_source_events = []
+        for se in source_events_detail:
+            debug_source_events.append({
+                "source": se.source,
+                "source_id": se.source_id,
+                "title": se.title,
+                # Convert to Pacific and serialize
+                "start": se.start.astimezone(SEATTLE_TZ).isoformat(),
+                # Convert to Pacific and serialize
+                "end": se.end.astimezone(SEATTLE_TZ).isoformat(),
+                "venue": se.venue,
+                "address": se.address,
+                "url": str(se.url),
+                "tags": se.tags,
+                "same_as": str(se.same_as) if se.same_as else None
+            })
+
         event_dict = {
             "canonical_id": event.canonical_id,
             "title": event.title,
@@ -41,6 +60,8 @@ def build(output_dir: Path):
             "tags": ",".join(event.tags) if event.tags else "",
             "is_date_only": is_date_only,  # Whether this is a date-only event
             "source_events": event.source_events,  # List of source events that were merged
+            # Detailed source event data for debug
+            "debug_source_events": debug_source_events,
             # Add Google Maps URL for addresses
             "maps_url": f"https://www.google.com/maps/search/{quote_plus(event.address)}" if event.address and event.address.lower() != 'none' else None
         }
@@ -48,6 +69,14 @@ def build(output_dir: Path):
 
     # Sort events by start time, then by title for events with the same start time
     event_dicts.sort(key=lambda e: (e['start'], e['title']))
+
+    # Prepare debug data dictionary
+    debug_data = {}
+    for event_dict in event_dicts:
+        debug_data[event_dict['canonical_id']] = {
+            'title': event_dict['title'],
+            'source_events': event_dict['debug_source_events']
+        }
 
     # Group events by date
     events_by_date = []
@@ -73,7 +102,8 @@ def build(output_dir: Path):
     tmpl = env.get_template("index.html.j2")
     html = tmpl.render(
         events_by_date=events_by_date,
-        source_stats=source_stats_pacific
+        source_stats=source_stats_pacific,
+        debug_data=debug_data
     )
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "index.html").write_text(html, encoding="utf-8")

@@ -22,6 +22,41 @@
     table[role="grid"] tbody tr {
       background-color: transparent;
     }
+    /* Debug button styling */
+    .debug-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.2s ease;
+      font-size: 1em;
+      padding: 0.25rem;
+      width: 100%;
+      text-align: center;
+    }
+    .debug-btn:hover {
+      opacity: 1;
+      background-color: #f0f0f0;
+      border-radius: 3px;
+    }
+    /* Modal content styling */
+    #debug-modal article {
+      max-width: 800px;
+      width: 90vw;
+      max-height: 85vh;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    #debug-modal main {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    #debug-modal header,
+    #debug-modal footer {
+      flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -36,7 +71,7 @@
       <tbody>
       {% for date_group in events_by_date %}
         <tr class="date-header">
-          <td colspan="4">{{ date_group.date.strftime('%A, %-m/%-d') }}</td>
+          <td colspan="5">{{ date_group.date.strftime('%A, %-m/%-d') }}</td>
         </tr>
         {% for e in date_group.events %}
         <tr>
@@ -47,7 +82,9 @@
               <small>{{ e.start.strftime('%-I:%M%p')|lower }} - {{ e.end.strftime('%-I:%M%p')|lower }}</small>
             {% endif %}
           </td>
-          <td><a href="{{ e.url }}">{{ e.title }}</a></td>
+          <td>
+            <a href="{{ e.url }}">{{ e.title }}</a>
+          </td>
           <td>
             {% if e.venue %}
               {{ e.venue }}
@@ -69,11 +106,35 @@
             <!-- TODO: Outlook, Apple -->
             {% endif %}
           </td>
+          <td>
+            <button class="debug-btn" data-canonical-id="{{ e.canonical_id }}" title="Show debug info">🔍</button>
+          </td>
         </tr>
         {% endfor %}
       {% endfor %}
       </tbody>
     </table>
+
+    <!-- Debug Modal -->
+    <dialog id="debug-modal">
+      <article>
+        <header>
+          <button aria-label="Close" rel="prev" data-close-modal></button>
+          <h3 id="debug-modal-title">Event Debug Information</h3>
+        </header>
+        <main id="debug-modal-content">
+          <h6>Source Records</h6>
+          <p><small>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</small></p>
+          <p><small>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</small></p>
+          <h6>Deduplication Process</h6>
+          <p><small>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</small></p>
+        </main>
+        <footer>
+          <button data-close-modal>Close</button>
+        </footer>
+      </article>
+    </dialog>
+
     <footer>
       <small>Built automatically every night. Data may lag sources.</small>
       {% if source_stats %}
@@ -88,5 +149,97 @@
       {% endif %}
     </footer>
   </main>
+
+  <!-- Debug data for JavaScript -->
+  <script type="application/json" id="debug-data">
+    {{ debug_data|tojson }}
+  </script>
+
+  <script>
+    // Debug modal functionality
+    const modal = document.getElementById('debug-modal');
+    const modalTitle = document.getElementById('debug-modal-title');
+    const modalContent = document.getElementById('debug-modal-content');
+    
+    // Load debug data
+    const debugData = JSON.parse(document.getElementById('debug-data').textContent);
+    
+    // Helper function to format datetime
+    function formatDateTime(dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZoneName: 'short'
+      });
+    }
+    
+    // Helper function to format tags
+    function formatTags(tags) {
+      if (!tags || tags.length === 0) return '<em>None</em>';
+      return tags.map(tag => `<code>${tag}</code>`).join(', ');
+    }
+    
+    // Open modal when debug button is clicked
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('debug-btn')) {
+        const canonicalId = e.target.dataset.canonicalId;
+        const data = debugData[canonicalId];
+        
+        if (!data) {
+          console.error('No debug data found for canonical ID:', canonicalId);
+          return;
+        }
+        
+        modalTitle.textContent = `Debug Info: ${data.title}`;
+        
+        let content = '<h6>Source Records</h6>';
+        
+        if (data.source_events.length === 0) {
+          content += '<p><small><em>No source events found.</em></small></p>';
+        } else {
+          data.source_events.forEach((event, index) => {
+            content += `
+              <div style="margin-bottom: 1.5rem; padding: 1rem; border: 1px solid #dee2e6; border-radius: 0.25rem; background-color: #f8f9fa;">
+                <h6>Source ${index + 1}: ${event.source}</h6>
+                <table style="font-size: 0.85em; margin: 0;">
+                  <tr><td><strong>Source ID:</strong></td><td><code>${event.source_id}</code></td></tr>
+                  <tr><td><strong>Title:</strong></td><td>${event.title}</td></tr>
+                  <tr><td><strong>Start:</strong></td><td>${formatDateTime(event.start)}</td></tr>
+                  <tr><td><strong>End:</strong></td><td>${formatDateTime(event.end)}</td></tr>
+                  <tr><td><strong>Venue:</strong></td><td>${event.venue || '<em>None</em>'}</td></tr>
+                  <tr><td><strong>Address:</strong></td><td>${event.address || '<em>None</em>'}</td></tr>
+                  <tr><td><strong>URL:</strong></td><td><a href="${event.url}" target="_blank">${event.url}</a></td></tr>
+                  <tr><td><strong>Tags:</strong></td><td>${formatTags(event.tags)}</td></tr>
+                  ${event.same_as ? `<tr><td><strong>Same As:</strong></td><td><a href="${event.same_as}" target="_blank">${event.same_as}</a></td></tr>` : ''}
+                </table>
+              </div>
+            `;
+          });
+        }
+        
+        modalContent.innerHTML = content;
+        modal.showModal();
+      }
+    });
+    
+    // Close modal when close button is clicked
+    document.addEventListener('click', (e) => {
+      if (e.target.dataset.closeModal !== undefined) {
+        modal.close();
+      }
+    });
+    
+    // Close modal when clicking outside of it
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.close();
+      }
+    });
+  </script>
 </body>
 </html>
