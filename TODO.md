@@ -3,7 +3,8 @@
 ## Short-Term
 
 ### Data Quality
-- **Validate SPR parsing**: More thorough checking of parsed data from Seattle Parks & Rec
+- Title and Venue: It looks like SPF adds the " at Venue" into the title which is messing with merging
+- Add times to the manual data sources
 
 ## Long-Term
 
@@ -26,7 +27,6 @@
 ### Data Enhancement
 - **Standardize titles**: Use LLM to create more informative titles like "Park restoration at Woodland Park with Greg"
 - **Event categorization**: Support both parks work and litter cleanup work with user filtering options
-  - **SPU cleanup events**: Currently tagged as "cleanup", "neighborhood", "utilities" - these are distinct from parks restoration work
   - **SPF events**: There are some SPF events that are not volunteer-related, so we may want to filter these out or have a separate category
   - **Future differentiation**: Distinguish cleanup events from parks/habitat restoration events for user filtering
 - **Enhanced details**: Standardize event information to cover who/what/why/how/when (explaining "why" invasive species removal matters will be challenging)
@@ -35,7 +35,6 @@
 ### User Experience
 - **Geographic filtering**: Allow users to filter to nearby events (consider cookie storage vs a simple neighborhood selector)
 - **Site freshness**: Improve the last-updated display to be more like SODA data quality testing
-- **Interactive details**: Click on rows to expand with more event information
 - **Mobile optimization**: Ensure responsive design works well on all devices
 
 ### Infrastructure & Quality
