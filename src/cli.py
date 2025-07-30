@@ -282,6 +282,96 @@ def etl_stats(days: int):
 
 
 @dev.command()
+@click.option('--source-events', is_flag=True, help='Analyze tags from source events instead of canonical events')
+@click.option('--min-count', default=1, help='Only show tags with at least this many occurrences (default: 1)')
+def tag_stats(source_events: bool = False, min_count: int = 1):
+    """Analyze tag frequency in the database."""
+    if source_events:
+        events = database.get_source_events()
+        click.echo(f"Analyzing tags from {len(events)} source events")
+    else:
+        events = database.get_canonical_events()
+        click.echo(f"Analyzing tags from {len(events)} canonical events")
+
+    # Count individual tags
+    tag_counter = Counter()
+    events_with_tags = 0
+
+    for event in events:
+        if event.tags:
+            events_with_tags += 1
+            for tag in event.tags:
+                tag_counter[tag] += 1
+
+    # Display results
+    click.echo(
+        f"Events with tags: {events_with_tags}/{len(events)} ({events_with_tags/len(events)*100:.1f}%)")
+    click.echo(f"Total unique tags: {len(tag_counter)}")
+
+    if tag_counter:
+        click.echo(
+            f"\nTag frequency (showing tags with {min_count}+ occurrences):")
+        click.echo("=" * 50)
+
+        # Sort by frequency (descending) then alphabetically
+        filtered_tags = [(tag, count)
+                         for tag, count in tag_counter.items() if count >= min_count]
+        sorted_tags = sorted(filtered_tags, key=lambda x: (-x[1], x[0]))
+
+        for tag, count in sorted_tags:
+            percentage = (count / len(events)) * 100
+            click.echo(f"{tag:<30} {count:>4} ({percentage:>5.1f}%)")
+    else:
+        click.echo("No tags found in any events.")
+
+
+@dev.command()
+def event_type_stats():
+    """Analyze event type distribution based on current classification logic."""
+    events = database.get_canonical_events()
+    click.echo(f"Analyzing event types from {len(events)} canonical events")
+
+    # Count event types
+    type_counter = Counter()
+    for event in events:
+        event_type = event.get_event_type()
+        type_counter[event_type] += 1
+
+    # Display results
+    click.echo("\nEvent type distribution:")
+    click.echo("=" * 40)
+
+    for event_type in ['parks', 'cleanup', 'other']:
+        count = type_counter[event_type]
+        percentage = (count / len(events)) * 100 if events else 0
+        click.echo(f"{event_type:<10} {count:>4} ({percentage:>5.1f}%)")
+
+    # Show some examples for each type
+    click.echo("\nExample events by type:")
+    click.echo("=" * 40)
+
+    examples_per_type = 3
+    type_examples = {'parks': [], 'cleanup': [], 'other': []}
+
+    for event in events:
+        event_type = event.get_event_type()
+        if len(type_examples[event_type]) < examples_per_type:
+            type_examples[event_type].append(event)
+
+    for event_type in ['parks', 'cleanup', 'other']:
+        click.echo(f"\n{event_type.upper()}:")
+        if type_examples[event_type]:
+            for event in type_examples[event_type]:
+                click.echo(f"  • {event.title}")
+                click.echo(f"    URL: {event.url}")
+                if event.tags:
+                    click.echo(
+                        f"    Tags: {', '.join(event.tags[:3])}{'...' if len(event.tags) > 3 else ''}")
+        else:
+            click.echo("  No examples found")
+
+
+@dev.command()
 def migrate():
     """Run database migrations for development."""
     click.echo("Running database migrations...")

@@ -87,6 +87,42 @@ class CanonicalEvent(BaseModel):
         """Check if this is a date-only event (time unknown/not specified)."""
         return not self.has_time_info()
 
+    def get_event_type(self) -> str:
+        """
+        Determine the event type based on tags, URL, and title.
+
+        Returns:
+            str: One of 'parks', 'cleanup', or 'other'
+        """
+        # Check URL first for Green Seattle Partnership
+        if self.url and 'seattle.greencitypartnerships.org' in str(self.url):
+            return 'parks'
+
+        # Check title for specific keywords
+        title_lower = self.title.lower()
+        if 'cleanup' in title_lower:
+            return 'cleanup'
+        if 'forest restoration' in title_lower:
+            return 'parks'
+
+        # Check tags
+        if self.tags:
+            tags_lower = [tag.lower() for tag in self.tags]
+
+            # Check for cleanup events
+            cleanup_indicators = ['cleanup', 'litter patrol']
+            if any(indicator in tag for tag in tags_lower for indicator in cleanup_indicators):
+                return 'cleanup'
+
+            # Check for parks/restoration events
+            parks_indicators = [
+                'green seattle partnership', 'volunteer/work party']
+            if any(indicator in tag for tag in tags_lower for indicator in parks_indicators):
+                return 'parks'
+
+        # Everything else
+        return 'other'
+
 
 class EventGroupMembership(BaseModel):
     """Represents membership of a source event in a canonical event group."""

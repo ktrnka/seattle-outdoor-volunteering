@@ -66,7 +66,9 @@ def build(output_dir: Path):
             # Detailed source event data for debug
             "debug_source_events": debug_source_events,
             # Add Google Maps URL for addresses
-            "maps_url": f"https://www.google.com/maps/search/{quote_plus(event.address)}" if event.address and event.address.lower() != 'none' else None
+            "maps_url": f"https://www.google.com/maps/search/{quote_plus(event.address)}" if event.address and event.address.lower() != 'none' else None,
+            # Event type for emoji display
+            "event_type": event.get_event_type()
         }
         event_dicts.append(event_dict)
 

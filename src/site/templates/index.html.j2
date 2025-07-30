@@ -97,7 +97,9 @@
             {% endif %}
           </td>
           <td>
-            <a href="{{ e.url }}">{{ e.title }}</a>
+            <a href="{{ e.url }}">
+              {% if e.event_type == 'parks' %}🌳{% elif e.event_type == 'cleanup' %}🗑️{% else %}🤝{% endif %} {{ e.title }}
+            </a>
           </td>
           <td>
             {% if e.venue %}
@@ -179,6 +181,13 @@
     
     // Load debug data
     const debugData = JSON.parse(document.getElementById('debug-data').textContent);
+    
+    // Event type emoji mapping
+    const eventTypeEmojis = {
+      'parks': '🌳',
+      'cleanup': '🗑️', 
+      'other': '🤝'
+    };
     
     // Helper function to format datetime
     function formatDateTime(dateStr) {
