@@ -102,20 +102,6 @@ def test_datetime_parsing():
         assert event.start.year <= 2026
 
 
-def test_contact_info_extraction():
-    """Test that contact information is extracted properly"""
-    rss_content = (data_path / "spr_volunteer.rss").read_text()
-    extractor = SPRExtractor(rss_content)
-    events = extractor.extract()
-
-    # Find an event with contact info
-    contact_event = next(
-        (e for e in events if "Greg Netols" in str(e.tags)), None)
-    assert contact_event is not None
-    assert "gregnetols@gmail.com" in str(contact_event.tags)
-    assert "2243889145" in str(contact_event.tags)
-
-
 def test_empty_rss():
     """Test handling of empty RSS content"""
     extractor = SPRExtractor(

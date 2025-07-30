@@ -25,6 +25,43 @@ from . import database
 def cli(): ...
 
 
+@cli.command()
+@click.option('--days', default=7, help='Number of days to include in stats')
+def stats(days):
+    """Show ETL run statistics for each source over the last N days."""
+    stats = database.get_etl_run_stats(days)
+    if not stats:
+        click.echo(f"No ETL runs found in the last {days} days.")
+        return
+
+    click.echo(f"ETL Run Statistics (Last {days} days)")
+    click.echo("=" * 50)
+
+    for source in sorted(stats.keys()):
+        source_stats = stats[source]
+        total = source_stats['total']
+        success = source_stats['success']
+        failure = source_stats['failure']
+
+        if total > 0:
+            success_rate = (success / total) * 100
+            click.echo(f"\n{source}:")
+            click.echo(f"  Total runs: {total}")
+            click.echo(f"  Successful: {success} ({success_rate:.1f}%)")
+            click.echo(f"  Failed: {failure} ({100-success_rate:.1f}%)")
+        else:
+            click.echo(f"\n{source}: No runs found")
+
+    total_runs = sum(s['total'] for s in stats.values())
+    total_success = sum(s['success'] for s in stats.values())
+
+    if total_runs > 0:
+        overall_success_rate = (total_success / total_runs) * 100
+        click.echo("\nOverall:")
+        click.echo(f"  Total runs: {total_runs}")
+        click.echo(f"  Success rate: {overall_success_rate:.1f}%")
+
+
 @cli.group()
 def dev():
     """Development and debugging commands."""

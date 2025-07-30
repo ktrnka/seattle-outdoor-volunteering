@@ -1,10 +1,13 @@
 """Database module using SQLAlchemy for managing the events database."""
 
-from typing import List, Dict, Tuple
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import create_engine, Column, String, DateTime, Float, Text, Integer, PrimaryKeyConstraint
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
+from sqlalchemy import create_engine, String, DateTime, Float, Text, Integer, PrimaryKeyConstraint, text
 from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy.orm import Mapped, mapped_column, object_session, sessionmaker, Session, declarative_base
+from sqlalchemy.sql import func
+from typing import List, Dict, Tuple
+
+import uuid
 
 from .config import DB_PATH, ensure_database_exists
 from .models import Event as PydanticEvent, CanonicalEvent as PydanticCanonicalEvent, EventGroupMembership as PydanticEventGroupMembership, ETLRun as PydanticETLRun
@@ -24,22 +27,21 @@ class Event(Base):
     """SQLAlchemy model for events table."""
     __tablename__ = 'events'
 
-    source = Column(String, nullable=False)
-    source_id = Column(String, nullable=False)
-    title = Column(String, nullable=False)
-    start = Column(DateTime, nullable=False)
-    end = Column(DateTime, nullable=False)
-    venue = Column(String, nullable=True)
-    address = Column(String, nullable=True)
-    url = Column(Text, nullable=False)
-    cost = Column(String, nullable=True)
-    latitude = Column(Float, nullable=True)
-    longitude = Column(Float, nullable=True)
-    tags = Column(Text, nullable=True)  # Stored as comma-separated string
-    # URL of the canonical/primary version of this event
-    same_as = Column(String, nullable=True)
-    # Source-specific structured data as JSON string
-    source_dict = Column(Text, nullable=True)
+    source: Mapped[str] = mapped_column(String, nullable=False)
+    source_id: Mapped[str] = mapped_column(String, nullable=False)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    start: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    end: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    venue: Mapped[str | None] = mapped_column(String, nullable=True)
+    address: Mapped[str | None] = mapped_column(String, nullable=True)
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    cost: Mapped[str | None] = mapped_column(String, nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    tags: Mapped[str | None] = mapped_column(
+        Text, nullable=True)  # Stored as comma-separated string
+    same_as: Mapped[str | None] = mapped_column(String, nullable=True)
+    source_dict: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
         PrimaryKeyConstraint('source', 'source_id'),
@@ -72,24 +74,24 @@ class CanonicalEvent(Base):
     """SQLAlchemy model for canonical events table."""
     __tablename__ = 'canonical_events'
 
-    canonical_id = Column(String, primary_key=True)
-    title = Column(String, nullable=False)
-    start = Column(DateTime, nullable=False)
-    end = Column(DateTime, nullable=False)
-    venue = Column(String, nullable=True)
-    address = Column(String, nullable=True)
-    url = Column(Text, nullable=False)
-    cost = Column(String, nullable=True)
-    latitude = Column(Float, nullable=True)
-    longitude = Column(Float, nullable=True)
-    tags = Column(Text, nullable=True)  # Stored as comma-separated string
+    canonical_id: Mapped[str] = mapped_column(String, primary_key=True)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    start: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    end: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    venue: Mapped[str | None] = mapped_column(String, nullable=True)
+    address: Mapped[str | None] = mapped_column(String, nullable=True)
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    cost: Mapped[str | None] = mapped_column(String, nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    tags: Mapped[str | None] = mapped_column(
+        Text, nullable=True)  # Stored as comma-separated string
 
     def to_pydantic(self) -> PydanticCanonicalEvent:
         """Convert SQLAlchemy model to Pydantic model."""
         tags = [tag.strip()
                 for tag in self.tags.split(',')] if self.tags else []
         # Get source events from the membership table
-        from sqlalchemy.orm import object_session
         session = object_session(self)
         source_events = []
         if session:
@@ -118,9 +120,9 @@ class EventGroupMembership(Base):
     """SQLAlchemy model for tracking which source events belong to which canonical events."""
     __tablename__ = 'event_group_memberships'
 
-    canonical_id = Column(String, nullable=False)
-    source = Column(String, nullable=False)
-    source_id = Column(String, nullable=False)
+    canonical_id: Mapped[str] = mapped_column(String, nullable=False)
+    source: Mapped[str] = mapped_column(String, nullable=False)
+    source_id: Mapped[str] = mapped_column(String, nullable=False)
 
     __table_args__ = (
         PrimaryKeyConstraint('canonical_id', 'source', 'source_id'),
@@ -138,12 +140,13 @@ class EventGroupMembership(Base):
 class ETLRun(Base):
     """SQLAlchemy model for tracking ETL runs for each data source."""
     __tablename__ = 'etl_runs'
-
-    id = Column(String, primary_key=True)  # Auto-generated unique ID
-    source = Column(String, nullable=False)
-    run_datetime = Column(DateTime, nullable=False)
-    status = Column(String, nullable=False)  # "success" or "failure"
-    num_rows = Column(Integer, nullable=False, default=0)
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True)  # Auto-generated unique ID
+    source: Mapped[str] = mapped_column(String, nullable=False)
+    run_datetime: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String, nullable=False)  # "success" or "failure"
+    num_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     def to_pydantic(self) -> PydanticETLRun:
         """Convert SQLAlchemy model to Pydantic model."""
@@ -188,7 +191,6 @@ def migrate_add_source_dict_column() -> None:
     engine = get_engine()
 
     # Check if column already exists
-    from sqlalchemy import text
     with engine.connect() as conn:
         result = conn.execute(text("PRAGMA table_info(events)"))
         columns = [row[1] for row in result.fetchall()]
@@ -433,7 +435,6 @@ def get_events_by_canonical_id(canonical_id: str) -> List[PydanticEvent]:
 
 def record_etl_run(source: str, status: str, num_rows: int) -> None:
     """Record an ETL run for a data source."""
-    import uuid
     session = get_session()
 
     try:
@@ -459,7 +460,6 @@ def get_source_updated_stats() -> Dict[str, datetime]:
 
     try:
         # Get the most recent successful run for each source
-        from sqlalchemy.sql import func
 
         # Subquery to get the max datetime for each source where status = 'success'
         max_datetimes = session.query(
