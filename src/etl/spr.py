@@ -166,6 +166,10 @@ class SPRExtractor(BaseExtractor):
         description_elem = item.find("description")
         description = description_elem.text if description_elem is not None else ""
 
+        link_elem = item.find("link")
+        link = normalize_url(
+            link_elem.text) if link_elem is not None else RSS_URL
+
         guid_elem = item.find("guid")
         guid = guid_elem.text if guid_elem is not None else ""
 
@@ -206,7 +210,7 @@ class SPRExtractor(BaseExtractor):
             end=end_dt,
             venue=venue,
             address=address,
-            url=HttpUrl(normalize_url(spr_data.link or RSS_URL)),
+            url=HttpUrl(link),
             cost=cost,
             tags=tags,
             same_as=same_as_url,
