@@ -6,15 +6,45 @@ from typing import List, Optional
 import requests
 from bs4 import BeautifulSoup
 from dateutil import parser
-from pydantic import HttpUrl
+from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from .base import BaseExtractor
 from .url_utils import normalize_url
-from ..models import Event, DNDASourceEvent
+from ..models import Event
 
 # DNDA API endpoint for events
 # Base URL with dynamic date range - we'll build this in fetch()
 API_BASE_URL = "https://dnda.org/wp-json/mec/v1/events"
+
+
+class DNDASourceEvent(BaseModel):
+    """Structured data extracted from DNDA JSON API."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    start: str  # ISO datetime string like "2025-08-09T10:00:00-07:00"
+    end: str  # ISO datetime string like "2025-08-09T13:00:00-07:00"
+    start_str: Optional[int] = None  # Unix timestamp
+    end_str: Optional[int] = None  # Unix timestamp
+    image: Optional[str] = None
+    url: str
+    background_color: Optional[str] = None
+    border_color: Optional[str] = None
+    description: Optional[str] = None
+    localtime: Optional[bool] = None
+    location: Optional[str] = None  # Address string
+    start_date: Optional[str] = None  # Formatted date like "August 9, 2025"
+    start_time: Optional[str] = None  # Formatted time like "10:00 am"
+    end_date: Optional[str] = None  # Formatted date like "August 9, 2025"
+    end_time: Optional[str] = None  # Formatted time like "1:00 pm"
+    start_date_str: Optional[int] = None  # Unix timestamp for date
+    end_date_str: Optional[int] = None  # Unix timestamp for date
+    start_day: Optional[str] = None  # Day of week like "Saturday"
+    labels: Optional[str] = None
+    reason_for_cancellation: Optional[str] = None
+    loca_time_html: Optional[str] = None
+    gridsquare: Optional[str] = None  # HTML img tag
 
 
 class DNDAExtractor(BaseExtractor):

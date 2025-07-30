@@ -3,8 +3,8 @@ import json
 from pathlib import Path
 
 from pydantic import HttpUrl
-from src.etl.spr import SPRExtractor
-from src.models import SEATTLE_TZ, SPRSourceData
+from src.etl.spr import SPRExtractor, SPRSourceData
+from src.models import SEATTLE_TZ
 
 data_path = Path(__file__).parent / "data"
 

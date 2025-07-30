@@ -3,7 +3,7 @@ from datetime import timezone
 from pathlib import Path
 
 from src.etl.spu import SPUExtractor
-from src.models import SPUSourceEvent
+from src.etl.spu import SPUSourceEvent
 
 
 def test_spu_extractor():

@@ -7,13 +7,38 @@ Event instances for upcoming occurrences of recurring events.
 
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import yaml
-from pydantic import HttpUrl
+from pydantic import BaseModel, ConfigDict, HttpUrl
 
-from ..models import Event, ManualEventsConfig, RecurringPattern, SEATTLE_TZ
+from src.models import RecurringPattern
+
+
+from ..models import Event, RecurringPattern, SEATTLE_TZ
 from .base import BaseExtractor
 from .url_utils import normalize_url
+
+
+class ManualEventDefinition(BaseModel):
+    """Definition of a recurring manual event."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str  # Unique identifier for this recurring event definition
+    title: str
+    description: Optional[str] = None
+    recurring_pattern: RecurringPattern
+    venue: Optional[str] = None
+    address: Optional[str] = None
+    url: HttpUrl
+    cost: Optional[str] = None
+    tags: Optional[List[str]] = []
+
+
+class ManualEventsConfig(BaseModel):
+    """Configuration file structure for manual events."""
+    model_config = ConfigDict(from_attributes=True)
+
+    recurring_events: List[ManualEventDefinition] = []
 
 
 class ManualExtractor(BaseExtractor):

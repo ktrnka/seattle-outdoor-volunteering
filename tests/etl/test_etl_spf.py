@@ -3,8 +3,8 @@ import json
 from pathlib import Path
 
 from pydantic import HttpUrl
-from src.etl.spf import SPFExtractor
-from src.models import SEATTLE_TZ, SPFSourceEvent
+from src.etl.spf import SPFExtractor, SPFSourceEvent
+from src.models import SEATTLE_TZ
 
 data_path = Path(__file__).parent / "data"
 

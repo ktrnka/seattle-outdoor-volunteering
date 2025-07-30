@@ -2,16 +2,36 @@ import re
 import xml.etree.ElementTree as ET
 import json
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
 import requests
 from dateutil import parser
-from pydantic import HttpUrl
+from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from .base import BaseExtractor
 from .url_utils import normalize_url
-from ..models import Event, SPRSourceData, SEATTLE_TZ
+from ..models import Event, SEATTLE_TZ
 
 RSS_URL = "https://www.trumba.com/calendars/volunteer-1.rss"
+
+
+class SPRSourceData(BaseModel):
+    """Structured data extracted from SPR RSS feed."""
+    model_config = ConfigDict(from_attributes=True)
+
+    title: str
+    description: str
+    location: Optional[str] = None
+    event_types: Optional[str] = None
+    neighborhoods: Optional[str] = None
+    parks: Optional[str] = None
+    sponsoring_organization: Optional[str] = None
+    contact: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    audience: Optional[str] = None
+    pre_register: Optional[str] = None
+    cost: Optional[str] = None
+    link: Optional[str] = None
 
 
 class SPRExtractor(BaseExtractor):
@@ -143,10 +163,6 @@ class SPRExtractor(BaseExtractor):
             'x-trumba': 'http://schemas.trumba.com/rss/x-trumba'
         }
 
-        # Extract metadata fields
-        link_elem = item.find("link")
-        link = link_elem.text if link_elem is not None else ""
-
         description_elem = item.find("description")
         description = description_elem.text if description_elem is not None else ""
 
@@ -182,12 +198,6 @@ class SPRExtractor(BaseExtractor):
         if end_dt.tzinfo is None:
             end_dt = end_dt.replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
 
-        # Ensure we have a valid URL
-        if not link or not link.startswith('http'):
-            event_url = RSS_URL
-        else:
-            event_url = link
-
         return Event(
             source=self.source,
             source_id=source_id,
@@ -196,7 +206,7 @@ class SPRExtractor(BaseExtractor):
             end=end_dt,
             venue=venue,
             address=address,
-            url=HttpUrl(normalize_url(event_url)),
+            url=HttpUrl(normalize_url(spr_data.link or RSS_URL)),
             cost=cost,
             tags=tags,
             same_as=same_as_url,

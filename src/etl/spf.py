@@ -5,13 +5,66 @@ from datetime import timezone
 import requests
 from bs4 import BeautifulSoup
 from dateutil import parser
-from pydantic import HttpUrl
+from pydantic import HttpUrl, BaseModel, ConfigDict
 
 from .base import BaseExtractor
 from .url_utils import normalize_url
-from ..models import Event, SPFSourceEvent, SPFOrganizer, SPFLocation, SPFAddress
+from ..models import Event
 
 SPF_EVENTS_URL = "https://www.seattleparksfoundation.org/events/"
+
+
+class SPFOrganizer(BaseModel):
+    """Organizer information from SPF schema.org JSON-LD."""
+    model_config = ConfigDict(from_attributes=True)
+
+    name: Optional[str] = None
+    description: Optional[str] = None
+    url: Optional[str] = None
+    telephone: Optional[str] = None
+    email: Optional[str] = None
+    same_as: Optional[str] = None
+
+
+class SPFAddress(BaseModel):
+    """Address information from SPF schema.org JSON-LD PostalAddress."""
+    model_config = ConfigDict(from_attributes=True)
+
+    type: Optional[str] = None
+    street_address: Optional[str] = None
+    address_locality: Optional[str] = None
+    address_region: Optional[str] = None
+    postal_code: Optional[str] = None
+    address_country: Optional[str] = None
+
+
+class SPFLocation(BaseModel):
+    """Location information from SPF schema.org JSON-LD."""
+    model_config = ConfigDict(from_attributes=True)
+
+    name: Optional[str] = None
+    description: Optional[str] = None
+    url: Optional[str] = None
+    address: Optional[SPFAddress] = None
+    telephone: Optional[str] = None
+    same_as: Optional[str] = None
+
+
+class SPFSourceEvent(BaseModel):
+    """Structured data extracted from SPF schema.org JSON-LD."""
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str
+    description: Optional[str] = None
+    image: Optional[str] = None
+    url: str
+    event_attendance_mode: Optional[str] = None
+    event_status: Optional[str] = None
+    start_date: str
+    end_date: str
+    location: Optional[SPFLocation] = None
+    organizer: Optional[SPFOrganizer] = None
+    performer: Optional[str] = None
 
 
 class SPFExtractor(BaseExtractor):

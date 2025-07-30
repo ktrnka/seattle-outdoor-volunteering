@@ -5,12 +5,24 @@ from datetime import datetime, timezone
 import requests
 from bs4 import BeautifulSoup
 from dateutil import parser
-from pydantic import HttpUrl
+from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from .base import BaseExtractor
-from ..models import Event, SPUSourceEvent, SEATTLE_TZ
+from ..models import Event, SEATTLE_TZ
 
 SPU_CLEANUP_URL = "https://www.seattle.gov/utilities/volunteer/all-hands-neighborhood-cleanup"
+
+
+class SPUSourceEvent(BaseModel):
+    """Structured data extracted from SPU All Hands Neighborhood Cleanup table."""
+    model_config = ConfigDict(from_attributes=True)
+
+    date: str  # Raw date string like "Saturday, August 9"
+    neighborhood: str
+    location: str  # Full location text from the cell
+    google_maps_link: Optional[str] = None
+    start_time: str  # Raw time string like "10 am – 12 pm"
+    end_time: Optional[str] = None  # Parsed from start_time if available
 
 
 class SPUExtractor(BaseExtractor):

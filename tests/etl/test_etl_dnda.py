@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 from pydantic import HttpUrl
 
-from src.etl.dnda import DNDAExtractor
-from src.models import SEATTLE_TZ, DNDASourceEvent
+from src.etl.dnda import DNDAExtractor, DNDASourceEvent
+from src.models import SEATTLE_TZ
 
 data_path = Path(__file__).parent / "data"
 
