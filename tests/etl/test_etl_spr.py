@@ -211,3 +211,26 @@ def test_source_dict_all_events_have_structure():
         # Basic required fields should be present
         assert spr_data.title is not None
         assert spr_data.title != ""
+
+
+def test_extract_spr_source_data_directly():
+    """Test that we can extract SPRSourceData directly from RSS items"""
+    rss_content = (data_path / "spr_volunteer.rss").read_text()
+    import xml.etree.ElementTree as ET
+
+    extractor = SPRExtractor(rss_content)
+    root = ET.fromstring(rss_content)
+    first_item = root.findall(".//item")[0]
+
+    # Test the direct extraction method
+    spr_data = extractor._extract_spr_source_data(first_item)
+
+    # Verify it's a valid SPRSourceData instance
+    assert isinstance(spr_data, SPRSourceData)
+    assert spr_data.title == "Preparing for Fall Planting"
+    assert spr_data.location == "5921 Aurora Ave N, Seattle, WA 98103"
+    assert spr_data.event_types == "Volunteer/Work Party"
+    assert spr_data.neighborhoods == "Greenwood/Phinney Ridge"
+    assert spr_data.sponsoring_organization == "Green Seattle Partnership"
+    assert spr_data.contact == "Greg Netols"
+    assert spr_data.link == "http://seattle.greencitypartnerships.org/event/42030/"

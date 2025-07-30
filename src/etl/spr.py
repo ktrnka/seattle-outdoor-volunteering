@@ -48,15 +48,102 @@ class SPRExtractor(BaseExtractor):
 
     def _parse_rss_item(self, item) -> Event:
         """Parse a single RSS item into an Event."""
+        # Step 1: Extract SPRSourceData from RSS item
+        spr_data = self._extract_spr_source_data(item)
+
+        # Step 2: Convert SPRSourceData to Event
+        return self._convert_to_event(item, spr_data)
+
+    def _extract_spr_source_data(self, item) -> SPRSourceData:
+        """Extract structured SPRSourceData from RSS item."""
+        # Extract basic fields
+        title_elem = item.find("title")
+        title = title_elem.text if title_elem is not None else ""
+
+        description_elem = item.find("description")
+        description = description_elem.text if description_elem is not None else ""
+
+        # Initialize all source data fields
+        source_data = {
+            'title': title,
+            'description': self._extract_description_text(description),
+            'location': None,
+            'event_types': None,
+            'neighborhoods': None,
+            'parks': None,
+            'sponsoring_organization': None,
+            'contact': None,
+            'contact_phone': None,
+            'contact_email': None,
+            'audience': None,
+            'pre_register': None,
+            'cost': None,
+            'link': None
+        }
+
+        # Parse structured fields from description
+        lines = description.replace(
+            '<br/>', '\n').replace('<br>', '\n').split('\n')
+        lines = [line.strip() for line in lines if line.strip()]
+
+        # First line is usually the address/location
+        if lines:
+            source_data['location'] = self._clean_html(lines[0])
+
+        # Parse structured fields
+        for line in lines:
+            original_line = line  # Keep the original before cleaning
+            line = self._clean_html(line)
+
+            # Extract structured fields
+            if ':' in line:
+                field, value = line.split(':', 1)
+                field = field.strip().lower()
+                value = value.strip()
+
+                if field == "event types":
+                    source_data['event_types'] = value
+                elif field == "neighborhoods":
+                    source_data['neighborhoods'] = value
+                elif field == "parks":
+                    source_data['parks'] = value
+                elif field == "sponsoring organization":
+                    source_data['sponsoring_organization'] = value
+                elif field == "contact":
+                    source_data['contact'] = value
+                elif field == "contact phone":
+                    source_data['contact_phone'] = value
+                elif field == "contact email":
+                    # Extract email from potential HTML link
+                    email_match = re.search(
+                        r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', value)
+                    if email_match:
+                        source_data['contact_email'] = email_match.group(1)
+                    else:
+                        source_data['contact_email'] = value
+                elif field == "audience":
+                    source_data['audience'] = value
+                elif field == "pre-register":
+                    source_data['pre_register'] = value
+                elif field == "cost":
+                    source_data['cost'] = value
+                elif field == "more info":
+                    # Extract the raw URL from the "More info" field without normalization
+                    # Use the original line to get the raw href value
+                    url_match = re.search(r'href="([^"]+)"', original_line)
+                    if url_match:
+                        source_data['link'] = url_match.group(1)
+
+        return SPRSourceData(**source_data)
+
+    def _convert_to_event(self, item, spr_data: SPRSourceData) -> Event:
+        """Convert SPRSourceData and RSS item metadata to Event."""
         # Define namespace map for XML parsing
         namespaces = {
             'x-trumba': 'http://schemas.trumba.com/rss/x-trumba'
         }
 
-        # Extract basic fields
-        title_elem = item.find("title")
-        title = title_elem.text if title_elem is not None else ""
-
+        # Extract metadata fields
         link_elem = item.find("link")
         link = link_elem.text if link_elem is not None else ""
 
@@ -78,13 +165,9 @@ class SPRExtractor(BaseExtractor):
             if match:
                 source_id = match.group(1)
 
-        # Parse description for structured data
+        # Parse datetime from description for Event fields
         address, venue, cost, start_dt, end_dt, tags = self._parse_description(
             description)
-
-        # Build structured source data
-        source_data = self._build_source_data(
-            title, description, address, tags)
 
         # Ensure we have valid datetime values
         if start_dt is None:
@@ -93,11 +176,6 @@ class SPRExtractor(BaseExtractor):
             end_dt = start_dt.replace(hour=12)
 
         # Convert to UTC (assume Pacific time if timezone-naive)
-        if start_dt.tzinfo is None:
-            start_dt = start_dt.replace(
-                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-        if end_dt.tzinfo is None:
-            end_dt = end_dt.replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
         if start_dt.tzinfo is None:
             start_dt = start_dt.replace(
                 tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
@@ -113,7 +191,7 @@ class SPRExtractor(BaseExtractor):
         return Event(
             source=self.source,
             source_id=source_id,
-            title=title,
+            title=spr_data.title,
             start=start_dt,
             end=end_dt,
             venue=venue,
@@ -122,8 +200,7 @@ class SPRExtractor(BaseExtractor):
             cost=cost,
             tags=tags,
             same_as=same_as_url,
-            source_dict=json.dumps(
-                source_data.model_dump()) if source_data else None
+            source_dict=json.dumps(spr_data.model_dump())
         )
 
     def _parse_description(self, description: str):
@@ -252,76 +329,6 @@ class SPRExtractor(BaseExtractor):
             end_dt = end_dt.replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
 
         return start_dt, end_dt
-
-    def _build_source_data(self, title: str, description: str, address: str, tags: List[str]) -> SPRSourceData:
-        """Build structured source data from parsed RSS item."""
-        # Initialize all fields
-        source_data = {
-            'title': title,
-            'description': self._extract_description_text(description),
-            'location': address if address else None,
-            'event_types': None,
-            'neighborhoods': None,
-            'parks': None,
-            'sponsoring_organization': None,
-            'contact': None,
-            'contact_phone': None,
-            'contact_email': None,
-            'audience': None,
-            'pre_register': None,
-            'cost': None,
-            'link': None
-        }
-
-        # Parse structured fields from description
-        lines = description.replace(
-            '<br/>', '\n').replace('<br>', '\n').split('\n')
-        lines = [line.strip() for line in lines if line.strip()]
-
-        for line in lines:
-            original_line = line  # Keep the original before cleaning
-            line = self._clean_html(line)
-
-            # Extract structured fields
-            if ':' in line:
-                field, value = line.split(':', 1)
-                field = field.strip().lower()
-                value = value.strip()
-
-                if field == "event types":
-                    source_data['event_types'] = value
-                elif field == "neighborhoods":
-                    source_data['neighborhoods'] = value
-                elif field == "parks":
-                    source_data['parks'] = value
-                elif field == "sponsoring organization":
-                    source_data['sponsoring_organization'] = value
-                elif field == "contact":
-                    source_data['contact'] = value
-                elif field == "contact phone":
-                    source_data['contact_phone'] = value
-                elif field == "contact email":
-                    # Extract email from potential HTML link
-                    email_match = re.search(
-                        r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', value)
-                    if email_match:
-                        source_data['contact_email'] = email_match.group(1)
-                    else:
-                        source_data['contact_email'] = value
-                elif field == "audience":
-                    source_data['audience'] = value
-                elif field == "pre-register":
-                    source_data['pre_register'] = value
-                elif field == "cost":
-                    source_data['cost'] = value
-                elif field == "more info":
-                    # Extract the raw URL from the "More info" field without normalization
-                    # Use the original line to get the raw href value
-                    url_match = re.search(r'href="([^"]+)"', original_line)
-                    if url_match:
-                        source_data['link'] = url_match.group(1)
-
-        return SPRSourceData(**source_data)
 
     def _extract_description_text(self, description: str) -> str:
         """Extract the main description text, skipping address/date and structured fields."""
