@@ -38,6 +38,19 @@ class EarthCorpsExtractor(BaseExtractor):
         return events
 
     @classmethod
+    def raise_for_missing_content(cls, response) -> None:
+        """Check response for CloudFlare protection and validate expected content."""
+        # Check for Cloudflare protection
+        if 'Just a moment' in response.text and 'cloudflare' in response.text.lower():
+            raise Exception(
+                f"Cloudflare protection detected when fetching EarthCorps calendar: {response.url}")
+
+        # Check for the specific JavaScript variable that contains event data
+        if 'var events_by_date' not in response.text:
+            raise Exception(
+                f"Invalid response from EarthCorps calendar - missing events data: {response.url}")
+
+    @classmethod
     def fetch(cls) -> 'EarthCorpsExtractor':
         """Fetch events from EarthCorps calendar for two weeks from now."""
         # Get current date and add two weeks to find future events
@@ -49,22 +62,13 @@ class EarthCorpsExtractor(BaseExtractor):
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
             'Accept-Language': 'en-US,en;q=0.9',
-            'Accept-Encoding': 'gzip, deflate, br',
             'Referer': 'https://www.earthcorps.org/',
         }
 
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
 
-        # Check for Cloudflare protection
-        if 'Just a moment' in response.text and 'cloudflare' in response.text.lower():
-            raise Exception(
-                f"Cloudflare protection detected when fetching EarthCorps calendar: {url}")
-
-        # Check for minimal expected content to ensure we got a real calendar page
-        if 'calendar' not in response.text.lower() or 'earthcorps' not in response.text.lower():
-            raise Exception(
-                f"Invalid response from EarthCorps calendar - missing expected content: {url}")
+        cls.raise_for_missing_content(response)
 
         return cls(response.text)
 

@@ -1,6 +1,14 @@
 from src.etl.earthcorps import EarthCorpsExtractor
 
 
+class MockResponse:
+    """Mock response object for testing content validation."""
+
+    def __init__(self, text: str, url: str = "https://example.com/test"):
+        self.text = text
+        self.url = url
+
+
 class TestEarthCorpsExtractor:
     """Test cases for EarthCorps extractor using August 2025 fixture data."""
 
@@ -127,5 +135,64 @@ class TestEarthCorpsExtractor:
             # Should be free events
             assert event.cost is None
 
-            # Should not have same_as initially
-            assert event.same_as is None
+        # Should not have same_as initially
+        assert event.same_as is None
+
+    def test_content_validation_with_real_calendar_page(self):
+        """Test content validation against real EarthCorps calendar HTML."""
+        # Load the real calendar fixture
+        with open('tests/etl/data/earthcorps_calendar_2025_08.html', 'r') as f:
+            html_content = f.read()
+
+        # Create mock response
+        mock_response = MockResponse(
+            html_content, "https://www.earthcorps.org/volunteer/calendar/2025/8/")
+
+        # Should not raise any exceptions
+        try:
+            EarthCorpsExtractor.raise_for_missing_content(mock_response)
+        except Exception as e:
+            assert False, f"Content validation failed on real calendar page: {e}"
+
+    def test_content_validation_detects_cloudflare(self):
+        """Test that content validation detects CloudFlare protection."""
+        cloudflare_html = """
+        <html>
+        <head><title>Just a moment...</title></head>
+        <body>
+        <h1>Please wait while we verify you're a human</h1>
+        <p>This process is automatic. Your browser will redirect you to your requested content shortly.</p>
+        <script>window.cloudflare = true;</script>
+        </body>
+        </html>
+        """
+
+        mock_response = MockResponse(
+            cloudflare_html, "https://www.earthcorps.org/volunteer/calendar/2025/8/")
+
+        try:
+            EarthCorpsExtractor.raise_for_missing_content(mock_response)
+            assert False, "Should have detected CloudFlare protection"
+        except Exception as e:
+            assert "Cloudflare protection detected" in str(e)
+
+    def test_content_validation_detects_missing_content(self):
+        """Test that content validation detects missing expected content."""
+        invalid_html = """
+        <html>
+        <head><title>EarthCorps Calendar</title></head>
+        <body>
+        <h1>This is a calendar page</h1>
+        <p>But it doesn't have the events_by_date JavaScript variable</p>
+        </body>
+        </html>
+        """
+
+        mock_response = MockResponse(
+            invalid_html, "https://www.earthcorps.org/volunteer/calendar/2025/8/")
+
+        try:
+            EarthCorpsExtractor.raise_for_missing_content(mock_response)
+            assert False, "Should have detected missing events data"
+        except Exception as e:
+            assert "missing events data" in str(e)

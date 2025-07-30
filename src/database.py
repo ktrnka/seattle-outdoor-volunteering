@@ -371,7 +371,7 @@ def get_future_canonical_events() -> List[PydanticCanonicalEvent]:
     session = get_session()
 
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         events = session.query(CanonicalEvent).filter(
             CanonicalEvent.end >= now
         ).order_by(CanonicalEvent.start).all()
@@ -456,5 +456,32 @@ def get_source_updated_stats() -> Dict[str, datetime]:
             result[run.source] = read_utc(run.run_datetime)
 
         return result
+    finally:
+        session.close()
+
+
+def get_etl_run_stats(days: int = 7) -> Dict[str, Dict[str, int]]:
+    """Get ETL run statistics for each source over the last N days."""
+    session = get_session()
+
+    try:
+        # Calculate cutoff date
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+
+        # Get all runs in the time period
+        runs = session.query(ETLRun).filter(
+            ETLRun.run_datetime >= cutoff_date
+        ).all()
+
+        # Group by source and count success/failure
+        stats = {}
+        for run in runs:
+            if run.source not in stats:
+                stats[run.source] = {'success': 0, 'failure': 0, 'total': 0}
+
+            stats[run.source][run.status] += 1
+            stats[run.source]['total'] += 1
+
+        return stats
     finally:
         session.close()
