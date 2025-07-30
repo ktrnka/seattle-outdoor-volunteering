@@ -60,6 +60,8 @@ def build(output_dir: Path):
             "tags": ",".join(event.tags) if event.tags else "",
             "is_date_only": is_date_only,  # Whether this is a date-only event
             "source_events": event.source_events,  # List of source events that were merged
+            # Count of source events for display
+            "source_events_count": len(debug_source_events),
             # Detailed source event data for debug
             "debug_source_events": debug_source_events,
             # Add Google Maps URL for addresses

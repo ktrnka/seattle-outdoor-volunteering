@@ -29,15 +29,29 @@
       cursor: pointer;
       opacity: 0.6;
       transition: opacity 0.2s ease;
-      font-size: 1em;
+      font-size: 0.9em;
       padding: 0.25rem;
       width: 100%;
       text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
     }
     .debug-btn:hover {
       opacity: 1;
       background-color: #f0f0f0;
       border-radius: 3px;
+    }
+    .debug-btn small {
+      background-color: #007bff;
+      color: white;
+      padding: 0.1rem 0.3rem;
+      border-radius: 0.75rem;
+      font-size: 0.75em;
+      font-weight: bold;
+      min-width: 1.2em;
+      text-align: center;
     }
     /* Modal content styling */
     #debug-modal article {
@@ -107,7 +121,9 @@
             {% endif %}
           </td>
           <td>
-            <button class="debug-btn" data-canonical-id="{{ e.canonical_id }}" title="Show debug info">🔍</button>
+            <button class="debug-btn" data-canonical-id="{{ e.canonical_id }}" title="Show debug info ({{ e.source_events_count }} source{{ 's' if e.source_events_count != 1 else '' }})">
+              🔍 <small>{{ e.source_events_count }}</small>
+            </button>
           </td>
         </tr>
         {% endfor %}
