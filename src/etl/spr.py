@@ -243,6 +243,7 @@ class SPRExtractor(BaseExtractor):
             start_dt, end_dt = self._parse_datetime(datetime_line)
 
         # Parse structured fields (format: <b>Field</b>: Value)
+
         for line in lines:
             line = self._clean_html(line)
 
@@ -261,10 +262,10 @@ class SPRExtractor(BaseExtractor):
                         venue = parks_match.group(1).strip()
                     else:
                         venue = value
-                elif field in ["event types", "neighborhoods", "sponsoring organization",
-                               "contact", "contact email", "contact phone", "audience"]:
+                # Only add tags from event types, neighborhoods, parks, and sponsoring organization
+                elif field in ["event types", "neighborhoods", "parks", "sponsoring organization"]:
                     if value:
-                        tags.append(value)
+                        tags.append(value.strip())
 
             # Extract venue from description text as fallback
             elif not venue and ("Join us for a restoration work party at" in line or "park" in line.lower()):

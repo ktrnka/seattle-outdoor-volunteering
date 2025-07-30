@@ -47,7 +47,8 @@ class Event(Base):
 
     def to_pydantic(self) -> PydanticEvent:
         """Convert SQLAlchemy model to Pydantic model."""
-        tags = self.tags.split(',') if self.tags else []
+        tags = [tag.strip()
+                for tag in self.tags.split(',')] if self.tags else []
 
         return PydanticEvent(
             source=self.source,
@@ -85,7 +86,8 @@ class CanonicalEvent(Base):
 
     def to_pydantic(self) -> PydanticCanonicalEvent:
         """Convert SQLAlchemy model to Pydantic model."""
-        tags = self.tags.split(',') if self.tags else []
+        tags = [tag.strip()
+                for tag in self.tags.split(',')] if self.tags else []
         # Get source events from the membership table
         from sqlalchemy.orm import object_session
         session = object_session(self)
