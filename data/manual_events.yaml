@@ -1,0 +1,71 @@
+# Manual events that don't have automated extractors
+# These are typically recurring events from organizations that notify via email or other manual means
+
+recurring_events:
+  # 1st Saturday of every month
+  - id: "mount_baker_hub"
+    title: "Mount Baker Hub Alliance Monthly Cleanup"
+    description: "Community cleanup event"
+    recurring_pattern: "first_saturday"
+    venue: "Mount Baker Hub Alliance"
+    url: "https://www.mtbakerhub.org/clean-ups/"  # Replace with actual URL
+    tags: ["cleanup"]
+    
+  - id: "duwamish_paddle"
+    title: "River Access Paddle Program Duwamish River Cleanup"
+    description: "Duwamish River cleanup via paddle"
+    recurring_pattern: "first_saturday"
+    venue: "Duwamish River"
+    url: "https://www.riveraccesspaddleprogram.org/events"  # Replace with actual URL
+    tags: ["cleanup", "water"]
+    
+  - id: "roosevelt_neighborhood"
+    title: "Roosevelt Neighborhood Association Cleanup"
+    description: "Roosevelt neighborhood cleanup"
+    recurring_pattern: "first_saturday"
+    venue: "Roosevelt Neighborhood"
+    url: "https://rooseveltseattle.org/volunteer/adopt-a-street/"  # Replace with actual URL
+    tags: ["cleanup"]
+
+  # 2nd Saturday of every month
+  - id: "cid_cleanup"
+    title: "C-ID Community Monthly Clean-Up"
+    description: "Chinatown-International District community cleanup"
+    recurring_pattern: "second_saturday"
+    venue: "Chinatown-International District"
+    url: "https://signup.com/client/invitation2/secure/87001728246606086/#/invitation"  # Replace with actual URL
+    tags: ["cleanup"]
+
+  # 2nd Sunday of every month
+  - id: "tidy_uptown"
+    title: "Tidy Uptown – Uptown Alliance"
+    description: "Uptown area cleanup"
+    recurring_pattern: "second_sunday"
+    venue: "Uptown"
+    url: "https://www.facebook.com/groups/435863887803944/"  # Replace with actual URL
+    tags: ["cleanup"]
+    
+  - id: "capitol_hill_care"
+    title: "Caring for Capitol Hill"
+    description: "Capitol Hill community cleanup"
+    recurring_pattern: "second_sunday" 
+    venue: "Capitol Hill"
+    url: "https://www.facebook.com/groups/caringforcapitolhill/events"  # Replace with actual URL
+    tags: ["cleanup"]
+
+  # 3rd Sunday of every month
+  - id: "jaxler_cleanup"
+    title: "Jaxler (Jackson/Yesler) Monthly Cleanup"
+    description: "Jackson/Yesler area cleanup"
+    recurring_pattern: "third_sunday"
+    venue: "Jackson/Yesler area"
+    url: "https://docs.google.com/document/d/1ZzxaZEbnPSWaDUuhOpvJEVajGGkYkCn1j0HTzlddKig/edit?tab=t.0"  # Replace with actual URL
+    tags: ["cleanup"]
+    
+  - id: "lake_city_together"
+    title: "Building Lake City Together"
+    description: "Lake City community cleanup"
+    recurring_pattern: "third_sunday"
+    venue: "Lake City"
+    url: "https://enjoy-lake-city.org/community-cleanups-2024/"  # Replace with actual URL
+    tags: ["cleanup"]

@@ -14,6 +14,7 @@ from .etl.spf import SPFExtractor
 from .etl.spr import SPRExtractor
 from .etl.spu import SPUExtractor
 from .etl.earthcorps import EarthCorpsExtractor
+from .etl.manual import ManualExtractor
 from .etl.deduplication import deduplicate_events
 from .site import generator
 from .models import SEATTLE_TZ
@@ -50,6 +51,7 @@ def etl(only_run: Optional[str] = None):
         "SPU": SPUExtractor,
         "DNDA": DNDAExtractor,
         "EarthCorps": EarthCorpsExtractor,
+        "Manual": ManualExtractor,
     }
 
     # Determine which extractors to run

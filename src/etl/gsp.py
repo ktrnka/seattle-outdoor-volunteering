@@ -46,11 +46,13 @@ class GSPBaseExtractor(BaseExtractor):
     @staticmethod
     def _create_date_only_times(year, month, day):
         """Create zero-duration start/end times at midnight UTC for date-only events."""
-        # Create midnight UTC time for the given date
-        start = datetime.datetime(
-            year, month, day, 0, 0, 0, tzinfo=timezone.utc)
-        end = start  # Zero duration indicates this is a date-only event
-        return start, end
+        # Create midnight in Seattle time first, then convert to UTC
+        # This ensures that when converted back to Seattle time for display, it shows the correct date
+        start_seattle = datetime.datetime(
+            year, month, day, 0, 0, 0, tzinfo=SEATTLE_TZ)
+        start_utc = start_seattle.astimezone(timezone.utc)
+        end_utc = start_utc  # Zero duration indicates this is a date-only event
+        return start_utc, end_utc
 
     @staticmethod
     def _create_default_times(year=None, month=7, day=28, start_hour=9, duration_hours=3):

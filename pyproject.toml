@@ -28,6 +28,7 @@ dependencies = [
     "sqlalchemy",
     "python-dateutil",
     "python-dotenv",
+    "pyyaml",
 ]
 
 [project.optional-dependencies]

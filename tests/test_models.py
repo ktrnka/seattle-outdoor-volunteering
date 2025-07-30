@@ -34,17 +34,20 @@ def test_event_has_time_info():
 
 
 def test_event_date_only():
-    """Test that events with zero duration at midnight are treated as date-only."""
-    # Zero-duration event at midnight UTC (date-only)
-    start = datetime(2024, 6, 15, 0, 0, 0, tzinfo=timezone.utc)
-    end = datetime(2024, 6, 15, 0, 0, 0, tzinfo=timezone.utc)
+    """Test that events with zero duration at midnight Seattle time are treated as date-only."""
+    # Create a date-only event at midnight Seattle time, then convert to UTC
+    # This matches how extractors now create date-only events
+    from src.models import SEATTLE_TZ
+    start_seattle = datetime(2024, 6, 15, 0, 0, 0, tzinfo=SEATTLE_TZ)
+    start_utc = start_seattle.astimezone(timezone.utc)
+    end_utc = start_utc
 
     event = Event(
         source="GSP",
         source_id="test-123",
         title="Test Event",
-        start=start,
-        end=end,
+        start=start_utc,
+        end=end_utc,
         venue="Test Park",
         url=HttpUrl("https://example.com/event/123")
     )

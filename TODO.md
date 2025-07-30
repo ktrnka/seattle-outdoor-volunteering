@@ -3,7 +3,6 @@
 ## Short-Term
 
 ### Data Quality
-- Make the EarthCore extractor more robust to Cloudflare
 - **Validate SPR parsing**: More thorough checking of parsed data from Seattle Parks & Rec
 
 ## Long-Term
