@@ -28,8 +28,10 @@ def normalize_url(url: str | HttpUrl) -> str:
     # Parse the URL
     parsed = urlparse(url_str)
 
-    # Default to https if no scheme
+    # Default to https and replace http with https
     scheme = parsed.scheme or 'https'
+    if scheme == 'http':
+        scheme = 'https'
 
     # Lowercase the netloc (domain)
     netloc = parsed.netloc.lower()

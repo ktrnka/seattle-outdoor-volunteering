@@ -145,7 +145,7 @@ def etl(only_run: Optional[str] = None):
 
     click.echo(
         f"Running deduplication on {len(all_source_events)} total events...")
-    canonical_events, membership_map = deduplicate_events(all_source_events)
+    canonical_events = deduplicate_events(all_source_events)
 
     # Show summary
     total_groups_with_duplicates = sum(
@@ -158,7 +158,7 @@ def etl(only_run: Optional[str] = None):
     # Save canonical events and memberships to database
     click.echo("Updating canonical events in database...")
     database.overwrite_canonical_events(canonical_events)
-    database.overwrite_event_group_memberships(membership_map)
+    # database.overwrite_event_group_memberships(membership_map)
 
     # Compress database for git
     with open(DB_PATH, "rb") as src, gzip.open(DB_GZ, "wb") as dst:
@@ -168,9 +168,9 @@ def etl(only_run: Optional[str] = None):
 
 
 @cli.command()
-@click.option('--show-examples', is_flag=True, help='Show examples of how events are being merged')
 @click.option('--verbose', is_flag=True, help='Show detailed logging of the deduplication process')
-def deduplicate(show_examples, verbose):
+@click.option('--dry-run', is_flag=True, help='Run deduplication without saving changes')
+def deduplicate(verbose: bool = False, dry_run: bool = False):
     """Run deduplication on existing source events in the database."""
     click.echo("Loading source events from database...")
     source_events = database.get_source_events()
@@ -191,7 +191,7 @@ def deduplicate(show_examples, verbose):
 
     # Run deduplication
     click.echo("Running deduplication...")
-    canonical_events, membership_map = deduplicate_events(source_events)
+    canonical_events = deduplicate_events(source_events)
 
     # Show summary
     total_groups_with_duplicates = sum(
@@ -211,42 +211,14 @@ def deduplicate(show_examples, verbose):
             count = size_counts[size]
             click.echo(f"  {size} events: {count} groups")
 
-    if show_examples:
-        click.echo("\n--- Examples of event merging ---")
-        examples_shown = 0
-        for canonical in canonical_events:
-            if len(canonical.source_events) > 1 and examples_shown < 5:
-                click.echo(f"\nCanonical Event: {canonical.title}")
-                click.echo(
-                    f"  Date: {canonical.start.strftime('%Y-%m-%d %H:%M UTC')}")
-                click.echo(f"  Venue: {canonical.venue or 'Unknown'}")
-                click.echo(f"  URL: {canonical.url}")
-                click.echo(
-                    f"  Merged from {len(canonical.source_events)} sources:")
-
-                # Find the source events for this canonical event
-                source_events_for_canonical = []
-                for event in source_events:
-                    event_key = (event.source, event.source_id)
-                    if event_key in membership_map and membership_map[event_key] == canonical.canonical_id:
-                        source_events_for_canonical.append(event)
-
-                for source_event in source_events_for_canonical:
-                    time_info = " (date-only)" if source_event.is_date_only() else ""
-                    click.echo(
-                        f"    - {source_event.source}: '{source_event.title}' ({source_event.start.strftime('%Y-%m-%d %H:%M UTC')}{time_info})")
-                    click.echo(f"      URL: {source_event.url}")
-
-                examples_shown += 1
-
-        if examples_shown == 0:
-            click.echo("No duplicate groups found to show as examples.")
-
     # Save canonical events to database
-    click.echo("Saving canonical events to database...")
-    database.overwrite_canonical_events(canonical_events)
-    database.overwrite_event_group_memberships(membership_map)
-    click.echo("Deduplication complete!")
+    if not dry_run:
+        click.echo("Saving canonical events to database...")
+        database.overwrite_canonical_events(canonical_events)
+        # database.overwrite_event_group_memberships(membership_map)
+        click.echo("Deduplication complete!")
+    else:
+        click.echo("Dry run enabled. No changes were made.")
 
 
 @cli.command()
@@ -457,6 +429,15 @@ def build_site():
     """Generate static site into docs/."""
     generator.build(Path("docs"))
     click.echo("Site built → docs/index.html")
+
+
+@dev.command()
+def test_splink():
+    """Test out Splink for event deduplication."""
+    from .etl.splink_dedupe import run_splink_deduplication
+
+    source_events = database.get_source_events()
+    run_splink_deduplication(source_events)
 
 
 # Add the dev group to the main CLI

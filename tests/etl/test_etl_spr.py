@@ -31,7 +31,7 @@ def test_parse_fixture():
     assert first_event.title == "Preparing for Fall Planting"
     assert first_event.address == "5921 Aurora Ave N, Seattle, WA 98103"
     assert first_event.same_as == HttpUrl(
-        "http://seattle.greencitypartnerships.org/event/42030")
+        "https://seattle.greencitypartnerships.org/event/42030")
 
     # Sunday, July 27, 2025, 8&amp;nbsp;&amp;ndash;&amp;nbsp;11am
     local_start = first_event.start.astimezone(SEATTLE_TZ)

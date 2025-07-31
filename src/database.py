@@ -6,6 +6,7 @@ from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Mapped, mapped_column, object_session, sessionmaker, Session, declarative_base
 from sqlalchemy.sql import func
 from typing import List, Dict, Tuple
+import sqlite3
 
 import uuid
 
@@ -169,6 +170,16 @@ def get_session() -> Session:
     engine = get_engine()
     SessionLocal = sessionmaker(bind=engine)
     return SessionLocal()
+
+
+def get_connection():
+    """Get a connection to the database."""
+    engine = get_engine()
+    return engine.connect()
+
+
+def get_regular_connection():
+    return sqlite3.connect(DB_PATH)
 
 
 def init_database(reset: bool = False) -> None:

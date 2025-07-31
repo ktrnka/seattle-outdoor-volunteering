@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Generator, List, Optional
 from zoneinfo import ZoneInfo
 from enum import Enum
 
@@ -71,7 +71,17 @@ class CanonicalEvent(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     tags: Optional[List[str]] = []
-    source_events: List[str] = []  # List of (source, source_id) pairs
+    source_events: List[str] = []  # List of source:source_id pairs
+
+    def iter_source_events(self) -> Generator[tuple[str, str], None, None]:
+        """
+        Iterate over source events that contributed to this canonical event.
+
+        Yields tuples of (source, source_id) for each source event.
+        """
+        for source_event in self.source_events:
+            source, source_id = source_event.split(':', 1)
+            yield source, source_id
 
     def has_time_info(self) -> bool:
         """

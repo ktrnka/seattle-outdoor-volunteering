@@ -383,22 +383,10 @@ def test_deduplicate_events():
         ),
     ]
 
-    canonical_events, membership_map = deduplicate_events(events)
+    canonical_events = deduplicate_events(events)
 
     # Should have 2 canonical events
     assert len(canonical_events) == 2
-
-    # Check membership map
-    assert len(membership_map) == 3
-    assert ("SPR", "1") in membership_map
-    assert ("GSP", "2") in membership_map
-    assert ("SPR", "3") in membership_map
-
-    # SPR:1 and GSP:2 should be in the same group
-    assert membership_map[("SPR", "1")] == membership_map[("GSP", "2")]
-
-    # SPR:3 should be in a different group
-    assert membership_map[("SPR", "3")] != membership_map[("SPR", "1")]
 
     # Find the Lincoln Park canonical event
     lincoln_canonical = None

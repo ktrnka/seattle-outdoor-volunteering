@@ -242,7 +242,7 @@ def create_canonical_event(event_group: List[Event], normalized_title: str, even
     )
 
 
-def deduplicate_events(events: List[Event]) -> Tuple[List[CanonicalEvent], Dict[Tuple[str, str], str]]:
+def deduplicate_events(events: List[Event]) -> List[CanonicalEvent]:
     """
     New deduplication system that groups events by normalized title and date.
 
@@ -258,7 +258,6 @@ def deduplicate_events(events: List[Event]) -> Tuple[List[CanonicalEvent], Dict[
     event_groups = group_events_by_title_and_date(events)
 
     canonical_events = []
-    membership_map = {}
 
     for (normalized_title, event_date), event_group in event_groups.items():
         # Create canonical event from this group
@@ -266,9 +265,4 @@ def deduplicate_events(events: List[Event]) -> Tuple[List[CanonicalEvent], Dict[
             event_group, normalized_title, event_date)
         canonical_events.append(canonical_event)
 
-        # Track membership for each source event
-        for event in event_group:
-            membership_map[(event.source, event.source_id)
-                           ] = canonical_event.canonical_id
-
-    return canonical_events, membership_map
+    return canonical_events
