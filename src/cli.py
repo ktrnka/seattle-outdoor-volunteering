@@ -436,8 +436,7 @@ def test_splink():
     """Test out Splink for event deduplication."""
     from .etl.splink_dedupe import run_splink_deduplication
 
-    source_events = database.get_source_events()
-    run_splink_deduplication(source_events)
+    run_splink_deduplication()
 
 
 # Add the dev group to the main CLI
