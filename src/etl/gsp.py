@@ -2,13 +2,14 @@ import json
 import re
 from typing import List, Optional
 import requests
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import BeautifulSoup
+from bs4.element import NavigableString
 from dateutil import parser
 import datetime
 from datetime import timezone
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
-from .base import BaseExtractor
+from .base import BaseExtractor, BaseDetailExtractor
 from .url_utils import normalize_url
 from ..models import Event, SEATTLE_TZ
 
@@ -19,19 +20,19 @@ API_URL = "https://seattle.greencitypartnerships.org/event/map/?sEcho=2&iColumns
 CAL_URL = "https://seattle.greencitypartnerships.org/event/calendar/"
 
 
+def _extract_source_id_from_url(event_url: str) -> str | None:
+    """Extract source_id from GSP event URL."""
+    if event_url and '/event/' in event_url:
+        try:
+            return event_url.split('/event/')[-1].split('/')[0]
+        except Exception:
+            pass
+    return None
+
+
 class GSPBaseExtractor(BaseExtractor):
     """Base class for GSP extractors with shared utility methods."""
     source = "GSP"
-
-    @staticmethod
-    def _extract_source_id_from_url(event_url: str) -> str | None:
-        """Extract source_id from GSP event URL."""
-        if event_url and '/event/' in event_url:
-            try:
-                return event_url.split('/event/')[-1].split('/')[0]
-            except Exception:
-                pass
-        return None
 
     @staticmethod
     def _create_fallback_source_id(title):
@@ -131,7 +132,7 @@ class GSPAPIExtractor(GSPBaseExtractor):
                 event_url = str(title_link.get('href', ''))
 
                 # Extract source_id from URL
-                source_id = self._extract_source_id_from_url(event_url)
+                source_id = _extract_source_id_from_url(event_url)
                 if not source_id:
                     source_id = self._create_fallback_source_id(title)
 
@@ -200,7 +201,7 @@ class GSPCalendarExtractor(GSPBaseExtractor):
                 event_url = str(title_link.get('href', ''))
 
                 # Extract source_id from URL
-                source_id = self._extract_source_id_from_url(event_url)
+                source_id = _extract_source_id_from_url(event_url)
                 if not source_id:
                     source_id = self._create_fallback_source_id(title)
 
@@ -316,7 +317,7 @@ class GSPDetailEvent(BaseModel):
             start=start,
             end=end,
             venue=None,  # No venue info in detail page
-            url=self.url,
+            url=HttpUrl(normalize_url(str(self.url))),
         )
 
 
@@ -330,13 +331,9 @@ def extract_immediate_text(element):
     return immediate_text
 
 
-class GSPDetailPageExtractor(GSPBaseExtractor):
+class GSPDetailPageExtractor(BaseDetailExtractor):
     """Extractor for GSP detail HTML page."""
     source = "GSP_DETAIL"
-
-    def __init__(self, url: HttpUrl, raw_data: str):
-        super().__init__(raw_data)
-        self.url = url
 
     def extract_detail_event(self) -> GSPDetailEvent:
         """Extract event details from the HTML page."""
@@ -364,7 +361,7 @@ class GSPDetailPageExtractor(GSPBaseExtractor):
         assert right_column, "No right column found in the details"
         right_paragraphs = right_column.find_all("p")
 
-        source_id = self._extract_source_id_from_url(str(self.url))
+        source_id = _extract_source_id_from_url(self.url)
         assert source_id, "No source_id found in the URL"
 
         # Pull out the activities section and simplify whitespacing
@@ -379,7 +376,7 @@ class GSPDetailPageExtractor(GSPBaseExtractor):
 
         return GSPDetailEvent(
             title=title,
-            url=self.url,
+            url=HttpUrl(self.url),
             source_id=source_id,
             datetimes=right_paragraphs[0].get_text(strip=True),
             description=description,
@@ -387,14 +384,18 @@ class GSPDetailPageExtractor(GSPBaseExtractor):
             contact_email=contact_email,
         )
 
-    def extract(self) -> List[Event]:
+    def extract(self) -> Event:
         """Extract a single event from the detail page."""
         detail_event = self.extract_detail_event()
-        return [detail_event.to_source_event()]
+        return detail_event.to_source_event()
 
     @classmethod
-    def fetch(cls) -> 'GSPDetailPageExtractor':
-        raise NotImplementedError()
+    def fetch(cls, url: str) -> 'GSPDetailPageExtractor':
+        """Fetch raw HTML from the detail page URL."""
+
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        return cls(url, response.text)
 
 
 class GSPExtractor(GSPBaseExtractor):
