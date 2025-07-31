@@ -5,7 +5,7 @@ import hashlib
 import html
 from collections import Counter, defaultdict
 from datetime import date
-from typing import Iterable, List, Dict, Tuple
+from typing import Iterable, List, Dict, Optional, Tuple, TypeVar
 from urllib.parse import urlparse
 from pydantic import HttpUrl
 
@@ -61,7 +61,10 @@ def group_events_by_title_and_date(events: List[Event]) -> Dict[Tuple[str, date]
     return dict(groups)
 
 
-def mode(values: Iterable):
+T = TypeVar('T')
+
+
+def mode(values: Iterable[Optional[T]]) -> Optional[T]:
     "Get the most common, non-null value from an iterable"
     counts = Counter(value for value in values if value is not None)
     if not counts:
@@ -156,7 +159,7 @@ def create_canonical_event(event_group: List[Event], normalized_title: str, even
     canonical_id = generate_canonical_id(normalized_title, event_date)
 
     # Select best attributes from the group
-    title = mode(event.title for event in event_group)
+    title = mode(event.title for event in event_group) or ""
     venue = mode(event.venue for event in event_group)
     url = select_preferred_url(event_group)
 

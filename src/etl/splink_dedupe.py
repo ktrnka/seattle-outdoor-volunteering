@@ -7,7 +7,7 @@ from ..database import get_regular_connection
 from .url_utils import normalize_url
 
 
-def create_urls(*urls: Optional[str]) -> list[str]:
+def create_url_list(*urls: Optional[str]) -> list[str]:
     """
     Create a list of URLs from the provided arguments.
 
@@ -40,7 +40,7 @@ def load_source_events() -> pd.DataFrame:
     df.loc[df["start"] == df["end"], "start_time"] = None
 
     # Create a URL list col of URL and same_as
-    df["urls"] = df.apply(lambda row: create_urls(
+    df["urls"] = df.apply(lambda row: create_url_list(
         row["url"], row["same_as"]), axis=1)
 
     # Special fields used by Splink
@@ -77,7 +77,7 @@ def run_splink_deduplication(show_examples: bool = True):
 
     dfs = [group for _, group in grouped]
 
-    linker = Linker(dfs, settings, db_api=db_api)
+    linker = Linker(dfs, settings, db_api=db_api)  # type: ignore
     linker.training.estimate_probability_two_random_records_match(
         [block_on("start_date", "title")],
         recall=0.8,
