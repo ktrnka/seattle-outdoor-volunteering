@@ -41,6 +41,14 @@ class Event(BaseModel):
     # Source-specific structured data as JSON dict
     source_dict: Optional[str] = None
 
+    @property
+    def start_local(self, tz: ZoneInfo = SEATTLE_TZ) -> datetime:
+        return self.start.astimezone(tz)
+
+    @property
+    def end_local(self, tz: ZoneInfo = SEATTLE_TZ) -> datetime:
+        return self.end.astimezone(tz)
+
     def has_time_info(self) -> bool:
         """
         Check if this event has actual time information or is date-only.

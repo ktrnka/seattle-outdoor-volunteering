@@ -3,7 +3,7 @@
 from datetime import timezone
 
 from src.etl.manual import ManualExtractor
-from src.models import Event, RecurringPattern
+from src.models import SEATTLE_TZ, Event, RecurringPattern
 
 
 class TestManualExtractor:
@@ -18,6 +18,8 @@ recurring_events:
     title: "Test Monthly Cleanup"
     description: "Test cleanup event"
     recurring_pattern: "first_saturday"
+    start:time: "09:00"
+    end_time: "11:00"
     venue: "Test Park"
     url: "https://example.com/test"
     tags: ["cleanup", "test"]
@@ -86,11 +88,17 @@ recurring_events:
     title: "Test Event"
     description: "Test description"
     recurring_pattern: "first_saturday"
+    start_time: "10:00"
+    end_time: "12:00"
     venue: "Test Venue"
     address: "123 Test St"
     url: "https://example.com/test"
     cost: "Free"
     tags: ["cleanup", "volunteer"]
+  - id: "bare_min_test_event"
+    title: "Bare Minimum Test Event"
+    recurring_pattern: "first_sunday"
+    url: "https://example.com/test"
 """
 
         extractor = ManualExtractor(mock_yaml)
@@ -100,7 +108,8 @@ recurring_events:
         assert len(events) > 0
 
         # Check first event properties
-        first_event = events[0]
+        first_event = next(
+            (e for e in events if e.title == "Test Event"), None)
         assert isinstance(first_event, Event)
         assert first_event.source == "MAN"
         assert first_event.title == "Test Event"
@@ -111,14 +120,24 @@ recurring_events:
         assert first_event.tags == ["cleanup", "volunteer"]
 
         # Check that it's a date-only event
-        assert first_event.is_date_only()
-        assert first_event.start == first_event.end
+        assert not first_event.is_date_only()
+        assert first_event.start_local.hour == 10  # 10am start
+        assert first_event.start_local.minute == 0
+
+        assert first_event.end_local.hour == 12  # 12pm end
 
         # Note: Date-only events are now stored at midnight Seattle time (converted to UTC)
         # We verify it's date-only via the is_date_only() method which handles timezone conversion
 
         # Check that start time is in UTC
         assert first_event.start.tzinfo == timezone.utc
+
+        second_event = next(
+            (e for e in events if e.title == "Bare Minimum Test Event"), None)
+
+        assert second_event is not None
+        assert second_event.title == "Bare Minimum Test Event"
+        assert second_event.is_date_only()  # Should be date-only
 
     def test_source_id_generation(self):
         """Test that source IDs are generated correctly and uniquely."""

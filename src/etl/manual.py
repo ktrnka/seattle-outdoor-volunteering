@@ -5,7 +5,7 @@ This extractor reads from the manual_events.yaml file and generates
 Event instances for upcoming occurrences of recurring events.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional
 import yaml
@@ -27,6 +27,8 @@ class ManualEventDefinition(BaseModel):
     title: str
     description: Optional[str] = None
     recurring_pattern: RecurringPattern
+    start_time: Optional[str] = None  # e.g. "13:00"
+    end_time: Optional[str] = None  # e.g. "15:00"
     venue: Optional[str] = None
     address: Optional[str] = None
     url: HttpUrl
@@ -85,7 +87,7 @@ class ManualExtractor(BaseExtractor):
 
         return events
 
-    def _generate_recurring_events(self, event_def, start_date, end_date) -> List[Event]:
+    def _generate_recurring_events(self, event_def: ManualEventDefinition, start_date: date, end_date: date) -> List[Event]:
         """Generate recurring event instances between start_date and end_date."""
         events = []
 
@@ -163,18 +165,28 @@ class ManualExtractor(BaseExtractor):
 
         return target_date
 
-    def _create_event_instance(self, event_def, event_date) -> Event:
-        """Create an Event instance for a specific date."""
-        # Create a unique source_id based on the stable event ID and date
+    def _parse_time(self, time_str: Optional[str]) -> Optional[time]:
+        if time_str:
+            return datetime.strptime(time_str, "%H:%M").time()
+        return None
+
+    def _build_datetime(self, naive_date: date, time_of_day: Optional[time]) -> datetime:
+        """Build a timezone-aware datetime from a naive datetime and optional time."""
+        if time_of_day:
+            return datetime.combine(naive_date, time_of_day).replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+        else:
+            # Default to midnight if no time is provided
+            return datetime.combine(naive_date, time.min).replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+
+    def _create_event_instance(self, event_def: ManualEventDefinition, event_date: date) -> Event:
+        """Create an Event instance for a specific date, using start/end times if present."""
         source_id = f"{event_def.id}_{event_date.strftime('%Y_%m_%d')}"
 
-        # Convert date to UTC datetime (date-only event - same start/end time)
-        # Create at midnight Seattle time, then convert to UTC for proper timezone handling
-        start_seattle = datetime.combine(
-            event_date, datetime.min.time()).replace(tzinfo=SEATTLE_TZ)
-        start_utc = start_seattle.astimezone(timezone.utc)
-        # Date-only events have same start/end (zero duration)
-        end_utc = start_utc
+        # Apply the optional state and end time to the date
+        start_utc = self._build_datetime(
+            event_date, self._parse_time(event_def.start_time))
+        end_utc = self._build_datetime(
+            event_date, self._parse_time(event_def.end_time))
 
         return Event(
             source=self.source,
