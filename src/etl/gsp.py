@@ -73,7 +73,7 @@ class GSPBaseExtractor(BaseExtractor):
         return start, end
 
     @staticmethod
-    def _create_event(source_id, title, start, end, venue, url):
+    def _create_event(source_id, title, start, end, venue, url, **extra_fields):
         """Create an Event object with standard GSP formatting."""
         return Event(
             source="GSP",
@@ -84,6 +84,7 @@ class GSPBaseExtractor(BaseExtractor):
             venue=venue,
             address=None,
             url=HttpUrl(url),
+            source_dict=json.dumps(extra_fields) if extra_fields else None
         )
 
 
@@ -194,7 +195,7 @@ class GSPCalendarExtractor(GSPBaseExtractor):
             date.today(), date.today() + timedelta(days=30)), timeout=30).text
         return cls(html)
 
-    def extract(self):
+    def extract(self) -> List[Event]:
         """Extract events from HTML content."""
         soup = BeautifulSoup(self.raw_data, "html.parser")
         events = []
@@ -208,6 +209,8 @@ class GSPCalendarExtractor(GSPBaseExtractor):
                 if not title_link:
                     continue
                 title = title_link.get_text(strip=True)
+
+                # Note: These are relative URLs
                 event_url = str(title_link.get('href', ''))
 
                 # Extract source_id from URL
@@ -229,6 +232,13 @@ class GSPCalendarExtractor(GSPBaseExtractor):
                 else:
                     date_part = date_text
                     venue = None
+
+                description_element = event_div.select("p")[1]
+                if description_element:
+                    description = description_element.find(
+                        string=True, recursive=False).strip()  # type: ignore
+                else:
+                    description = None
 
                 # Try to parse the date
                 # Format: "July 28, 9am-12:30pm" -> need to add year
@@ -283,7 +293,7 @@ class GSPCalendarExtractor(GSPBaseExtractor):
 
                 normalized_url = self._normalize_event_url(event_url, CAL_URL)
                 evt = self._create_event(
-                    source_id, title, start, end, venue, normalized_url)
+                    source_id, title, start, end, venue, normalized_url, description=description)
                 events.append(evt)
             except Exception:
                 # Skip events that can't be parsed

@@ -1,4 +1,5 @@
 # tests/test_etl_gsp.py
+import json
 from pathlib import Path
 
 from pydantic import HttpUrl
@@ -35,6 +36,9 @@ def test_parse_calendar_fixture():
     local_end = first_event.end.astimezone(SEATTLE_TZ)
     assert local_end.hour == 12  # 12:30pm local time
     assert local_end.minute == 30
+
+    raw_source = json.loads(first_event.source_dict)
+    assert raw_source['description'] == "Let's finish this area off as we are close to the end."
 
 
 def test_parse_api_fixture():

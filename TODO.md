@@ -4,7 +4,8 @@
 
 ### Data Quality
 - Title and Venue: It looks like SPF adds the " at Venue" into the title which is messing with merging
-- Add times to the manual data sources
+- Add a data_url to tag where the data came from
+- Add a description field into more of the events
 
 ## Long-Term
 
