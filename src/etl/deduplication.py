@@ -5,7 +5,7 @@ import hashlib
 import html
 from collections import Counter, defaultdict
 from datetime import date
-from typing import List, Dict, Tuple
+from typing import Iterable, List, Dict, Tuple
 from urllib.parse import urlparse
 from pydantic import HttpUrl
 
@@ -74,38 +74,12 @@ def group_events_by_title_and_date(events: List[Event]) -> Dict[Tuple[str, date]
     return dict(groups)
 
 
-def select_most_common_title(events: List[Event]) -> str:
-    """
-    Select the most common title from a group of events.
-
-    Args:
-        events: List of events in the same group
-
-    Returns:
-        Most common title string
-    """
-    title_counts = Counter(event.title for event in events)
-    return title_counts.most_common(1)[0][0]
-
-
-def select_most_common_venue(events: List[Event]) -> str | None:
-    """
-    Select the most common non-null venue from a group of events.
-
-    Args:
-        events: List of events in the same group
-
-    Returns:
-        Most common non-null venue string, or None if all are null
-    """
-    non_null_venues = [
-        event.venue for event in events if event.venue is not None]
-
-    if not non_null_venues:
+def mode(values: Iterable):
+    "Get the most common, non-null value from an iterable"
+    counts = Counter(value for value in values if value is not None)
+    if not counts:
         return None
-
-    venue_counts = Counter(non_null_venues)
-    return venue_counts.most_common(1)[0][0]
+    return counts.most_common(1)[0][0]
 
 
 def select_event_with_time_info(events: List[Event]) -> Event | None:
@@ -195,8 +169,8 @@ def create_canonical_event(event_group: List[Event], normalized_title: str, even
     canonical_id = generate_canonical_id(normalized_title, event_date)
 
     # Select best attributes from the group
-    title = select_most_common_title(event_group)
-    venue = select_most_common_venue(event_group)
+    title = mode(event.title for event in event_group)
+    venue = mode(event.venue for event in event_group)
     url = select_preferred_url(event_group)
 
     # Get timing info from an event with time data if available
