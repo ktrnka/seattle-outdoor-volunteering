@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en" class="no-js">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=8,chrome=1">
+    <title></title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" type="image/vnd.microsoft.icon" href="/favicon.ico">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" type="text/css" media="screen" href="/css/style.css?v=5">
+    <link rel="stylesheet" type="text/css" media="screen" href="/font/stylesheet.css">
+    <script src="/js/modernizr-1.5.min.js"></script>
+
+    <style type="text/css">
+        /* == Footer == */
+        .partners {
+            float: right;
+            display: block;
+            width: 750px;
+            overflow: hidden;
+            height: 90px
+        }
+
+        .funding {
+            width: 420px
+        }
+
+        .partners a {
+            margin-right: 10px;
+            float: right;
+        }
+
+        a.p2 {
+            background: url('/img/forterra_2021.png') no-repeat;
+            width: 159px;
+            height: 35px;
+            position: relative;
+            top: 15px;
+        }
+
+        a.p3 {
+            background: url('/img/ucf.png') no-repeat;
+            width: 120px;
+            height: 65px;
+        }
+
+        a.p4 {
+            background: url('/img/usfs.png') no-repeat;
+            width: 75px;
+            height: 65px;
+        }
+
+        footer {
+            height: 170px;
+            background: url('/img/footer-bg21.jpg') bottom left repeat-x;
+        }
+
+        footer #entity-logo2 {
+            background: url(/img/entities/seattle/logo2.png) no-repeat;
+            height: 65px;
+            width: 186px;
+        }
+    </style>
+
+
+    <link rel="stylesheet" href="/css/view-event.css" type="text/css" media="screen" title="no title" charset="utf-8">
+    <link rel="stylesheet" href="/css/colorbox.css" type="text/css" media="screen" title="no title" charset="utf-8">
+    <link rel="stylesheet" href="/css/event-print.css" type="text/css" media="print">
+    <style type="text/css">
+        .canceled,
+        .fullevent,
+        .completed {
+            overflow: hidden;
+            margin: 10px;
+            background: #FFDC91;
+        }
+
+        .canceled h2,
+        .fullevent h2,
+        .completed h2 {
+            margin: 10px;
+            text-align: center;
+            font-size: 150%
+        }
+
+        .canceled p {
+            margin: 10px
+        }
+
+        .canceled {}
+
+        .fullevent {}
+
+        .completed {}
+    </style>
+
+</head>
+<!--[if lt IE 7 ]> <body class="ie6"> <![endif]-->
+<!--[if IE 7 ]>    <body class="ie7"> <![endif]-->
+<!--[if IE 8 ]>    <body class="ie8"> <![endif]-->
+<!--[if IE 9 ]>    <body class="ie9"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!-->
+
+<body> <!--<![endif]-->
+
+
+
+    <div id="view-event" class="container">
+
+
+        <style type="text/css">
+            header #header-logo {
+                background: url('/img/entities/seattle/logo.png') no-repeat;
+                height: 104px;
+                width: 237px;
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+        </style>
+
+
+
+        <header>
+            <div class="content">
+                <a href="http://greenseattle.org" id="header-logo" target="_blank"><span></span></a>
+                <nav>
+                    <ul id="mainNav" class="dropdown">
+
+                        <li class="loggedout"><a href="/event/map/">Map of Events</a></li>
+                        <li class="loggedout"><a href="/event/calendar/">Calendar of Events</a></li>
+
+                    </ul>
+                </nav>
+
+                <ul id="account" class="noAuth">
+
+                    <li><em>Not Logged In</em><a href="/user/login/?next=/">Login</a></li>
+
+                </ul>
+
+                <div class="cb"></div>
+
+            </div>
+        </header>
+        <!-- SPECIAL ANNOUNCEMENT -->
+
+
+
+
+
+
+
+        <div class="content">
+            <div id="sidebar">
+
+
+                <button class="action joinBtn" id="join1">Join this Event</button>
+
+
+
+
+
+
+
+
+                <span class="border green"></span>
+                <section class="whitebox panel">
+                    <h2>Share this Event</h2>
+                    <p>Share this event with your friends on Facebook
+                        <script src="https://connect.facebook.net/en_US/all.js#xfbml=1"></script>
+                        <fb:like href="https://seattle.seattle.greencitypartnerships.org/event/42097/"
+                            layout="button_count" show_faces="false" width="450" action="recommend"></fb:like>
+                    </p>
+                    <p>Add to your Calendar:&nbsp;<a href="/event/42097/vcal/">vCal 1.0</a>&nbsp;<a
+                            href="/event/42097/ical/">iCal 2.0</a></p>
+                    <p>Or copy this web address to your clipboard and send it to a friend</p>
+                    <form id="share">
+                        <input type="text" id="event-url"
+                            value='https://seattle.greencitypartnerships.org/event/42097/'>
+                    </form>
+                </section>
+
+
+
+
+                <span class="border green"></span>
+                <section class="whitebox panel">
+                    <h2>Youth Participant Waiver</h2>
+                    <p>If you are under 18 and attending the event without a parent or guardian, please come to the
+                        event with the waiver below signed by a parent or guardian.</p>
+                    <ul>
+                        <li><span><a href="/doc/entities/seattle/youth_release_waiver.pdf" target="_blank">Youth Waiver
+                                    Form</a></span></li>
+                    </ul>
+                </section>
+
+
+
+
+            </div><!-- end sidebar-->
+
+            <div id="main">
+                <div style="display: none;" id="volunteer_messagebox" class="whitebox mBottom10 callout"
+                    style="width: 678px;">
+                </div>
+
+
+                <section class="whitebox panel">
+
+                    <div id="map-wrap" class="column">
+                        <h2 class="green">Schmitz Preserve Park - Schmitz Park / Sprucing …<em>08/01/2025</em></h2>
+                        <!-- in case there is an image -->
+
+                        <div class="branding">
+
+                            <img id="brandImg" class="gray"
+                                src="/img/event/schmitz-park-sprucing-event_6630/schmitz-park-sprucing-event_6630.jpg">
+                            <div id="map"></div>
+                        </div>
+
+                    </div>
+
+                    <div class="non-map-content">
+
+
+
+
+
+                        <div class="column left">
+                            <h3 class="mTop0">Activities</h3>
+                            <p class="mBottom20">This is a newly adopted forest steward parcel, just down the trail from
+                                the Stevens St. trailhead along the Adams Highway section of the park. This will be our
+                                third visit since adopting the parcel. So far we've removed ivy, blackberry, and other
+                                invasives and continue to remove legacy trash that we uncover. This trip we'll dig into
+                                an area that is overgrown with Himalayan blackberry and make piles to decompose on site.
+                            </p>
+                            <p><em>All ages OK</em></p>
+                            <p><em>1 out of 15 participants registered.</em></p>
+
+
+                            <h3>What to Bring</h3>
+                            <p>We'll supply hand tools and have a selection of gloves, but if you have your own that you
+                                like feel free to bring those. This will be a light and easy cleanup day to get our
+                                bearings and develop longer term plans for the parcel. We just placed a plant order for
+                                the Winter so we'll be doing lots of work in this area this year readying it for those
+                                plants.</p>
+
+                            <h3>Where to Meet</h3>
+                            <p>We'll meet at 9:30am at the Admiral Way & Stevens St. trailhead, right off the north end
+                                of the bridge. If you come late we'll be about a 30 second walk down the trail on the
+                                left. I'll leave a sign up at the short social trail leading in to the work site.</p>
+
+
+
+                            <a
+                                href="https://www.google.com/maps/search/?api=1&query=47.57758112725641,-122.40237310656356">Meeting
+                                Location Map</a>
+
+
+
+                            <h3>Where to Park</h3>
+                            <p>Park on the bridge spanning Schmitz Park and walk to the trailhead at Stevens St.</p>
+                            <!-- </p> -->
+                        </div>
+
+                        <div class="column right">
+                            <h3 class="mTop0">Date & Time</h3>
+                            <p>August 1, 2025 9:30am - 11:30am</p>
+                            <h3>Contact</h3>
+                            <p>Erik Bell<br /><a href="mailto:erik.belltribe@gmail.com">erik.belltribe@gmail.com</a></p>
+                            <p style="margin-top: 15px;">Erik Bell<br /><br /><a
+                                    href="mailto://erik.belltribe@gmail.com">erik.belltribe@gmail.com</a><br />206-852-9552
+                            </p>
+
+                            <h3>Extra Info</h3>
+                            View <a id="smu"
+                                href="http://www.arcgis.com/home/webmap/viewer.html?webmap=9be9415001144aa383e5b86e481d2c45&amp;extent=-122.6421,47.4196,-121.9651,47.7835"
+                                target="_blank">Site Map</a>
+
+                            <h3>Event Safety Measures</h3>
+                            For more information on what to expect during your Green Seattle Partnership event, please
+                            visit:
+                            <a href="https://greenseattle.org/get-involved/volunteer/"
+                                target=_blank">greenseattle.org/get-involved/volunteer</a>
+
+
+
+                            <div class="buttons">
+                                <button class="action joinBtn" type="button" id="join2">Join this Event</button>
+                            </div>
+
+
+
+                        </div>
+
+
+
+
+
+                        <div class="cb"></div>
+                    </div>
+                </section><!-- end section -->
+            </div><!-- main content -->
+            <div class="push"></div>
+        </div> <!-- end of #container -->
+
+        <div class="cb"></div>
+        <footer>
+            <div class="content">
+                <div class="partners">
+                    <a id="entity-logo2" href="https://www.seattle.gov/parks/" target="_blank"></a>
+                    <a class="p2" href="https://forterra.org/" target="_blank"></a>
+                    <a class="p3" href="https://dnr.wa.gov/urbanforestry" target="_blank"></a>
+                    <a class="p4" href="https://fs.usda.gov/" target="_blank"></a>
+                </div>
+                <div class="funding">
+                    <p>The development of CEDAR was made possible through a grant from the USDA Forest Service, Urban
+                        and Community Forestry Program.</p>
+                </div>
+            </div>
+        </footer>
+
+        <script src="/js/jquery-1.5.2.min.js" type="text/javascript" charset="utf-8"></script>
+        <script type="text/javascript">
+            var ENTITY = 'seattle';
+            var ENVIRONMENT = 'prod';
+            var ES = JSON.parse('{"email_from": "no-reply@greencitypartnerships.org", "questions_email": "info@greenseattle.org", "logo_link": "greenseattle.org", "logo2_width": "186", "logo2_link": "https://www.seattle.gov/parks/", "SITE_MAP_URL": "http://www.arcgis.com/home/webmap/viewer.html?webmap=9be9415001144aa383e5b86e481d2c45&extent=-122.6421,47.4196,-121.9651,47.7835", "default_map_lat": 47.62647668947911, "default_map_lon": -122.35790310490347, "default_map_zoom": 10, "city": "Seattle", "name": "Green Seattle Partnership", "logo2_img": "/img/entities/seattle/logo2.png", "logo_img": "/img/entities/seattle/logo.png", "youth_waiver_form": "/doc/entities/seattle/youth_release_waiver.pdf", "signin_instructions": "/doc/entities/seattle/sign-in-sheet-instructions.pdf", "slug": "gsp", "follow_us": "follow us on Twitter, ", "ne_lat": 47.735, "ne_lon": -122.435, "sw_lat": 47.501, "sw_lon": -122.244}');
+        </script>
+        <script src="/js/script.js?v=5"></script>
+        <!--[if lt IE 7 ]><script src="/js/dd_belatedpng.js?v=1"></script><![endif]-->
+        <!--[if gt IE 6 ]><link rel="stylesheet" href="/css/ie.css" type="text/css" media="screen" charset="utf-8"><![endif]-->
+
+        <script type="text/javascript" src="//www.google.com/jsapi"></script>
+        <script src="/js/mercatorprojection.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/js/maps.js?v=5" type="text/javascript" charset="utf-8"></script>
+        <script src="/js/wms.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/js/jquery.colorbox-min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/js/volunteer_registration.js?v=1" type="text/javascript" charset="utf-8"></script>
+        <script type="text/javascript">
+            $(document).ajaxSend(function (event, xhr, settings) {
+                function getCookie(name) {
+                    var cookieValue = null;
+                    if (document.cookie && document.cookie != '') {
+                        var cookies = document.cookie.split(';');
+                        for (var i = 0; i < cookies.length; i++) {
+                            var cookie = jQuery.trim(cookies[i]);
+                            // Does this cookie string begin with the name we want?
+                            if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                break;
+                            }
+                        }
+                    }
+                    return cookieValue;
+                }
+                function sameOrigin(url) {
+                    // url could be relative or scheme relative or absolute
+                    var host = document.location.host; // host + port
+                    var protocol = document.location.protocol;
+                    var sr_origin = '//' + host;
+                    var origin = protocol + sr_origin;
+                    // Allow absolute or scheme relative URLs to same origin
+                    return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
+                        (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
+                        // or any other URL that isn't scheme relative or absolute i.e relative.
+                        !(/^(\/\/|http:|https:).*/.test(url));
+                }
+                function safeMethod(method) {
+                    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+                }
+
+                if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
+                    xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+                }
+            });
+
+            $(function () {
+                $("#event-url").focus(function () { $(this).select() })
+                $(".joinBtn").colorbox({
+                    transition: "elastic",
+                    speed: "100",
+                    opacity: ".5",
+                    initialWidth: "600",
+                    initialHeight: "500",
+                    width: "600",
+                    onComplete: function () { $('#id_first_name').focus() },
+                    height: "500",
+                    scrolling: "false",
+                    href: "/event/42097/volunteer/?prereg=True"
+                });
+
+                $("#cboxContent").delegate(".close", "click", function () {
+                    $.colorbox.close();
+                });
+
+
+            });
+
+            var entity = 'seattle';
+            var map = null;
+            var parkkml = null;
+            var parkkml_listener = null;
+            var park_slug = 'schmitz-preserve-park';
+            var meeting_location_lat = 47.57758112725641;
+            var meeting_location_lng = -122.40237310656356;
+
+            // load google map api version 3
+            google.load("maps", "3", { callback: initialize, other_params: "key=AIzaSyCYeTP-mypKnQCcBTRT_QKcXURFul62j2g" });
+
+            // Initialize map
+            function initialize() {
+                initialize_map();
+                var meetingLocation = null;
+                if (meeting_location_lat && meeting_location_lng) {
+                    var infoWindow = new google.maps.InfoWindow({
+                        content: "Meeting Location"
+                    });
+
+                    meetingLocation = new google.maps.Marker({
+                        position: { lat: meeting_location_lat, lng: meeting_location_lng },
+                        animation: google.maps.Animation.DROP,
+                        map: map,
+                        title: 'Meeting Location',
+                    });
+
+                    meetingLocation.addListener('click', function () {
+                        infoWindow.open(map, meetingLocation);
+                    });
+                    infoWindow.open(map, meetingLocation);
+                }
+            }
+
+            function add_volunteer_callback(id) {
+                $(".joinBtn").colorbox({ href: "/event/42097/unvolunteer/?id=" + id })
+                $('#join1')[0].innerHTML = "Unregister from Event";
+                $('#join2')[0].innerHTML = "Unregister from Event";
+                if ($('#volunteer_message')) {
+                    $('#volunteer_message').remove();
+                }
+                $('#volunteer_messagebox').width(678);
+                $('#volunteer_messagebox').show();
+                $('#volunteer_messagebox').append('<h2 class="mBottom10" id="volunteer_message">Successfully registered for this event.</h2>');
+            }
+
+            function remove_volunteer_callback() {
+                $(".joinBtn").colorbox({ href: "/event/42097/volunteer/?prereg=True" });
+                $('#join1')[0].innerHTML = "Join this Event";
+                $('#join2')[0].innerHTML = "Join this Event";
+                $('#volunteer_message').remove();
+                $('#volunteer_messagebox').width(678);
+                $('#volunteer_messagebox').show();
+                $('#volunteer_messagebox').append('<h2 class="mBottom10" id="volunteer_message">Successfully removed from event.</h2>');
+            }
+
+            function load_events() {
+                // do nothing - for map. do not remove
+            }
+
+        </script>
+
+        <script type="text/javascript">
+            var _gaq = _gaq || [];
+            _gaq.push(['_setAccount', 'UA-22840868-1']);
+            _gaq.push(['_trackPageview']);
+
+            (function () {
+                var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+                ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+            })();
+        </script>
+</body>
+
+</html>
