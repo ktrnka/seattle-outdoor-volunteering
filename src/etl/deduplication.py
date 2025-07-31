@@ -40,19 +40,6 @@ def normalize_title(title: str) -> str:
     return normalized.strip()
 
 
-def get_event_date(event: Event) -> date:
-    """
-    Extract the date portion of an event's start time.
-
-    Args:
-        event: Event to extract date from
-
-    Returns:
-        Date of the event
-    """
-    return event.start.date()
-
-
 def group_events_by_title_and_date(events: List[Event]) -> Dict[Tuple[str, date], List[Event]]:
     """
     Group events by normalized title and date.
@@ -67,7 +54,7 @@ def group_events_by_title_and_date(events: List[Event]) -> Dict[Tuple[str, date]
 
     for event in events:
         normalized_title = normalize_title(event.title)
-        event_date = get_event_date(event)
+        event_date = event.start.date()
         key = (normalized_title, event_date)
         groups[key].append(event)
 

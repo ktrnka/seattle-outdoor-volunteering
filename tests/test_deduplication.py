@@ -9,10 +9,8 @@ from pydantic import HttpUrl
 from src.models import Event
 from src.etl.deduplication import (
     normalize_title,
-    get_event_date,
     group_events_by_title_and_date,
-    select_most_common_title,
-    select_most_common_venue,
+    mode,
     select_event_with_time_info,
     is_gsp_url,
     select_preferred_url,
@@ -122,87 +120,19 @@ def test_group_events_by_title_and_date():
     assert len(groups[green_lake_key]) == 1
 
 
-def test_select_most_common_title():
-    """Test selecting most common title."""
-    events = [
-        Event(
-            source="SPR",
-            source_id="1",
-            title="Lincoln Park Work Party",
-            start=datetime(2025, 7, 28, 10, 0, tzinfo=UTC),
-            end=datetime(2025, 7, 28, 12, 0, tzinfo=UTC),
-            url=HttpUrl("https://example.com/1")
-        ),
-        Event(
-            source="GSP",
-            source_id="2",
-            title="Lincoln Park Work Party",  # Same title
-            start=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
-            end=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
-            url=HttpUrl("https://example.com/2")
-        ),
-        Event(
-            source="SPF",
-            source_id="3",
-            title="Lincoln Park: Work Party",  # Different punctuation
-            start=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
-            end=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
-            url=HttpUrl("https://example.com/3")
-        ),
-    ]
+def test_mode():
+    """Test the mode function."""
+    values = [1, 2, 2, 3, 3, 3, None]
+    assert mode(values) == 3
 
-    # Should pick the most common exact title
-    assert select_most_common_title(events) == "Lincoln Park Work Party"
+    # Test with all None
+    assert mode([None, None]) is None
 
+    # Test with no values
+    assert mode([]) is None
 
-def test_select_most_common_venue():
-    """Test selecting most common venue."""
-    events = [
-        Event(
-            source="SPR",
-            source_id="1",
-            title="Test Event",
-            start=datetime(2025, 7, 28, 10, 0, tzinfo=UTC),
-            end=datetime(2025, 7, 28, 12, 0, tzinfo=UTC),
-            url=HttpUrl("https://example.com/1"),
-            venue="Lincoln Park"
-        ),
-        Event(
-            source="GSP",
-            source_id="2",
-            title="Test Event",
-            start=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
-            end=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
-            url=HttpUrl("https://example.com/2"),
-            venue="Lincoln Park"  # Same venue
-        ),
-        Event(
-            source="SPF",
-            source_id="3",
-            title="Test Event",
-            start=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
-            end=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
-            url=HttpUrl("https://example.com/3"),
-            venue=None  # No venue
-        ),
-    ]
-
-    assert select_most_common_venue(events) == "Lincoln Park"
-
-    # Test all None venues
-    events_no_venue = [
-        Event(
-            source="SPR",
-            source_id="1",
-            title="Test Event",
-            start=datetime(2025, 7, 28, 10, 0, tzinfo=UTC),
-            end=datetime(2025, 7, 28, 12, 0, tzinfo=UTC),
-            url=HttpUrl("https://example.com/1"),
-            venue=None
-        ),
-    ]
-
-    assert select_most_common_venue(events_no_venue) is None
+    # Test with single value
+    assert mode([42]) == 42
 
 
 def test_select_event_with_time_info():

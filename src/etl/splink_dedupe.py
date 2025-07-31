@@ -1,10 +1,9 @@
 from typing import Optional
 import pandas as pd
 import splink.comparison_library as cl
-from splink import DuckDBAPI, Linker, SettingsCreator, block_on, splink_datasets
+from splink import DuckDBAPI, Linker, SettingsCreator, block_on
 
 from ..database import get_regular_connection
-from ..models import Event as MemorySourceEvent
 from .url_utils import normalize_url
 
 
