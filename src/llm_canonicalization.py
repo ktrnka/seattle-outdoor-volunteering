@@ -26,7 +26,7 @@ You're an expert at canonicalizing events from multiple data sources, with some 
 
 You will be given an existing canonical event along with source events, and asked to create a new canonical event that's more readable and user-friendly.
 
-Response format:
+# Response format:
 - Return a JSON object with the following fields:
     - analysis_trace: A short list of thoughts analysing the existing canonical event and source events
     - planning_trace: A short list of thoughts on your goals for the new canonical event
@@ -35,16 +35,70 @@ Response format:
     - category: The type of event, one of 'landscaping', 'litter', 'concert', or 'other'
     - description: A short description of the event (optional, but recommended)
 
-Tips:
+# High level strategy:
 - The event should answer the basic questions:
-    - What will we be doing? This helps people decide if it's a phyisical activity that they're capable of going.
-    - Where is the event? The venue should be a very short, recognizable location name. We don't need the full address in venue because we have a separate venue field.
-    - When is the event? The existing data structure can be used for this, no need to add new fields.
-    - Why are we doing it? This helps people understand the purpose and motivation. This should be in the description if possible.
-- The venue should be the name of the park, neighborhood, or general area.
-- The title and venue should provide enough information for the user to decide if they want to attend. (E.g., making it clear what type of event it is, where it is, if possible the group)
+    - What will we be doing?
+    - Who is organizing or sponsoring it?
+    - Where is the event?
+    - When is the event?
+    - Why are we doing it?
+- We want the fields to be short and distinct from one another.
+- Keep the changes relatively small and be careful not to imagine new details that aren't in the source events.
+
+# Tactical tips:
+- The venue should be the name of the park or neighborhood. If it's short, include the location within the park or neighborhood.
 - The title should be short and descriptive, free of catchy phrases or marketing language.
-- The title should not include the location if the venue already has it
+- If we have "why" information, include it in the description.
+
+# Examples
+
+1. Lizard Haven weeding and watering
+
+Input info:
+Title: Lizard Haven weeding and watering
+Venue: Discovery Park
+tags=['Green Seattle Partnership', 'Magnolia', 'Volunteer/Work Party']
+other: Join us for a restoration work party at Discovery Park. Lots of effort has been put into the lizard haven site; watering it during the ... "neighborhoods": "Magnolia", "parks": null, "sponsoring_organization": "Green Seattle Partnership", "contact": "Rob Stevens", "contact_phone": null, "contact_email": "dlibfrom@yahoo.com", "audience": "All", "pre_register": "No", "cost": null
+
+Analysis:
+- Lizard Haven is a specific site within Discovery Park, but it may not be widely known
+- Discovery Park is a large, well-known park so it doesn't need additional context
+- It might be nice to include the contact info to answer "who"
+
+Revised title: Weeding and Watering with Rob and Green Seattle Partnership
+Revised venue: Lizard Haven, Discovery Park
+
+2. Peppi's Watering and Weeding
+
+Input info:
+Title: Peppi's Watering and Weeding
+Venue: Peppi's Playground
+tags=['Green Seattle Partnership', 'Madrona/Leschi', 'Volunteer/Work Party']
+other: Join us for a restoration work party at Peppi\\\\\'s Playground. We will begin preparing for the return of school and fall planting season by weeding "sponsoring_organization": "Green Seattle Partnership", "contact": "Jana Robbins", "contact_phone": null, "contact_email": "janambrobbins@gmail.com", "audience": "All", "pre_register": "No", "cost": null, "link"
+
+Analysis:
+- Peppi's Playground is a specific site that may not be widely known, consider including the neighborhood for context
+- The title makes it sound like a person is hosting, but it's actually a park
+- It might be nice to include the "why" information about preparing for school and fall planting in the description
+- The contact info could answer "who"
+
+Revised title: Weeding and Watering with Jana and Green Seattle Partnership
+Revised venue: Peppi's Playground, Madrona/Leschi
+
+3. Preparing for Fall Planting at Woodland Park
+Input info:
+Title: Preparing for Fall Planting
+Venue: Woodland Park
+tags=['Green Seattle Partnership', 'Greenwood/Phinney Ridge', 'Volunteer/Work Party']
+other: Join us for a restoration work party at Woodland Park - See website for important details on what to bring and where to meet "neighborhoods": "Greenwood/Phinney Ridge", "parks": null, "sponsoring_organization": "Green Seattle Partnership", "contact": "Greg Netols", "contact_phone": "2243889145", "contact_email": "gregnetols@gmail.com", "audience": "All", "pre_register": "No", "cost": null, "link": "http://seattle.greencitypartnerships.org/event/42030/"
+
+Analysis:
+- Woodland Park is a well-known park, so no need to include the neighborhood. It'd be nice to include the specific site within the park but I don't see it
+- I see contact info, that might answer "who"
+
+Revised title: Fall Planting Preparation with Greg and Green Seattle Partnership
+Revised venue: Woodland Park
+
 """.strip()
 
 
