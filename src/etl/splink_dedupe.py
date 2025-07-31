@@ -3,6 +3,8 @@ import pandas as pd
 import splink.comparison_library as cl
 from splink import DuckDBAPI, Linker, SettingsCreator, block_on
 
+from src.etl.deduplication import normalize_title
+
 from ..database import get_regular_connection
 from .url_utils import normalize_url
 
@@ -31,6 +33,7 @@ def load_source_events() -> pd.DataFrame:
     df = pd.read_sql_query(
         "SELECT * FROM events", sqlite_connection, parse_dates=["start", "end"]
     )
+    df["normalized_title"] = df["title"].apply(normalize_title)
     df["start_date"] = df["start"].dt.date.astype(str)
 
     # Create a start time of day column
@@ -61,7 +64,7 @@ def run_splink_deduplication(show_examples: bool = True):
     settings = SettingsCreator(
         link_type="link_only",
         comparisons=[
-            cl.JaroAtThresholds("title").configure(
+            cl.JaroAtThresholds("normalized_title").configure(
                 term_frequency_adjustments=True
             ),
             cl.JaroAtThresholds("address", [0.75]),
@@ -79,14 +82,14 @@ def run_splink_deduplication(show_examples: bool = True):
 
     linker = Linker(dfs, settings, db_api=db_api)  # type: ignore
     linker.training.estimate_probability_two_random_records_match(
-        [block_on("start_date", "title")],
+        [block_on("start_date", "normalized_title")],
         recall=0.8,
     )
 
     linker.training.estimate_u_using_random_sampling(max_pairs=5e6)
 
     linker.training.estimate_parameters_using_expectation_maximisation(
-        block_on("title")
+        block_on("normalized_title")
     )
 
     linker.training.estimate_parameters_using_expectation_maximisation(

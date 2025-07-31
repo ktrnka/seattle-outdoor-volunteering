@@ -155,6 +155,7 @@ def create_canonical_event(event_group: List[Event], normalized_title: str, even
     if not event_group:
         raise ValueError("Cannot create canonical event from empty group")
 
+    # TODO: This canonical ID isn't needed and it's a bit complex, so better to remove it
     # Generate canonical ID
     canonical_id = generate_canonical_id(normalized_title, event_date)
 
@@ -174,7 +175,9 @@ def create_canonical_event(event_group: List[Event], normalized_title: str, even
         end = event_group[0].end
 
     # Collect other attributes (pick first non-null value)
-    address = next((e.address for e in event_group if e.address), None)
+    address = mode(event.address for event in event_group if event.address)
+
+    # TODO: Consider deleting these fields
     cost = next((e.cost for e in event_group if e.cost), None)
     latitude = next((e.latitude for e in event_group if e.latitude), None)
     longitude = next((e.longitude for e in event_group if e.longitude), None)
