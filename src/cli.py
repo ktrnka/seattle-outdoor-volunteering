@@ -1,4 +1,3 @@
-import click
 import gzip
 import shutil
 from collections import Counter
@@ -6,19 +5,21 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from src.etl.dnda import DNDAExtractor
+import click
 
-from .config import DB_PATH, DB_GZ
+
+from . import database
+from .config import DB_GZ, DB_PATH
+from .etl.deduplication import deduplicate_events
+from .etl.dnda import DNDAExtractor
+from .etl.earthcorps import EarthCorpsExtractor
 from .etl.gsp import GSPCalendarExtractor
+from .etl.manual import ManualExtractor
 from .etl.spf import SPFExtractor
 from .etl.spr import SPRExtractor
 from .etl.spu import SPUExtractor
-from .etl.earthcorps import EarthCorpsExtractor
-from .etl.manual import ManualExtractor
-from .etl.deduplication import deduplicate_events
-from .site import generator
 from .models import SEATTLE_TZ
-from . import database
+from .site import generator
 
 
 @click.group()
