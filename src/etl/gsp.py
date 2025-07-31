@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from bs4.element import NavigableString
 from dateutil import parser
 import datetime
-from datetime import timezone
+from datetime import date, timedelta, timezone
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from .base import BaseExtractor, BaseDetailExtractor
@@ -179,9 +179,19 @@ class GSPCalendarExtractor(GSPBaseExtractor):
     """Extractor for GSP calendar HTML page (fallback, limited events)."""
 
     @classmethod
+    def build_url(cls, start_date: date, end_date: date) -> str:
+        """Build the calendar URL with date range."""
+        url = CAL_URL
+        if start_date and end_date:
+            url += f"?start={start_date}&end={end_date}"
+        return url
+
+    @classmethod
     def fetch(cls):
         """Fetch raw HTML from the GSP calendar."""
-        html = requests.get(CAL_URL, timeout=30).text
+
+        html = requests.get(cls.build_url(
+            date.today(), date.today() + timedelta(days=30)), timeout=30).text
         return cls(html)
 
     def extract(self):
@@ -397,30 +407,3 @@ class GSPDetailPageExtractor(BaseDetailExtractor):
         response = requests.get(url, timeout=30)
         response.raise_for_status()
         return cls(url, response.text)
-
-
-class GSPExtractor(GSPBaseExtractor):
-    """Main GSP extractor that tries API first, falls back to HTML."""
-
-    @classmethod
-    def fetch(cls):
-        """Fetch from API first, fallback to HTML calendar."""
-        try:
-            return GSPAPIExtractor.fetch()
-        except Exception:
-            return GSPCalendarExtractor.fetch()
-
-    def extract(self):
-        """Extract events, delegating to appropriate extractor based on data type."""
-        # Try to parse as JSON first (API data)
-        try:
-            data = json.loads(self.raw_data)
-            if 'aaData' in data:
-                api_extractor = GSPAPIExtractor(self.raw_data)
-                return api_extractor.extract()
-        except (json.JSONDecodeError, KeyError):
-            pass
-
-        # Fallback to HTML parsing (calendar page)
-        calendar_extractor = GSPCalendarExtractor(self.raw_data)
-        return calendar_extractor.extract()

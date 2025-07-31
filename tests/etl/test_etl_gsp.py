@@ -2,7 +2,7 @@
 from pathlib import Path
 
 from pydantic import HttpUrl
-from src.etl.gsp import GSPDetailEvent, GSPDetailPageExtractor, GSPExtractor, GSPCalendarExtractor, GSPAPIExtractor
+from src.etl.gsp import GSPDetailEvent, GSPDetailPageExtractor, GSPCalendarExtractor, GSPAPIExtractor
 from src.models import SEATTLE_TZ
 
 data_path = Path(__file__).parent / "data"
@@ -57,28 +57,6 @@ def test_parse_api_fixture():
     assert first_event.source_id == "42093"
     assert first_event.url == HttpUrl(
         "https://seattle.greencitypartnerships.org/event/42093")
-
-
-def test_main_extractor_delegates_to_api():
-    """Test that the main GSPExtractor properly delegates to API extractor when given JSON."""
-    json_data = (data_path / "gsp_api_100.json").read_text()
-    extractor = GSPExtractor(json_data)
-    events = extractor.extract()
-
-    # Should behave the same as GSPAPIExtractor
-    assert len(events) >= 50
-    assert all(e.source == "GSP" for e in events)
-
-
-def test_main_extractor_delegates_to_calendar():
-    """Test that the main GSPExtractor properly delegates to calendar extractor when given HTML."""
-    html = (data_path / "gsp_calendar.html").read_text()
-    extractor = GSPExtractor(html)
-    events = extractor.extract()
-
-    # Should behave the same as GSPCalendarExtractor
-    assert len(events) >= 3
-    assert all(e.source == "GSP" for e in events)
 
 
 def test_detail_extractor():
