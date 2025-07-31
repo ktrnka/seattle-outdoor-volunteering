@@ -318,6 +318,7 @@ class GSPDetailEvent(BaseModel):
             end=end,
             venue=None,  # No venue info in detail page
             url=HttpUrl(normalize_url(str(self.url))),
+            source_dict=self.model_dump_json()
         )
 
 

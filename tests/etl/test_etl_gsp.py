@@ -115,3 +115,5 @@ def test_detail_extractor():
     assert event.end_local.day == 1
     assert event.end_local.hour == 11
     assert event.end_local.minute == 30
+
+    assert event.source_dict is not None
