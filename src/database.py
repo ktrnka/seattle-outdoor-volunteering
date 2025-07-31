@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, String, DateTime, Float, Text, Integer, Pr
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Mapped, mapped_column, object_session, sessionmaker, Session, declarative_base
 from sqlalchemy.sql import func
-from typing import List, Dict, Tuple
+from typing import List, Dict, Optional, Tuple
 import sqlite3
 
 import uuid
@@ -401,6 +401,29 @@ def get_canonical_events() -> List[PydanticCanonicalEvent]:
         events = session.query(CanonicalEvent).order_by(
             CanonicalEvent.start).all()
         return [event.to_pydantic() for event in events]
+    finally:
+        session.close()
+
+
+def find_canonical_event_with_sources(title: str) -> Optional[Tuple[PydanticCanonicalEvent, List[PydanticEvent]]]:
+    """Find a canonical event by title."""
+    session = get_session()
+
+    try:
+        event = session.query(CanonicalEvent).filter(
+            CanonicalEvent.title.ilike(f"%{title}%")
+        ).first()
+        if event:
+            # Find all source events for this canonical event
+            source_events = session.query(Event).join(
+                EventGroupMembership,
+                (Event.source == EventGroupMembership.source) & (
+                    Event.source_id == EventGroupMembership.source_id)
+            ).filter(
+                EventGroupMembership.canonical_id == event.canonical_id
+            ).all()
+            return event.to_pydantic(), [e.to_pydantic() for e in source_events]
+        return None
     finally:
         session.close()
 

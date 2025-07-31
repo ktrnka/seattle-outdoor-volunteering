@@ -439,6 +439,17 @@ def test_splink():
     run_splink_deduplication()
 
 
+@dev.command()
+@click.argument("event_title")
+def test_llm_canonicalization(event_title: str):
+    """Test LLM-based canonicalization."""
+    from .llm_canonicalization import run_llm_canonicalization
+
+    run_llm_canonicalization(
+        *database.find_canonical_event_with_sources(event_title)
+    )
+
+
 # Add the dev group to the main CLI
 cli.add_command(dev)
 
