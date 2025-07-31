@@ -353,37 +353,19 @@ def overwrite_canonical_events(canonical_events: List[PydanticCanonicalEvent]) -
             )
             session.execute(stmt)
 
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()
-
-
-def overwrite_event_group_memberships(membership_map: Dict[Tuple[str, str], str]) -> None:
-    """Insert or update event group membership records."""
-    session = get_session()
-
-    try:
-        # Clear existing memberships first
-        session.query(EventGroupMembership).delete()
-
-        # Insert new memberships
-        for (source, source_id), canonical_id in membership_map.items():
-            membership_data = {
-                'canonical_id': canonical_id,
-                'source': source,
-                'source_id': source_id,
-            }
-
-            # Use SQLite-specific upsert syntax
-            stmt = insert(EventGroupMembership).values(**membership_data)
-            stmt = stmt.on_conflict_do_update(
-                index_elements=['canonical_id', 'source', 'source_id'],
-                set_=membership_data
-            )
-            session.execute(stmt)
+            # Make sure to link source events to this canonical event
+            for source, source_id in canonical_event.iter_source_events():
+                membership_data = {
+                    'canonical_id': canonical_event.canonical_id,
+                    'source': source,
+                    'source_id': source_id,
+                }
+                stmt = insert(EventGroupMembership).values(**membership_data)
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=['canonical_id', 'source', 'source_id'],
+                    set_=membership_data
+                )
+                session.execute(stmt)
 
         session.commit()
     except Exception:

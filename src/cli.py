@@ -158,7 +158,6 @@ def etl(only_run: Optional[str] = None):
     # Save canonical events and memberships to database
     click.echo("Updating canonical events in database...")
     database.overwrite_canonical_events(canonical_events)
-    # database.overwrite_event_group_memberships(membership_map)
 
     # Compress database for git
     with open(DB_PATH, "rb") as src, gzip.open(DB_GZ, "wb") as dst:
@@ -215,7 +214,6 @@ def deduplicate(verbose: bool = False, dry_run: bool = False):
     if not dry_run:
         click.echo("Saving canonical events to database...")
         database.overwrite_canonical_events(canonical_events)
-        # database.overwrite_event_group_memberships(membership_map)
         click.echo("Deduplication complete!")
     else:
         click.echo("Dry run enabled. No changes were made.")
