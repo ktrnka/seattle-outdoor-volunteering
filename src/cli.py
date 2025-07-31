@@ -9,7 +9,7 @@ from typing import Optional
 from src.etl.dnda import DNDAExtractor
 
 from .config import DB_PATH, DB_GZ
-from .etl.gsp import GSPAPIExtractor, GSPCalendarExtractor
+from .etl.gsp import GSPCalendarExtractor
 from .etl.spf import SPFExtractor
 from .etl.spr import SPRExtractor
 from .etl.spu import SPUExtractor
