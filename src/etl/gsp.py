@@ -1,10 +1,12 @@
 import json
+import re
+from typing import List, Optional
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 from dateutil import parser
 import datetime
 from datetime import timezone
-from pydantic import HttpUrl
+from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from .base import BaseExtractor
 from .url_utils import normalize_url
@@ -22,7 +24,7 @@ class GSPBaseExtractor(BaseExtractor):
     source = "GSP"
 
     @staticmethod
-    def _extract_source_id_from_url(event_url):
+    def _extract_source_id_from_url(event_url: str) -> str | None:
         """Extract source_id from GSP event URL."""
         if event_url and '/event/' in event_url:
             try:
@@ -279,7 +281,122 @@ class GSPCalendarExtractor(GSPBaseExtractor):
         return events
 
 
-# For backward compatibility and to try API first with HTML fallback
+class GSPDetailEvent(BaseModel):
+    """Definition of a recurring manual event."""
+    model_config = ConfigDict(from_attributes=True)
+
+    title: str
+    source_id: str
+    url: HttpUrl
+    datetimes: str
+
+    description: Optional[str] = None
+    contact_name: Optional[str] = None
+    contact_email: Optional[str] = None
+
+    def to_source_event(self) -> Event:
+        """Convert to a source event."""
+        # Parse a date and time string like "August 1, 2025 9:30am - 11:30am"
+        start, end = self.datetimes.split('-')
+        start = parser.parse(start.strip()).replace(
+            tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+
+        # Get the date from start and the time from end.strip
+        end_time = parser.parse(end.strip()).replace(
+            tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+        end = start.replace(
+            hour=end_time.hour,
+            minute=end_time.minute,
+        )
+
+        return Event(
+            source=GSPDetailPageExtractor.source,
+            source_id=self.source_id,
+            title=self.title,
+            start=start,
+            end=end,
+            venue=None,  # No venue info in detail page
+            url=self.url,
+        )
+
+
+def extract_immediate_text(element):
+    """Extract text from an element, handling nested tags."""
+    if not element:
+        return ""
+    immediate_text = ''.join(
+        s for s in element.contents if isinstance(s, NavigableString)
+    ).strip()
+    return immediate_text
+
+
+class GSPDetailPageExtractor(GSPBaseExtractor):
+    """Extractor for GSP detail HTML page."""
+    source = "GSP_DETAIL"
+
+    def __init__(self, url: HttpUrl, raw_data: str):
+        super().__init__(raw_data)
+        self.url = url
+
+    def extract_detail_event(self) -> GSPDetailEvent:
+        """Extract event details from the HTML page."""
+        soup = BeautifulSoup(self.raw_data, 'html.parser')
+
+        # All the details are under <section class="whitebox panel">
+        main_section = soup.select_one("#main")
+        assert main_section, "No event details found in the page"
+
+        # The title is in <h2 class="green">
+        title_elem = main_section.select_one("h2.green")
+        assert title_elem, "No event title found in the details"
+        title = title_elem.get_text(strip=True)
+
+        detail_section = main_section.select_one("div.non-map-content")
+        assert detail_section, "No event detail section found in the page"
+
+        # Process div.column.left and extract the paragraph tags: activites, ages, num_registered, what_to_bring, where_to_meet, where_to_park
+        left_column = detail_section.select_one("div.column.left")
+        assert left_column, "No left column found in the details"
+        left_paragraphs = left_column.find_all("p")
+
+        # Process div.column.right and extract the paragraph tags: datetimes, contact_line1, contact_line2
+        right_column = detail_section.select_one("div.column.right")
+        assert right_column, "No right column found in the details"
+        right_paragraphs = right_column.find_all("p")
+
+        source_id = self._extract_source_id_from_url(str(self.url))
+        assert source_id, "No source_id found in the URL"
+
+        # Pull out the activities section and simplify whitespacing
+        description = left_paragraphs[0].get_text(strip=True)
+        description = re.sub(r'\s+', ' ', description)
+
+        # Pull out contact info
+        contact_name = extract_immediate_text(right_paragraphs[1])
+        contact_email = right_paragraphs[1].select_one("a[href^='mailto:']")
+        contact_email = contact_email.get_text(
+            strip=True) if contact_email else None
+
+        return GSPDetailEvent(
+            title=title,
+            url=self.url,
+            source_id=source_id,
+            datetimes=right_paragraphs[0].get_text(strip=True),
+            description=description,
+            contact_name=contact_name,
+            contact_email=contact_email,
+        )
+
+    def extract(self) -> List[Event]:
+        """Extract a single event from the detail page."""
+        detail_event = self.extract_detail_event()
+        return [detail_event.to_source_event()]
+
+    @classmethod
+    def fetch(cls) -> 'GSPDetailPageExtractor':
+        raise NotImplementedError()
+
+
 class GSPExtractor(GSPBaseExtractor):
     """Main GSP extractor that tries API first, falls back to HTML."""
 

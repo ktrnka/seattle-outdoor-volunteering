@@ -2,7 +2,7 @@
 from pathlib import Path
 
 from pydantic import HttpUrl
-from src.etl.gsp import GSPExtractor, GSPCalendarExtractor, GSPAPIExtractor
+from src.etl.gsp import GSPDetailEvent, GSPDetailPageExtractor, GSPExtractor, GSPCalendarExtractor, GSPAPIExtractor
 from src.models import SEATTLE_TZ
 
 data_path = Path(__file__).parent / "data"
@@ -79,3 +79,39 @@ def test_main_extractor_delegates_to_calendar():
     # Should behave the same as GSPCalendarExtractor
     assert len(events) >= 3
     assert all(e.source == "GSP" for e in events)
+
+
+def test_detail_extractor():
+    """Test that the GSPDetailPageExtractor can extract event details."""
+    html = (data_path / "gsp_detail_page.html").read_text()
+    url = "https://seattle.greencitypartnerships.org/event/42093"
+
+    extractor = GSPDetailPageExtractor(HttpUrl(url), html)
+    detailed_event = extractor.extract_detail_event()
+
+    assert detailed_event == GSPDetailEvent(
+        title="Schmitz Preserve Park - Schmitz Park / Sprucing …08/01/2025",
+        url=HttpUrl(url),
+        source_id="42093",
+        datetimes="August 1, 2025 9:30am - 11:30am",
+        description="This is a newly adopted forest steward parcel, just down the trail from the Stevens St. trailhead along the Adams Highway section of the park. This will be our third visit since adopting the parcel. So far we've removed ivy, blackberry, and other invasives and continue to remove legacy trash that we uncover. This trip we'll dig into an area that is overgrown with Himalayan blackberry and make piles to decompose on site.",
+        contact_name='Erik Bell',
+        contact_email='erik.belltribe@gmail.com'
+    )
+
+    event = detailed_event.to_source_event()
+    assert event.title == "Schmitz Preserve Park - Schmitz Park / Sprucing …08/01/2025"
+    assert event.url == HttpUrl(url)
+    assert event.source_id == "42093"
+
+    assert event.start_local.year == 2025
+    assert event.start_local.month == 8
+    assert event.start_local.day == 1
+    assert event.start_local.hour == 9
+    assert event.start_local.minute == 30
+
+    assert event.end_local.year == 2025
+    assert event.end_local.month == 8
+    assert event.end_local.day == 1
+    assert event.end_local.hour == 11
+    assert event.end_local.minute == 30
