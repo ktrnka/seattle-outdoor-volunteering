@@ -9,7 +9,8 @@ recurring_events:
     recurring_pattern: "first_saturday"
     start_time: "09:00"
     end_time: "12:00"
-    venue: "Mount Baker Hub Alliance"
+    venue: "Mount Baker Neighborhood"
+    address: "Corner of Rainier Ave S and S Forest St, in front of the water ox mural at Hoa Mai Preschool"
     url: "https://www.mtbakerhub.org/clean-ups/"  # Replace with actual URL
     tags: ["cleanup"]
     
@@ -30,6 +31,7 @@ recurring_events:
     start_time: "09:45"
     end_time: "12:00"
     venue: "Roosevelt Neighborhood"
+    address: "parking lot of the Calvary Christian Assembly"
     url: "https://rooseveltseattle.org/volunteer/adopt-a-street/"  # Replace with actual URL
     tags: ["cleanup"]
 
@@ -50,6 +52,7 @@ recurring_events:
     description: "Uptown area cleanup"
     recurring_pattern: "second_sunday"
     venue: "Uptown"
+    address: "Counterbalance Park"
     url: "https://www.facebook.com/groups/435863887803944/"  # Replace with actual URL
     tags: ["cleanup"]
     
@@ -60,6 +63,7 @@ recurring_events:
     start_time: "10:00"
     end_time: "12:00"
     venue: "Capitol Hill"
+    address: "Cal Anderson Park"
     url: "https://www.facebook.com/groups/caringforcapitolhill/events"  # Replace with actual URL
     tags: ["cleanup"]
 
@@ -70,7 +74,7 @@ recurring_events:
     recurring_pattern: "third_sunday"
     start_time: "10:00"
     end_time: "12:00"
-    venue: "Jackson/Yesler area"
+    venue: "Pratt Park"
     url: "https://docs.google.com/document/d/1ZzxaZEbnPSWaDUuhOpvJEVajGGkYkCn1j0HTzlddKig/edit?tab=t.0"  # Replace with actual URL
     tags: ["cleanup"]
     
@@ -81,5 +85,6 @@ recurring_events:
     start_time: "13:00"
     end_time: "15:00"
     venue: "Lake City"
+    address: "Lake City Branch of the Seattle Public Library, 12501 28th Ave NE, Seattle, WA"
     url: "https://enjoy-lake-city.org/community-cleanups-2024/"  # Replace with actual URL
     tags: ["cleanup"]
