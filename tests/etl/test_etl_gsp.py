@@ -86,7 +86,7 @@ def test_detail_extractor():
     html = (data_path / "gsp_detail_page.html").read_text()
     url = "https://seattle.greencitypartnerships.org/event/42093"
 
-    extractor = GSPDetailPageExtractor(HttpUrl(url), html)
+    extractor = GSPDetailPageExtractor(url, html)
     detailed_event = extractor.extract_detail_event()
 
     assert detailed_event == GSPDetailEvent(
