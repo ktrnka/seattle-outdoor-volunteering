@@ -208,6 +208,7 @@ class DNDAExtractor(BaseExtractor):
             # Create source_id from event ID
             source_id = str(dnda_event.id)
 
+            # TODO: Move this to DNDASourceEvent
             return Event(
                 source=self.source,
                 source_id=source_id,

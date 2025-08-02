@@ -1,12 +1,11 @@
+from datetime import datetime, date, timedelta, timezone
+from typing import List, Optional, Tuple
 import json
 import re
-from typing import List, Optional
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString
 from dateutil import parser
-import datetime
-from datetime import date, timedelta, timezone
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from .base import BaseExtractor, BaseDetailExtractor
@@ -30,6 +29,38 @@ def _extract_source_id_from_url(event_url: str) -> str | None:
     return None
 
 
+def parse_time(time_str: str) -> datetime:
+    """Parse a time like '9am' or '12:30pm' into a datetime object."""
+
+    try:
+        return datetime.strptime(time_str, "%I:%M%p")
+    except ValueError:
+        return datetime.strptime(time_str, "%I%p")
+
+
+def parse_gsp_range(event_datetime_str: str, after: Optional[datetime] = None) -> Tuple[datetime, datetime]:
+    """
+    Parse a date like July 28, 9am-12:30pm"""
+
+    date_str, time_range_str = event_datetime_str.split(', ')
+
+    start_str, end_str = time_range_str.split('-')
+
+    partial_date = datetime.strptime(
+        date_str + " " + str(date.today().year), "%B %d %Y").date()
+    partial_start_time = parse_time(start_str.strip())
+    partial_end_time = parse_time(end_str.strip())
+
+    if after and partial_date < after.date():
+        # If the date is before the 'after' date, adjust to next year
+        partial_date = partial_date.replace(year=after.year + 1)
+
+    start_dt = datetime.combine(partial_date, partial_start_time.time())
+    end_dt = datetime.combine(partial_date, partial_end_time.time())
+
+    return start_dt, end_dt
+
+
 class GSPBaseExtractor(BaseExtractor):
     """Base class for GSP extractors with shared utility methods."""
     source = "GSP"
@@ -51,30 +82,17 @@ class GSPBaseExtractor(BaseExtractor):
         """Create zero-duration start/end times for date-only events."""
         # Create midnight in Seattle time first, then convert to UTC
         # Date-only events have zero duration (same start/end time)
-        start_seattle = datetime.datetime(
+        start_seattle = datetime(
             year, month, day, 0, 0, 0, tzinfo=SEATTLE_TZ)
         start_utc = start_seattle.astimezone(timezone.utc)
         end_utc = start_utc  # Zero duration indicates this is a date-only event
         return start_utc, end_utc
 
     @staticmethod
-    def _create_default_times(year=None, month=7, day=28, start_hour=9, duration_hours=3):
-        """Create default start/end times in UTC for events with time info."""
-        if year is None:
-            year = datetime.datetime.now().year
-
-        start = datetime.datetime(year, month, day, start_hour, 0, 0)
-        end = start.replace(hour=start_hour + duration_hours)
-
-        # Convert to UTC (assume Pacific time)
-        start = start.replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-        end = end.replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-
-        return start, end
-
-    @staticmethod
     def _create_event(source_id, title, start, end, venue, url, **extra_fields):
         """Create an Event object with standard GSP formatting."""
+
+        # TODO: Refactor into a GSPSourceEvent -> Shared SourceEvent conversion
         return Event(
             source="GSP",
             source_id=source_id,
@@ -160,7 +178,7 @@ class GSPAPIExtractor(GSPBaseExtractor):
                         raise ValueError("Invalid date format")
                 except Exception:
                     # Fallback to current date if parsing fails
-                    current_date = datetime.datetime.now()
+                    current_date = datetime.now()
                     start, end = self._create_date_only_times(
                         current_date.year, current_date.month, current_date.day)
 
@@ -240,56 +258,8 @@ class GSPCalendarExtractor(GSPBaseExtractor):
                 else:
                     description = None
 
-                # Try to parse the date
-                # Format: "July 28, 9am-12:30pm" -> need to add year
-                current_year = datetime.datetime.now().year
-                try:
-                    # Simple parsing - assume it's in the current year
-                    date_part = date_part.strip()
-                    if ',' in date_part:
-                        month_day, time_part = date_part.split(',', 1)
-                        time_part = time_part.strip()
-
-                        # Parse start time
-                        if '-' in time_part:
-                            start_time, end_time = time_part.split('-', 1)
-                            start_time = start_time.strip()
-                        else:
-                            start_time = time_part
-                            end_time = None
-
-                        # Create datetime - simplified parsing
-                        date_str = f"{month_day}, {current_year}"
-                        start = parser.parse(f"{date_str} {start_time}")
-                        if end_time:
-                            end = parser.parse(
-                                f"{date_str} {end_time.strip()}")
-                        else:
-                            # default 3 hour duration
-                            end = start.replace(hour=start.hour + 3)
-
-                        # Convert to UTC (assume Pacific time)
-                        if start.tzinfo is None:
-                            start = start.replace(
-                                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-                        if end.tzinfo is None:
-                            end = end.replace(
-                                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-                    else:
-                        # Fallback
-                        start = parser.parse(
-                            f"{date_part} {current_year} 09:00:00")
-                        end = start.replace(hour=12)
-                        # Convert to UTC (assume Pacific time)
-                        if start.tzinfo is None:
-                            start = start.replace(
-                                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-                        if end.tzinfo is None:
-                            end = end.replace(
-                                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-                except Exception:
-                    # Fallback parsing
-                    start, end = self._create_default_times()
+                # Parse the date and time range
+                start, end = parse_gsp_range(date_part.strip())
 
                 normalized_url = self._normalize_event_url(event_url, CAL_URL)
                 evt = self._create_event(

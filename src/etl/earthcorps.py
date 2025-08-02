@@ -129,25 +129,10 @@ class EarthCorpsExtractor(BaseExtractor):
 
             # Parse datetime
             start_datetime_str = event_data.get('StartDateTime', '')
-            duration_hours = float(event_data.get('Duration', '3.0'))
+            duration_hours = float(event_data.get('Duration', '0.0'))
 
-            # Parse start time (format like "8/9/2025 10:00 AM")
-            try:
-                start_dt = parser.parse(start_datetime_str)
-            except Exception:
-                # Fallback: construct from year/month/day and time
-                start_time = event_data.get('startTime', '10am')
-                time_match = re.search(r'(\d{1,2})(am|pm)', start_time.lower())
-                if time_match:
-                    hour = int(time_match.group(1))
-                    if time_match.group(2) == 'pm' and hour != 12:
-                        hour += 12
-                    elif time_match.group(2) == 'am' and hour == 12:
-                        hour = 0
-                else:
-                    hour = 10  # Default to 10am
-
-                start_dt = datetime(year, month, day, hour, 0)
+            # Parse start time (format like "8/9/2025 10:00 AM") or raise error if not found
+            start_dt = parser.parse(start_datetime_str)
 
             # Convert to UTC (assuming Pacific time)
             if start_dt.tzinfo is None:
