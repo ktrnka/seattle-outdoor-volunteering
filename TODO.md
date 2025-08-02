@@ -2,10 +2,23 @@
 
 ## Short-Term
 
+### UI
+- Update to Pico 2.0 and their official CDN, not whatever's in here
+- Update CSS to be more responsive on mobile. It might be better to use Pico's lightweight column setup
+
+### Code Quality
+- Refactor most pipelines to look like extracting CustomSourceEvent (with mostly strings) then generate SourceEvent with the standard fields
+- Refactor most of the date extraction code: GSP, SPR, SPU could share some code
+- In general, catch errors higher up the call stack to simplify the code and log errors more effectively
+- Fix bs4 type errors
+- Trim down much of the data wrangling at the extraction layer. Simplify it!
+
 ### Data Quality
 - Title and Venue: It looks like SPF adds the " at Venue" into the title which is messing with merging
-- Add a data_url to tag where the data came from
+- Add a data_url to tag where the data came from (important to distinguish between data coming from calendars vs data coming from detail pages)
 - Add a description field into more of the events
+- Make venue optional. Don't set defaults if it's not in the source
+- Add the description field to the shared SourceEvent model
 
 ## Long-Term
 
