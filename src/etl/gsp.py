@@ -8,7 +8,7 @@ from bs4.element import NavigableString
 from dateutil import parser
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
-from .base import BaseExtractor, BaseDetailExtractor
+from .base import BaseListExtractor, BaseDetailExtractor
 from .url_utils import normalize_url
 from ..models import Event, SEATTLE_TZ
 
@@ -61,7 +61,7 @@ def parse_gsp_range(event_datetime_str: str, after: Optional[datetime] = None) -
     return start_dt, end_dt
 
 
-class GSPBaseExtractor(BaseExtractor):
+class GSPBaseExtractor(BaseListExtractor):
     """Base class for GSP extractors with shared utility methods."""
     source = "GSP"
 

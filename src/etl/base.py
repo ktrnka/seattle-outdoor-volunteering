@@ -3,8 +3,8 @@ from typing import List
 from ..models import Event
 
 
-class BaseExtractor(abc.ABC):
-    """Base extractor for event list pages"""
+class BaseListExtractor(abc.ABC):
+    """Base extractor for event list pages, calendar pages, etc"""
     source: str  # Source code for the event extractor
 
     def __init__(self, raw_data: str):
@@ -12,7 +12,7 @@ class BaseExtractor(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def fetch(cls) -> 'BaseExtractor':
+    def fetch(cls) -> 'BaseListExtractor':
         """Fetch raw data and return an instance of the extractor."""
         ...
 

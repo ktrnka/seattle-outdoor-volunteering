@@ -1,4 +1,4 @@
-from src.etl.earthcorps import EarthCorpsExtractor
+from src.etl.earthcorps import EarthCorpsCalendarExtractor
 
 
 class MockResponse:
@@ -19,7 +19,7 @@ class TestEarthCorpsExtractor:
             html_content = f.read()
 
         # Create extractor and extract events
-        extractor = EarthCorpsExtractor(html_content)
+        extractor = EarthCorpsCalendarExtractor(html_content)
         events = extractor.extract()
 
         # Should have found 4 events for August 2025
@@ -30,7 +30,7 @@ class TestEarthCorpsExtractor:
         assert first_event.source == "EC"
         assert first_event.source_id == "a0EUh000002w9hhMAA"
         assert first_event.title == "Seattle: Kubota Garden"
-        assert first_event.venue == "Seattle"
+        assert first_event.venue == "South Seattle"
         assert str(
             first_event.url) == "https://www.earthcorps.org/volunteer/event/a0EUh000002w9hhMAA"
 
@@ -51,21 +51,21 @@ class TestEarthCorpsExtractor:
         assert second_event.source == "EC"
         assert second_event.source_id == "a0EUh000002vH2zMAE"
         assert second_event.title == "Lake Washington Blvd: South Seattle"
-        assert second_event.venue == "Lake Washington Blvd"
+        assert second_event.venue == "South Seattle"
 
         # Test third event (Aug 16) - Tukwila
         third_event = events[2]
         assert third_event.source == "EC"
         assert third_event.source_id == "a0EUh000002wmHdMAI"
         assert third_event.title == "Tukwila Community Center: Duwamish River"
-        assert third_event.venue == "Tukwila Community Center"
+        assert third_event.venue == "Duwamish"
 
         # Test fourth event (Aug 23) - Union Slough Everett
         fourth_event = events[3]
         assert fourth_event.source == "EC"
         assert fourth_event.source_id == "a0EUh000003uGjVMAU"
         assert fourth_event.title == "Union Slough Everett"
-        assert fourth_event.venue == "Union Slough Everett"
+        assert fourth_event.venue == "Everett"
 
     def test_extract_year_month_from_navigation(self):
         """Test extracting year and month from navigation links."""
@@ -75,7 +75,7 @@ class TestEarthCorpsExtractor:
         from bs4 import BeautifulSoup
         soup = BeautifulSoup(html_content, 'html.parser')
 
-        extractor = EarthCorpsExtractor(html_content)
+        extractor = EarthCorpsCalendarExtractor(html_content)
         year, month = extractor._extract_year_month(soup)
 
         # Should detect August 2025
@@ -84,35 +84,25 @@ class TestEarthCorpsExtractor:
 
     def test_extract_venue_logic(self):
         """Test venue extraction logic with different event title patterns."""
-        extractor = EarthCorpsExtractor("")
+        extractor = EarthCorpsCalendarExtractor("")
 
-        # Test title with colon separator
+        # Default
         event_data1 = {"Name": "Seattle: Kubota Garden"}
         venue1 = extractor._extract_venue(event_data1)
-        assert venue1 == "Seattle"
+        assert venue1 == "Unknown"
 
-        # Test title with location prefix
-        event_data2 = {"Name": "Lake Washington Blvd: South Seattle"}
-        venue2 = extractor._extract_venue(event_data2)
-        assert venue2 == "Lake Washington Blvd"
-
-        # Test title without colon, should use full title
-        event_data3 = {"Name": "Union Slough Everett"}
-        venue3 = extractor._extract_venue(event_data3)
-        assert venue3 == "Union Slough Everett"
-
-        # Test with region fallback - use empty title to trigger fallback
+        # Happy path
         event_data4 = {"Name": "", "Region": "North Sound",
                        "SubRegion": "Everett"}
         venue4 = extractor._extract_venue(event_data4)
-        assert venue4 == "Everett, North Sound"
+        assert venue4 == "Everett"
 
     def test_events_have_required_fields(self):
         """Test that all extracted events have required fields."""
         with open('tests/etl/data/earthcorps_calendar_2025_08.html', 'r') as f:
             html_content = f.read()
 
-        extractor = EarthCorpsExtractor(html_content)
+        extractor = EarthCorpsCalendarExtractor(html_content)
         events = extractor.extract()
 
         for event in events:
@@ -150,7 +140,8 @@ class TestEarthCorpsExtractor:
 
         # Should not raise any exceptions
         try:
-            EarthCorpsExtractor.raise_for_missing_content(mock_response)
+            EarthCorpsCalendarExtractor.raise_for_missing_content(
+                mock_response)
         except Exception as e:
             assert False, f"Content validation failed on real calendar page: {e}"
 
@@ -171,7 +162,8 @@ class TestEarthCorpsExtractor:
             cloudflare_html, "https://www.earthcorps.org/volunteer/calendar/2025/8/")
 
         try:
-            EarthCorpsExtractor.raise_for_missing_content(mock_response)
+            EarthCorpsCalendarExtractor.raise_for_missing_content(
+                mock_response)
             assert False, "Should have detected CloudFlare protection"
         except Exception as e:
             assert "Cloudflare protection detected" in str(e)
@@ -192,7 +184,8 @@ class TestEarthCorpsExtractor:
             invalid_html, "https://www.earthcorps.org/volunteer/calendar/2025/8/")
 
         try:
-            EarthCorpsExtractor.raise_for_missing_content(mock_response)
+            EarthCorpsCalendarExtractor.raise_for_missing_content(
+                mock_response)
             assert False, "Should have detected missing events data"
         except Exception as e:
             assert "missing events data" in str(e)

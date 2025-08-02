@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from dateutil import parser
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
-from .base import BaseExtractor
+from .base import BaseListExtractor
 from .url_utils import normalize_url
 from ..models import Event
 
@@ -47,7 +47,7 @@ class DNDASourceEvent(BaseModel):
     gridsquare: Optional[str] = None  # HTML img tag
 
 
-class DNDAExtractor(BaseExtractor):
+class DNDAExtractor(BaseListExtractor):
     """Extractor for Delridge Neighborhoods Development Association (DNDA) events."""
     source = "DNDA"
 
@@ -126,6 +126,7 @@ class DNDAExtractor(BaseExtractor):
             )
 
         except Exception:
+            # TODO: Handle and log the error elsewhere
             return None
 
     @classmethod
@@ -221,6 +222,7 @@ class DNDAExtractor(BaseExtractor):
                 source_dict=dnda_event.model_dump_json()
             )
 
+        # TODO: Consolidate error handling
         except Exception:
             return None
 
@@ -240,6 +242,7 @@ class DNDAExtractor(BaseExtractor):
             if venue:
                 return venue
 
+        # TODO: I hate this default
         return "DNDA Event Location"
 
     def _extract_venue_from_description(self, description: str) -> Optional[str]:

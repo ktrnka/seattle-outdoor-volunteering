@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, HttpUrl
 
 
 from ..models import Event, RecurringPattern, SEATTLE_TZ
-from .base import BaseExtractor
+from .base import BaseListExtractor
 from .url_utils import normalize_url
 
 
@@ -41,7 +41,7 @@ class ManualEventsConfig(BaseModel):
     recurring_events: List[ManualEventDefinition] = []
 
 
-class ManualExtractor(BaseExtractor):
+class ManualExtractor(BaseListExtractor):
     """Extract events from manual_events.yaml configuration."""
 
     source = "MAN"  # 3-letter code for manual events
@@ -186,6 +186,7 @@ class ManualExtractor(BaseExtractor):
         end_utc = self._build_datetime(
             event_date, self._parse_time(event_def.end_time))
 
+        # TODO: Move to ManualEventDefinition
         return Event(
             source=self.source,
             source_id=source_id,

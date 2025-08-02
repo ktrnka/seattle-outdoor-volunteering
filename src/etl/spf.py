@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from dateutil import parser
 from pydantic import HttpUrl, BaseModel, ConfigDict
 
-from .base import BaseExtractor
+from .base import BaseListExtractor
 from .url_utils import normalize_url
 from ..models import Event
 
@@ -67,7 +67,7 @@ class SPFSourceEvent(BaseModel):
     performer: Optional[str] = None
 
 
-class SPFExtractor(BaseExtractor):
+class SPFExtractor(BaseListExtractor):
     """Seattle Parks Foundation extractor - parses schema.org JSON-LD data."""
     source = "SPF"
 

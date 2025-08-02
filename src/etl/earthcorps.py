@@ -7,12 +7,12 @@ from bs4 import BeautifulSoup
 from dateutil import parser
 from pydantic import HttpUrl
 
-from .base import BaseExtractor
+from .base import BaseListExtractor
 from .url_utils import normalize_url
 from ..models import Event, SEATTLE_TZ
 
 
-class EarthCorpsExtractor(BaseExtractor):
+class EarthCorpsCalendarExtractor(BaseListExtractor):
     """Extractor for EarthCorps volunteer events."""
     source = "EC"
 
@@ -51,7 +51,7 @@ class EarthCorpsExtractor(BaseExtractor):
                 f"Invalid response from EarthCorps calendar - missing events data: {response.url}")
 
     @classmethod
-    def fetch(cls) -> 'EarthCorpsExtractor':
+    def fetch(cls) -> 'EarthCorpsCalendarExtractor':
         """Fetch events from EarthCorps calendar for two weeks from now."""
         # Get current date and add two weeks to find future events
         from datetime import datetime, timedelta
@@ -148,6 +148,7 @@ class EarthCorpsExtractor(BaseExtractor):
             # Build event URL
             url = f"https://www.earthcorps.org/volunteer/event/{event_id}"
 
+            # TODO: Refactor into an EarthCorpCalendarEvent -> Event conversion method
             return Event(
                 source=self.source,
                 source_id=source_id,
@@ -164,6 +165,7 @@ class EarthCorpsExtractor(BaseExtractor):
                 same_as=None
             )
 
+        # Handle exceptions in the caller
         except Exception as e:
             print(
                 f"Error parsing EarthCorps event {event_data.get('Id', 'unknown')}: {e}")
@@ -171,32 +173,5 @@ class EarthCorpsExtractor(BaseExtractor):
 
     def _extract_venue(self, event_data: dict) -> str:
         """Extract venue name from event data."""
-        # Try to use the title as venue info since it often contains location
-        title = event_data.get('Name', '')
 
-        # Look for common patterns like "Location: Description" or just use title
-        if ':' in title:
-            # Take the part before the colon as location
-            parts = title.split(':', 1)
-            location_part = parts[0].strip()
-            # Clean up common prefixes
-            location_part = re.sub(
-                r'^(Seattle|Tacoma|Everett|Bellevue|Kirkland|Redmond|Issaquah|Federal Way|Burien|Kent|Tukwila):\s*', '', location_part)
-            if location_part:
-                return location_part
-        else:
-            # No colon, use the full title as venue if it looks like a location
-            if title:
-                return title
-
-        # If we have region/subregion info, use that as fallback
-        region = event_data.get('Region', '')
-        subregion = event_data.get('SubRegion', '')
-
-        if subregion and subregion != region:
-            return f"{subregion}, {region}"
-        elif region:
-            return region
-
-        # Final fallback
-        return "EarthCorps Event Location"
+        return event_data.get('SubRegion', 'Unknown')

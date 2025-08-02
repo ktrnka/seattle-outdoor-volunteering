@@ -7,7 +7,7 @@ import requests
 from dateutil import parser
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
-from .base import BaseExtractor
+from .base import BaseListExtractor
 from .url_utils import normalize_url
 from ..models import Event, SEATTLE_TZ
 
@@ -34,7 +34,7 @@ class SPRSourceData(BaseModel):
     link: Optional[str] = None
 
 
-class SPRExtractor(BaseExtractor):
+class SPRExtractor(BaseListExtractor):
     """Seattle Parks & Recreation extractor for RSS feed."""
     source = "SPR"
 
@@ -297,6 +297,8 @@ class SPRExtractor(BaseExtractor):
             # "Sunday, July 27, 2025, 8–11am"
             # "Sunday, July 27, 2025, 8:45–11am"
             # "Sunday, July 27, 2025, 10:30am–2:30pm"
+
+            # TODO: Simplify the parsing logic. Share some code with the GSP parser
 
             # Extract date part and time part
             if ',' in datetime_line:

@@ -12,7 +12,7 @@ from . import database
 from .config import DB_GZ, DB_PATH
 from .etl.deduplication import deduplicate_events
 from .etl.dnda import DNDAExtractor
-from .etl.earthcorps import EarthCorpsExtractor
+from .etl.earthcorps import EarthCorpsCalendarExtractor
 from .etl.gsp import GSPCalendarExtractor
 from .etl.manual import ManualExtractor
 from .etl.spf import SPFExtractor
@@ -88,7 +88,7 @@ def etl(only_run: Optional[str] = None):
         "SPF": SPFExtractor,
         "SPU": SPUExtractor,
         "DNDA": DNDAExtractor,
-        "EarthCorps": EarthCorpsExtractor,
+        "EarthCorps": EarthCorpsCalendarExtractor,
         "Manual": ManualExtractor,
     }
 

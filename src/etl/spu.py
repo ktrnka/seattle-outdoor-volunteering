@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from dateutil import parser
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
-from .base import BaseExtractor
+from .base import BaseListExtractor
 from ..models import Event, SEATTLE_TZ
 
 SPU_CLEANUP_URL = "https://www.seattle.gov/utilities/volunteer/all-hands-neighborhood-cleanup"
@@ -25,7 +25,7 @@ class SPUSourceEvent(BaseModel):
     end_time: Optional[str] = None  # Parsed from start_time if available
 
 
-class SPUExtractor(BaseExtractor):
+class SPUExtractor(BaseListExtractor):
     """Seattle Public Utilities All Hands Neighborhood Cleanup extractor."""
     source = "SPU"
 
