@@ -61,12 +61,12 @@ class Event(Base):
             end=read_utc(self.end),
             venue=self.venue,
             address=self.address,
-            url=self.url,
+            url=self.url,  # type: ignore
             cost=self.cost,
             latitude=self.latitude,
             longitude=self.longitude,
             tags=tags,
-            same_as=self.same_as,
+            same_as=self.same_as,  # type: ignore
             source_dict=self.source_dict
         )
 
@@ -108,7 +108,7 @@ class CanonicalEvent(Base):
             end=read_utc(self.end),
             venue=self.venue,
             address=self.address,
-            url=self.url,
+            url=self.url,  # type: ignore
             cost=self.cost,
             latitude=self.latitude,
             longitude=self.longitude,

@@ -140,7 +140,7 @@ def run_llm_canonicalization(event: CanonicalEvent, source_events: List[Event]):
 
     # Step 3: LLM call
     response = client.chat.completions.parse(
-        messages=messages,
+        messages=messages,  # type: ignore
         temperature=0.2,
         model="openai/gpt-4.1",
         response_format=RevisedCanonicalEvent,

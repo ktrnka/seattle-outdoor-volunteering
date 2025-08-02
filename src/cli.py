@@ -444,9 +444,13 @@ def test_llm_canonicalization(event_title: str):
     """Test LLM-based canonicalization."""
     from .llm_canonicalization import run_llm_canonicalization
 
-    run_llm_canonicalization(
-        *database.find_canonical_event_with_sources(event_title)
-    )
+    data = database.find_canonical_event_with_sources(event_title)
+    if data:
+        run_llm_canonicalization(
+            *data
+        )
+    else:
+        click.echo(f"No canonical event found with title '{event_title}'.")
 
 
 # Add the dev group to the main CLI

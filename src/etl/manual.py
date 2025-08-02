@@ -11,8 +11,6 @@ from typing import List, Optional
 import yaml
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
-from src.models import RecurringPattern
-
 
 from ..models import Event, RecurringPattern, SEATTLE_TZ
 from .base import BaseExtractor

@@ -3,7 +3,7 @@
 from datetime import timezone
 
 from src.etl.manual import ManualExtractor
-from src.models import SEATTLE_TZ, Event, RecurringPattern
+from src.models import Event, RecurringPattern
 
 
 class TestManualExtractor:

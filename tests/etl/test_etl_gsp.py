@@ -37,6 +37,7 @@ def test_parse_calendar_fixture():
     assert local_end.hour == 12  # 12:30pm local time
     assert local_end.minute == 30
 
+    assert first_event.source_dict
     raw_source = json.loads(first_event.source_dict)
     assert raw_source['description'] == "Let's finish this area off as we are close to the end."
 
