@@ -77,7 +77,7 @@ def test_environment_tz_utc():
     tzset()
 
     local_tzinfo = datetime.now().astimezone().tzinfo
-    assert local_tzinfo == "UTC"
+    assert local_tzinfo and str(local_tzinfo) == "UTC"
 
     extractor = GSPCalendarExtractor(html)
     events = extractor.extract()

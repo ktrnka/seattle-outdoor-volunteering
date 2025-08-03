@@ -40,7 +40,8 @@ def parse_time(time_str: str) -> datetime:
 
 def parse_gsp_range(event_datetime_str: str, after: Optional[datetime] = None) -> Tuple[datetime, datetime]:
     """
-    Parse a date like July 28, 9am-12:30pm"""
+    Parse a date like July 28, 9am-12:30pm
+    """
 
     date_str, time_range_str = event_datetime_str.split(', ')
 
@@ -260,6 +261,8 @@ class GSPCalendarExtractor(GSPBaseExtractor):
 
                 # Parse the date and time range
                 start, end = parse_gsp_range(date_part.strip())
+                start = start.replace(tzinfo=SEATTLE_TZ)
+                end = end.replace(tzinfo=SEATTLE_TZ)
 
                 normalized_url = self._normalize_event_url(event_url, CAL_URL)
                 evt = self._create_event(
