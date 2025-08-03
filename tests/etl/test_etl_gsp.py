@@ -1,7 +1,9 @@
 # tests/test_etl_gsp.py
-from datetime import datetime
+from datetime import datetime, time
 import json
+import os
 from pathlib import Path
+from time import tzset
 
 from pydantic import HttpUrl
 from src.etl.gsp import GSPDetailEvent, GSPDetailPageExtractor, GSPCalendarExtractor, GSPAPIExtractor, parse_gsp_range
@@ -64,6 +66,39 @@ def test_parse_calendar_fixture():
     assert first_event.source_dict
     raw_source = json.loads(first_event.source_dict)
     assert raw_source['description'] == "Let's finish this area off as we are close to the end."
+
+
+def test_environment_tz_utc():
+    """Test that mimics Github Actions: The environment is set to UTC."""
+    html = (data_path / "gsp_calendar.html").read_text()
+
+    # Override the timezone for this process
+    os.environ["TZ"] = "UTC"
+    tzset()
+
+    local_tzinfo = datetime.now().astimezone().tzinfo
+    assert local_tzinfo == "UTC"
+
+    extractor = GSPCalendarExtractor(html)
+    events = extractor.extract()
+
+    # sanity check - expect at least a few events
+    assert len(events) >= 3
+    assert all(e.source == "GSP" for e in events)
+
+    # Basic checks on the first event
+    first_event = events[0]
+    assert first_event.title == "Weeding south of 70th St. again"
+    assert first_event.url == HttpUrl(
+        "https://seattle.greencitypartnerships.org/event/42093")
+
+    # July 28, 9am-12:30pm @ Burke-Gilman Trail in local time
+    local_start = first_event.start.astimezone(SEATTLE_TZ)
+    assert local_start.year == 2025
+    assert local_start.month == 7
+    assert local_start.day == 28
+    assert local_start.hour == 9  # 9am local time
+    assert local_start.minute == 0
 
 
 def test_parse_api_fixture():
