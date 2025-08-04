@@ -7,6 +7,8 @@ import requests
 from dateutil import parser
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
+from src.etl.date_utils import parse_range_single_string
+
 from .base import BaseListExtractor
 from .url_utils import normalize_url
 from ..models import Event, SEATTLE_TZ
@@ -56,13 +58,9 @@ class SPRExtractor(BaseListExtractor):
 
         # Find all item elements in the RSS feed
         for item in root.findall(".//item"):
-            try:
-                event = self._parse_rss_item(item)
-                if event:
-                    events.append(event)
-            except Exception:
-                # Skip events that can't be parsed
-                continue
+            event = self._parse_rss_item(item)
+            if event:
+                events.append(event)
 
         return events
 
@@ -240,7 +238,15 @@ class SPRExtractor(BaseListExtractor):
 
             # Second line is usually date and time
             datetime_line = self._clean_html(lines[1])
-            start_dt, end_dt = self._parse_datetime(datetime_line)
+            # start_dt, end_dt = self._parse_datetime(datetime_line)
+            try:
+                # Parse the date and time range
+                start_dt, end_dt = parse_range_single_string(
+                    datetime_line, SEATTLE_TZ)
+            except ValueError as e:
+                print(f"Error parsing date/time '{datetime_line}': {e}")
+                start_dt = None
+                end_dt = None
 
         # Parse structured fields (format: <b>Field</b>: Value)
 
@@ -285,67 +291,67 @@ class SPRExtractor(BaseListExtractor):
         text = text.replace('&nbsp;', ' ').replace('&ndash;', '–')
         return text.strip()
 
-    def _parse_datetime(self, datetime_line: str):
-        """Parse datetime information from a line like 'Sunday, July 27, 2025, 8–11am'."""
-        # Default fallback (timezone-naive, will be converted to UTC later)
-        current_year = datetime.now().year
-        start_dt = datetime(current_year, 7, 28, 9, 0)  # fallback
-        end_dt = datetime(current_year, 7, 28, 12, 0)   # fallback
+    # def _parse_datetime(self, datetime_line: str):
+    #     """Parse datetime information from a line like 'Sunday, July 27, 2025, 8–11am'."""
+    #     # Default fallback (timezone-naive, will be converted to UTC later)
+    #     current_year = datetime.now().year
+    #     start_dt = datetime(current_year, 7, 28, 9, 0)  # fallback
+    #     end_dt = datetime(current_year, 7, 28, 12, 0)   # fallback
 
-        try:
-            # Handle various formats like:
-            # "Sunday, July 27, 2025, 8–11am"
-            # "Sunday, July 27, 2025, 8:45–11am"
-            # "Sunday, July 27, 2025, 10:30am–2:30pm"
+    #     try:
+    #         # Handle various formats like:
+    #         # "Sunday, July 27, 2025, 8–11am"
+    #         # "Sunday, July 27, 2025, 8:45–11am"
+    #         # "Sunday, July 27, 2025, 10:30am–2:30pm"
 
-            # TODO: Simplify the parsing logic. Share some code with the GSP parser
+    #         # TODO: Simplify the parsing logic. Share some code with the GSP parser
 
-            # Extract date part and time part
-            if ',' in datetime_line:
-                parts = datetime_line.split(',')
-                if len(parts) >= 4:
-                    # Format: "Sunday, July 27, 2025, 8–11am"
-                    # "July 27, 2025"
-                    date_part = f"{parts[1].strip()}, {parts[2].strip()}"
-                    time_part = parts[3].strip()  # "8–11am"
-                elif len(parts) >= 3:
-                    # Format might be "July 27, 2025, 8–11am"
-                    date_part = f"{parts[0].strip()}, {parts[1].strip()}"
-                    time_part = parts[2].strip()
-                else:
-                    return start_dt, end_dt
-            else:
-                return start_dt, end_dt
+    #         # Extract date part and time part
+    #         if ',' in datetime_line:
+    #             parts = datetime_line.split(',')
+    #             if len(parts) >= 4:
+    #                 # Format: "Sunday, July 27, 2025, 8–11am"
+    #                 # "July 27, 2025"
+    #                 date_part = f"{parts[1].strip()}, {parts[2].strip()}"
+    #                 time_part = parts[3].strip()  # "8–11am"
+    #             elif len(parts) >= 3:
+    #                 # Format might be "July 27, 2025, 8–11am"
+    #                 date_part = f"{parts[0].strip()}, {parts[1].strip()}"
+    #                 time_part = parts[2].strip()
+    #             else:
+    #                 return start_dt, end_dt
+    #         else:
+    #             return start_dt, end_dt
 
-            # Parse time range (e.g., "8–11am", "10:30am–2:30pm")
-            time_match = re.search(
-                r'(\d{1,2}(?::\d{2})?(?:am|pm)?)\s*[–-]\s*(\d{1,2}(?::\d{2})?(?:am|pm)?)', time_part)
-            if time_match:
-                start_time_str = time_match.group(1)
-                end_time_str = time_match.group(2)
+    #         # Parse time range (e.g., "8–11am", "10:30am–2:30pm")
+    #         time_match = re.search(
+    #             r'(\d{1,2}(?::\d{2})?(?:am|pm)?)\s*[–-]\s*(\d{1,2}(?::\d{2})?(?:am|pm)?)', time_part)
+    #         if time_match:
+    #             start_time_str = time_match.group(1)
+    #             end_time_str = time_match.group(2)
 
-                # Handle case where start time doesn't have am/pm but end time does
-                if not re.search(r'(am|pm)', start_time_str):
-                    end_period = re.search(r'(am|pm)', end_time_str)
-                    if end_period:
-                        start_time_str += end_period.group(1)
+    #             # Handle case where start time doesn't have am/pm but end time does
+    #             if not re.search(r'(am|pm)', start_time_str):
+    #                 end_period = re.search(r'(am|pm)', end_time_str)
+    #                 if end_period:
+    #                     start_time_str += end_period.group(1)
 
-                # Parse full datetime
-                start_dt = parser.parse(f"{date_part} {start_time_str}")
-                end_dt = parser.parse(f"{date_part} {end_time_str}")
+    #             # Parse full datetime
+    #             start_dt = parser.parse(f"{date_part} {start_time_str}")
+    #             end_dt = parser.parse(f"{date_part} {end_time_str}")
 
-        except Exception:
-            # Keep fallback values
-            pass
+    #     except Exception:
+    #         # Keep fallback values
+    #         pass
 
-        # Convert to UTC (assume Pacific time if timezone-naive)
-        if start_dt.tzinfo is None:
-            start_dt = start_dt.replace(
-                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-        if end_dt.tzinfo is None:
-            end_dt = end_dt.replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+    #     # Convert to UTC (assume Pacific time if timezone-naive)
+    #     if start_dt.tzinfo is None:
+    #         start_dt = start_dt.replace(
+    #             tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+    #     if end_dt.tzinfo is None:
+    #         end_dt = end_dt.replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
 
-        return start_dt, end_dt
+    #     return start_dt, end_dt
 
     def _extract_description_text(self, description: str) -> str:
         """Extract the main description text, skipping address/date and structured fields."""

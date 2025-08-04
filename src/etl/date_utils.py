@@ -56,6 +56,10 @@ def parse_range(date_str: str, time_range_str: str, tz: tzinfo, after: Optional[
 
     partial_date = parse_date(date_str, after)
 
+    # Replace HTML en-dash and Unicode en-dash with regular dash
+    time_range_str = time_range_str.replace(
+        '&ndash;', '-').replace('\u2013', '-')
+    print(f"Parsing date: {partial_date} with time range: {time_range_str}")
     start_str, end_str = time_range_str.split('-')
 
     partial_start_time = parse_time(start_str.strip())
