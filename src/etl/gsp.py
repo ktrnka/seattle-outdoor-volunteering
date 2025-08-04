@@ -1,5 +1,5 @@
 from datetime import datetime, date, timedelta, timezone
-from typing import List, Optional, Tuple
+from typing import List, Optional
 import json
 import re
 import requests
@@ -7,6 +7,8 @@ from bs4 import BeautifulSoup
 from bs4.element import NavigableString
 from dateutil import parser
 from pydantic import BaseModel, ConfigDict, HttpUrl
+
+from src.etl.date_utils import parse_range_single_string
 
 from .base import BaseListExtractor, BaseDetailExtractor
 from .url_utils import normalize_url
@@ -27,39 +29,6 @@ def _extract_source_id_from_url(event_url: str) -> str | None:
         except Exception:
             pass
     return None
-
-
-def parse_time(time_str: str) -> datetime:
-    """Parse a time like '9am' or '12:30pm' into a datetime object."""
-
-    try:
-        return datetime.strptime(time_str, "%I:%M%p")
-    except ValueError:
-        return datetime.strptime(time_str, "%I%p")
-
-
-def parse_gsp_range(event_datetime_str: str, after: Optional[datetime] = None) -> Tuple[datetime, datetime]:
-    """
-    Parse a date like July 28, 9am-12:30pm
-    """
-
-    date_str, time_range_str = event_datetime_str.split(', ')
-
-    start_str, end_str = time_range_str.split('-')
-
-    partial_date = datetime.strptime(
-        date_str + " " + str(date.today().year), "%B %d %Y").date()
-    partial_start_time = parse_time(start_str.strip())
-    partial_end_time = parse_time(end_str.strip())
-
-    if after and partial_date < after.date():
-        # If the date is before the 'after' date, adjust to next year
-        partial_date = partial_date.replace(year=after.year + 1)
-
-    start_dt = datetime.combine(partial_date, partial_start_time.time())
-    end_dt = datetime.combine(partial_date, partial_end_time.time())
-
-    return start_dt, end_dt
 
 
 class GSPBaseExtractor(BaseListExtractor):
@@ -260,9 +229,8 @@ class GSPCalendarExtractor(GSPBaseExtractor):
                     description = None
 
                 # Parse the date and time range
-                start, end = parse_gsp_range(date_part.strip())
-                start = start.replace(tzinfo=SEATTLE_TZ)
-                end = end.replace(tzinfo=SEATTLE_TZ)
+                start, end = parse_range_single_string(
+                    date_part.strip(), SEATTLE_TZ)
 
                 normalized_url = self._normalize_event_url(event_url, CAL_URL)
                 evt = self._create_event(

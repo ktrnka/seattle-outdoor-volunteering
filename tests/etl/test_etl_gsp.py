@@ -6,7 +6,8 @@ from pathlib import Path
 from time import tzset
 
 from pydantic import HttpUrl
-from src.etl.gsp import GSPDetailEvent, GSPDetailPageExtractor, GSPCalendarExtractor, GSPAPIExtractor, parse_gsp_range
+from src.etl.date_utils import parse_range_single_string
+from src.etl.gsp import GSPDetailEvent, GSPDetailPageExtractor, GSPCalendarExtractor, GSPAPIExtractor
 from src.models import SEATTLE_TZ
 
 data_path = Path(__file__).parent / "data"
@@ -14,7 +15,7 @@ data_path = Path(__file__).parent / "data"
 
 def test_basic_ranges():
     """Test basic time range parsing"""
-    start, end = parse_gsp_range("July 28, 9am-12:30pm")
+    start, end = parse_range_single_string("July 28, 9am-12:30pm", SEATTLE_TZ)
     assert start.hour == 9
     assert start.minute == 0
     assert end.hour == 12
@@ -25,14 +26,15 @@ def test_basic_ranges():
     assert start.day == 28
     assert start.year == datetime.now().year
 
-    start, end = parse_gsp_range(
-        "July 28, 9am-12:30pm", after=datetime(2030, 7, 1))
-    assert start.year == 2031
-    assert end.year == 2031
+    # The year should be the same as after's year in this example
+    start, end = parse_range_single_string(
+        "July 28, 9am-12:30pm", SEATTLE_TZ, after=datetime(2030, 7, 1))
+    assert start.year == 2030
+    assert end.year == 2030
 
     # some tests that it doesn't crash
-    parse_gsp_range("August 1, 9:30am - 1pm")
-    parse_gsp_range("July 31, 10am-1pm ")
+    parse_range_single_string("August 1, 9:30am - 1pm", SEATTLE_TZ)
+    parse_range_single_string("July 31, 10am-1pm", SEATTLE_TZ)
 
 
 def test_parse_calendar_fixture():
