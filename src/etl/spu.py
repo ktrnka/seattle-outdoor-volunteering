@@ -7,6 +7,8 @@ from bs4 import BeautifulSoup
 from dateutil import parser
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
+from src.etl.date_utils import parse_range
+
 from .base import BaseListExtractor
 from ..models import Event, SEATTLE_TZ
 
@@ -112,10 +114,14 @@ class SPUExtractor(BaseListExtractor):
     def _convert_to_event(self, spu_event: SPUSourceEvent) -> Optional[Event]:
         """Convert SPUSourceEvent to Event model."""
         try:
-            # Parse date and time - convert from formats like "Saturday, August 9" to full date
-            start_datetime, end_datetime = self._parse_date_and_time(
-                spu_event.date, f"{spu_event.start_time} – {spu_event.end_time or ''}")
-            if not start_datetime or not end_datetime:
+            try:
+                start_datetime, end_datetime = parse_range(
+                    spu_event.date, f"{spu_event.start_time} - {spu_event.end_time}", SEATTLE_TZ)
+                start_datetime = start_datetime.astimezone(timezone.utc)
+                end_datetime = end_datetime.astimezone(timezone.utc)
+            except Exception:
+                print(
+                    f"Failed to parse date/time for event: {spu_event.date}, {spu_event.start_time} - {spu_event.end_time}")
                 return None
 
             # Parse venue and address from location string
@@ -171,46 +177,3 @@ class SPUExtractor(BaseListExtractor):
         venue = re.sub(r'\s+', ' ', venue).strip()
 
         return venue, address
-
-    def _parse_date_and_time(self, date_text: str, time_text: str) -> tuple[Optional[datetime], Optional[datetime]]:
-        """Parse date and time strings into datetime objects."""
-        try:
-            # Parse date string like "Saturday, August 9"
-            # We need to add the year since it's not provided
-            current_year = datetime.now().year
-
-            # Try to parse with current year first
-            try:
-                date_with_year = f"{date_text}, {current_year}"
-                parsed_date = parser.parse(date_with_year, fuzzy=True)
-            except Exception:
-                # If that fails, try next year (events might be for next year)
-                date_with_year = f"{date_text}, {current_year + 1}"
-                parsed_date = parser.parse(date_with_year, fuzzy=True)
-
-            # Parse time string like "10 am – 12 pm" or "9 am – 12 pm"
-            time_parts = re.split(r'[–\-]', time_text)
-            if len(time_parts) != 2:
-                return None, None
-
-            start_time_str = time_parts[0].strip()
-            end_time_str = time_parts[1].strip()
-
-            # Parse start and end times
-            start_time = parser.parse(start_time_str, fuzzy=True).time()
-            end_time = parser.parse(end_time_str, fuzzy=True).time()
-
-            # Combine date and times
-            start_datetime = datetime.combine(parsed_date.date(), start_time)
-            end_datetime = datetime.combine(parsed_date.date(), end_time)
-
-            # Assume Seattle local time, convert to UTC
-            start_datetime = start_datetime.replace(
-                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-            end_datetime = end_datetime.replace(
-                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-
-            return start_datetime, end_datetime
-
-        except Exception:
-            return None, None

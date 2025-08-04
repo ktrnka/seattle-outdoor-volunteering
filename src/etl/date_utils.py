@@ -28,9 +28,9 @@ def parse_time(time_str: str) -> datetime:
 
 
 def parse_date(date_str: str, after: Optional[datetime] = None) -> date:
-    """Parse a date string like Sunday, August 3, 2025, 'July 28' or 'Saturday, August 9' into a date object."""
+    """Parse a date string like Sunday, August 3, 2025, 'July 28' or 'Saturday, August 9' or 'Saturday, Nov 22' into a date object."""
 
-    for date_format in ("%B %d", "%A, %B %d", "%A, %B %d, %Y", "%B %d, %Y"):
+    for date_format in ("%B %d", "%A, %B %d", "%A, %B %d, %Y", "%B %d, %Y", "%A, %b %d"):
         try:
             dt = datetime.strptime(date_str, date_format).date()
 
