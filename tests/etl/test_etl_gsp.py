@@ -6,7 +6,7 @@ from pathlib import Path
 from time import tzset
 
 from pydantic import HttpUrl
-from src.etl.date_utils import parse_range_single_string
+from src.etl.date_utils import parse_range_single_string, parse_range
 from src.etl.gsp import GSPDetailEvent, GSPDetailPageExtractor, GSPCalendarExtractor, GSPAPIExtractor
 from src.models import SEATTLE_TZ
 
@@ -35,6 +35,32 @@ def test_basic_ranges():
     # some tests that it doesn't crash
     parse_range_single_string("August 1, 9:30am - 1pm", SEATTLE_TZ)
     parse_range_single_string("July 31, 10am-1pm", SEATTLE_TZ)
+
+    # SPR test
+    start, end = parse_range_single_string(
+        "Sunday, August 3, 2025, 8 - 11am", SEATTLE_TZ)
+    assert start.hour == 8
+    assert start.minute == 0
+    assert end.hour == 11
+    assert end.minute == 0
+
+    # Tougher time test for SPR
+    start, end = parse_range_single_string(
+        "Sunday, August 3, 2025, 5 - 6pm", SEATTLE_TZ)
+    assert start.hour == 17
+    assert start.minute == 0
+    assert end.hour == 18
+    assert end.minute == 0
+
+    # SPU examples
+    # Saturday, August 9
+    # 10 am &ndash; 12 pm
+    start, end = parse_range("Saturday, August 9", "10 am - 12 pm", SEATTLE_TZ)
+
+    assert start.hour == 10
+    assert start.minute == 0
+    assert end.hour == 12
+    assert end.minute == 0
 
 
 def test_parse_calendar_fixture():

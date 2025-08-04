@@ -9,17 +9,22 @@
 # Formats from GSP
 # July 28, 9am-12:30pm (no year)
 
-from datetime import date, datetime, tzinfo
+from datetime import date, datetime, timedelta, tzinfo
 from typing import Optional, Tuple
 
 
 def parse_time(time_str: str) -> datetime:
     """Parse a time like '9am' or '12:30pm' into a datetime object."""
 
-    try:
-        return datetime.strptime(time_str, "%I:%M%p")
-    except ValueError:
-        return datetime.strptime(time_str, "%I%p")
+    norm_time_str = time_str.replace(
+        '&nbsp;', ' ').replace('&ndash;', '-').replace(" ", "").strip()
+
+    for time_format in ("%I:%M%p", "%I%p", "%I:%M", "%I"):
+        try:
+            return datetime.strptime(norm_time_str, time_format)
+        except ValueError:
+            continue
+    raise ValueError(f"Could not parse time: {time_str}")
 
 
 def parse_date(date_str: str, after: Optional[datetime] = None) -> date:
@@ -55,6 +60,11 @@ def parse_range(date_str: str, time_range_str: str, tz: tzinfo, after: Optional[
 
     partial_start_time = parse_time(start_str.strip())
     partial_end_time = parse_time(end_str.strip())
+
+    # If the start time doesn't have an ampm marker, pick whatever leads to the shorter duration
+    if not start_str.strip().lower().endswith(('am', 'pm')):
+        if partial_start_time + timedelta(hours=12) < partial_end_time:
+            partial_start_time += timedelta(hours=12)
 
     start_dt = datetime.combine(partial_date, partial_start_time.time())
     end_dt = datetime.combine(partial_date, partial_end_time.time())
