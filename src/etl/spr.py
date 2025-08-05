@@ -2,7 +2,7 @@ import re
 import xml.etree.ElementTree as ET
 import json
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import requests
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
@@ -63,7 +63,7 @@ class SPRExtractor(BaseListExtractor):
 
         return events
 
-    def _parse_rss_item(self, item) -> Event:
+    def _parse_rss_item(self, item) -> Optional[Event]:
         """Parse a single RSS item into an Event."""
         # Step 1: Extract SPRSourceData from RSS item
         spr_data = self._extract_spr_source_data(item)
@@ -186,11 +186,9 @@ class SPRExtractor(BaseListExtractor):
         address, venue, cost, start_dt, end_dt, tags = self._parse_description(
             description)
 
-        # Ensure we have valid datetime values
-        if start_dt is None:
-            start_dt = datetime.now().replace(hour=9, minute=0, second=0, microsecond=0)
-        if end_dt is None:
-            end_dt = start_dt.replace(hour=12)
+        # Skip events that don't have valid datetime information
+        if start_dt is None or end_dt is None:
+            return None
 
         # Convert to UTC (assume Pacific time if timezone-naive)
         if start_dt.tzinfo is None:
@@ -214,6 +212,21 @@ class SPRExtractor(BaseListExtractor):
             source_dict=json.dumps(spr_data.model_dump())
         )
 
+    @staticmethod
+    def _find_datetime_line(lines: List[str]) -> Optional[Tuple[str, int]]:
+        """Find the line containing date/time information and return it with its index.
+
+        Returns:
+            Tuple of (datetime_line, index) if found, None otherwise
+        """
+        for i, line in enumerate(lines):
+            cleaned_line = SPRExtractor._clean_html(line)
+            # Look for a line that contains a year (20XX) and time (am/pm)
+            # This distinguishes actual datetime lines from description text that mentions times
+            if re.search(r'20\d{2}', cleaned_line) and re.search(r'[^A-Za-z](am|pm)\b', cleaned_line, re.IGNORECASE):
+                return cleaned_line, i
+        return None
+
     def _parse_description(self, description: str):
         """Parse the description field to extract structured information."""
         # Initialize defaults
@@ -225,27 +238,33 @@ class SPRExtractor(BaseListExtractor):
         tags = []
 
         # Parse the HTML-like description
-        # Format: "Address <br/>Date, Time <br/><br/>Description <br/><br/><b>Field</b>: Value"
+        # Format 1: "Address <br/>Date, Time <br/><br/>Description <br/><br/><b>Field</b>: Value"
+        # Format 2: "Park Name<br/>Address Line 1<br/>City, State Zip <br/>Date, Time <br/><br/>Description..."
 
         lines = description.replace(
             '<br/>', '\n').replace('<br>', '\n').split('\n')
         lines = [line.strip() for line in lines if line.strip()]
 
-        if len(lines) >= 2:
-            # First line is usually the address
-            address = self._clean_html(lines[0])
+        if lines:
+            # Find the line with date/time information
+            if datetime_result := self._find_datetime_line(lines):
+                datetime_line, datetime_line_index = datetime_result
+                try:
+                    # Parse the date and time range
+                    start_dt, end_dt = parse_range_single_string(
+                        datetime_line, SEATTLE_TZ)
+                except ValueError as e:
+                    print(f"Error parsing date/time '{datetime_line}': {e}")
+                    start_dt = None
+                    end_dt = None
 
-            # Second line is usually date and time
-            datetime_line = self._clean_html(lines[1])
-            # start_dt, end_dt = self._parse_datetime(datetime_line)
-            try:
-                # Parse the date and time range
-                start_dt, end_dt = parse_range_single_string(
-                    datetime_line, SEATTLE_TZ)
-            except ValueError as e:
-                print(f"Error parsing date/time '{datetime_line}': {e}")
-                start_dt = None
-                end_dt = None
+                # Build address from lines before the datetime line
+                address_lines = [self._clean_html(
+                    line) for line in lines[:datetime_line_index]]
+                address = ', '.join(address_lines) if address_lines else ""
+            else:
+                # Fallback: use first line if no datetime found
+                address = self._clean_html(lines[0]) if lines else ""
 
         # Parse structured fields (format: <b>Field</b>: Value)
 
@@ -280,7 +299,8 @@ class SPRExtractor(BaseListExtractor):
 
         return address, venue, cost, start_dt, end_dt, tags
 
-    def _clean_html(self, text: str) -> str:
+    @staticmethod
+    def _clean_html(text: str) -> str:
         """Remove HTML tags and decode entities."""
         # Remove HTML tags
         text = re.sub(r'<[^>]+>', '', text)
