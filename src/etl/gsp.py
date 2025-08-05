@@ -146,11 +146,11 @@ class GSPAPIExtractor(GSPBaseExtractor):
                             year, month, day)
                     else:
                         raise ValueError("Invalid date format")
-                except Exception:
-                    # Fallback to current date if parsing fails
-                    current_date = datetime.now()
-                    start, end = self._create_date_only_times(
-                        current_date.year, current_date.month, current_date.day)
+                except Exception as e:
+                    # Skip events with unparseable dates - don't create hallucinated events
+                    print(
+                        f"Error parsing GSP date '{date_text}' for event '{title}': {e}")
+                    continue
 
                 normalized_url = self._normalize_event_url(event_url, API_URL)
                 evt = self._create_event(

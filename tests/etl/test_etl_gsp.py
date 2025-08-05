@@ -187,3 +187,17 @@ def test_detail_extractor():
     assert event.end_local.minute == 30
 
     assert event.source_dict is not None
+
+
+def test_gsp_api_invalid_date_should_drop_event():
+    """Test that GSP API extractor drops events with unparseable dates instead of using current date."""
+    # Load test data with an invalid date format
+    json_data = (data_path / "gsp_api_invalid_date.json").read_text()
+
+    extractor = GSPAPIExtractor(json_data)
+    events = extractor.extract()
+
+    # Events with unparseable dates should be dropped, not assigned today's date
+    # This test exposes the bug where datetime.now() fallback creates hallucinated events
+    assert len(
+        events) == 0, f"Expected 0 events but got {len(events)}. Events with invalid dates should be dropped, not assigned current date."
