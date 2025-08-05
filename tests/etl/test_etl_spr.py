@@ -261,19 +261,21 @@ def test_clean_html():
     """Test the _clean_html static method directly"""
     # Test HTML tag removal
     assert SPRExtractor._clean_html("<b>Bold text</b>") == "Bold text"
-    assert SPRExtractor._clean_html('<a href="mailto:test@example.com">Email</a>') == "Email"
-    
+    assert SPRExtractor._clean_html(
+        '<a href="mailto:test@example.com">Email</a>') == "Email"
+
     # Test HTML entity decoding
     assert SPRExtractor._clean_html("&amp;") == "&"
     assert SPRExtractor._clean_html("&lt;script&gt;") == "<script>"
-    assert SPRExtractor._clean_html("Hello&nbsp;World") == "Hello World"  # Test nbsp in context
+    assert SPRExtractor._clean_html(
+        "Hello&nbsp;World") == "Hello World"  # Test nbsp in context
     assert SPRExtractor._clean_html("&ndash;") == "–"
-    
+
     # Test complex example (similar to RSS content)
     complex_html = "Sunday, July 27, 2025, 8&amp;nbsp;&amp;ndash;&amp;nbsp;11am"
     expected = "Sunday, July 27, 2025, 8 – 11am"
     assert SPRExtractor._clean_html(complex_html) == expected
-    
+
     # Test stripping whitespace
     assert SPRExtractor._clean_html("  <p>Text</p>  ") == "Text"
 
@@ -292,11 +294,11 @@ def test_find_datetime_line():
     assert index == 1
     assert "2025" in datetime_line
     assert "11am" in datetime_line
-    
+
     # Test multi-line address format
     lines = [
         "Ballard Corners Park",
-        "1702 NW 62nd St", 
+        "1702 NW 62nd St",
         "Seattle, WA 98107",
         "Saturday, August 2, 2025, 10am – 2pm",
         "We'll be weeding, grooming plants..."
@@ -307,7 +309,7 @@ def test_find_datetime_line():
     assert index == 3
     assert "2025" in datetime_line
     assert "10am" in datetime_line
-    
+
     # Test no datetime line found
     lines = [
         "Some address",
@@ -316,10 +318,10 @@ def test_find_datetime_line():
     ]
     result = SPRExtractor._find_datetime_line(lines)
     assert result is None
-    
+
     # Test line with time but no year (should not match)
     lines = [
-        "Some address", 
+        "Some address",
         "Meeting at 9am",
         "More description"
     ]
