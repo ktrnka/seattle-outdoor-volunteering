@@ -4,8 +4,10 @@
 An ETL pipeline that scrapes Seattle-area outdoor volunteer events into a SQLite database and generates a static website with PicoCSS. Events are fetched nightly via GitHub Actions and served through GitHub Pages.
 
 ## Interaction Guidelines
-- When making design desisions that will significantly affect future development, consider how it will fit into the long-term vision and ask for feedback on the approach.
+- When making design decisions that will significantly affect future development, consider how it will fit into the long-term vision and ask for feedback on the approach.
 - If instructions don't seem feasible (e.g., extracting data that doesn't exist in the source, conflicting requirements), stop development and ask for guidance rather than making assumptions. Clear communication prevents wasted effort and ensures the right solution.
+- **For bug reports and data quality issues**: Always start with TDD - create a failing test that reproduces the problem before attempting any fixes
+- **For new features**: Ask whether to use TDD or implement directly, depending on complexity and risk
 - After completing a major feature or refactor, do a small post-mortem. Reflect on what went well and what could be improved. Then consider some small incremental changes to our development process that might improve our workflow. Then review them with me and collaborate to update the copilot instructions.
 
 ## Architecture & Data Flow
@@ -45,8 +47,46 @@ Events are deduplicated based on date and title, then a canonical version is cre
 
 ## Development Guidelines
 
-- Use test-driven development when appropriate
+### Test-Driven Development (TDD) - Primary Approach
+**When fixing bugs, prefer TDD:**
+1. **Write a failing test first** that exposes the problem or demonstrates the desired behavior
+2. **Create minimal test data if needed** in `tests/etl/data/` that reproduces the issue
+3. **Run the test** to confirm it fails for the right reasons
+4. **Implement the minimal fix** to make the test pass
+5. **Verify** that existing tests still pass
+
+**When implementing new features:**
+1. Write a minimal implementation, being careful to separate unit-testable logic from network calls
+2. Write tests (optionally with fixture data) that minimally cover the new functionality
+3. Run tests to ensure they pass
+4. As we make the implementation more complete and robust, use the tests to catch bugs early and add to the tests
+
+**TDD Examples:**
+- Bug reports: Create a test with data that reproduces the bug, then fix it
+- New extractors: Write the basic extractor logic against fixture data first, then implement network requests
+- Date/time parsing issues: Test edge cases with malformed input data
+- Data integrity: Test that invalid data gets dropped rather than creating hallucinated events
+
+**When TDD applies:**
+- Fixing parsing errors or data quality issues (always use TDD)
+- Adding new data sources (create tests with fixture data first)
+- Modifying extraction logic (test edge cases first)
+- Any change that could break existing functionality
+
+**When TDD may not be needed:**
+- Simple documentation updates or configuration changes
+- Minor refactoring with existing comprehensive test coverage
+- Exploratory work or prototyping (but add tests before committing)
+
+### Data Integrity Principles
+- **Never create hallucinated data**: Drop events with unparseable dates/times rather than using defaults like `datetime.now()`
+- **Log errors clearly**: When dropping invalid data, log what was dropped and why
+- **Test edge cases**: Always test with malformed/missing data to ensure robust error handling
+
+### Code Quality
 - Follow single responsibility principle: separate classes for different data formats
+- Use static methods for utility functions that don't need instance state
+- Add tests for at least one success and one failure case for each new feature
 
 ## Development Workflows
 
@@ -69,10 +109,21 @@ uv run seattle-volunteering build-site
 ### Testing
 Tests use data in `tests/etl/data/` with real HTML/XML samples. Run with `uv run pytest`.
 
+**Test-Driven Development Workflow:**
+- **Bug fixes**: Start by creating a test that reproduces the bug, then fix it
+- **Feature development**: Write tests with mock/fixture data before implementing network calls
+- **Use realistic test data**: Save actual API responses, HTML pages, etc. to `tests/etl/data/`
+- **Test both success and failure**: Include malformed data to test error handling
+
 **Integration Testing:**
 - Use `uv run seattle-volunteering etl` to test the full pipeline with live data
 - This verifies all extractors work together and shows actual event counts
 - Compare output before/after changes to ensure improvements work as expected
+
+**Test Data Management:**
+- Save real examples: `curl` actual API responses/HTML pages to `tests/etl/data/`
+- Create edge case fixtures: Invalid dates, malformed HTML, empty responses
+- Use descriptive filenames: `gsp_api_invalid_date.json`, `spr_rss_missing_datetime.xml`
 
 ### Adding New Data Sources
 1. **Download example data**: If possible, download an example file (HTML, XML, JSON) with curl to `tests/etl/data/` for LLM inspection and unit testing
@@ -82,6 +133,15 @@ Tests use data in `tests/etl/data/` with real HTML/XML samples. Run with `uv run
 5. Add to extractor list in `src/cli.py:etl()`
 6. Test by running the ETL with `uv run seattle-volunteering etl --only-run new_source`
 7. Update `DATA_SOURCES.md` status table
+
+### Bug Fixing Protocol
+**Always start with a failing test when fixing bugs:**
+1. **Reproduce first**: Create test data that reproduces the reported issue
+2. **Verify the bug**: Write a test that fails in the expected way
+3. **Understand the root cause**: Use the test to understand why it's failing
+4. **Fix minimally**: Make the smallest change possible to make the test pass
+5. **Verify comprehensively**: Run all tests to ensure no regressions
+6. **Log appropriately**: Add clear error messages for dropped/invalid data
 
 ## File Structure Notes
 - CLI entry point: `src/cli.py` with Click commands
