@@ -435,7 +435,18 @@ def test_splink():
     """Test out Splink for event deduplication."""
     from .etl.splink_dedupe import run_splink_deduplication
 
-    run_splink_deduplication()
+    for canonical_event in run_splink_deduplication():
+        if len(canonical_event.source_events) > 2:
+            click.echo(f"Cluster {canonical_event.canonical_id}:")
+            click.echo(f"  Title: {canonical_event.title}")
+            click.echo(f"  Start: {canonical_event.start}")
+            click.echo(f"  End: {canonical_event.end}")
+            click.echo(f"  Venue: {canonical_event.venue}")
+            click.echo(f"  Address: {canonical_event.address}")
+            click.echo(f"  URL: {canonical_event.url}")
+            click.echo(
+                f"  Sources: {', '.join(canonical_event.source_events)}")
+            click.echo()
 
 
 @dev.command()
