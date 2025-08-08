@@ -18,6 +18,7 @@ from .etl.manual import ManualExtractor
 from .etl.spf import SPFExtractor
 from .etl.spr import SPRExtractor
 from .etl.spu import SPUExtractor
+from .etl.splink_dedupe import run_splink_deduplication
 from .models import SEATTLE_TZ
 from .site import generator
 
@@ -170,7 +171,22 @@ def etl(only_run: Optional[str] = None):
 @cli.command()
 @click.option('--verbose', is_flag=True, help='Show detailed logging of the deduplication process')
 @click.option('--dry-run', is_flag=True, help='Run deduplication without saving changes')
-def deduplicate(verbose: bool = False, dry_run: bool = False):
+@click.option('--method', type=click.Choice(['splink', 'old']), default='splink')
+def deduplicate(verbose: bool = False, dry_run: bool = False, method: str = 'splink'):
+    """Run deduplication on existing source events in the database."""
+    if method == 'splink':
+        click.echo("Running Splink deduplication...")
+        canonical_events = run_splink_deduplication(show_examples=verbose)
+        if not dry_run:
+            database.overwrite_canonical_events(canonical_events)
+    elif method == 'old':
+        click.echo("Running old deduplication method...")
+        deduplicate_old(verbose=verbose, dry_run=dry_run)
+    else:
+        click.echo(f"Unknown deduplication method: {method}")
+
+
+def deduplicate_old(verbose: bool = False, dry_run: bool = False):
     """Run deduplication on existing source events in the database."""
     click.echo("Loading source events from database...")
     source_events = database.get_source_events()
@@ -428,25 +444,6 @@ def build_site():
     """Generate static site into docs/."""
     generator.build(Path("docs"))
     click.echo("Site built → docs/index.html")
-
-
-@dev.command()
-def test_splink():
-    """Test out Splink for event deduplication."""
-    from .etl.splink_dedupe import run_splink_deduplication
-
-    for canonical_event in run_splink_deduplication():
-        if len(canonical_event.source_events) > 2:
-            click.echo(f"Cluster {canonical_event.canonical_id}:")
-            click.echo(f"  Title: {canonical_event.title}")
-            click.echo(f"  Start: {canonical_event.start}")
-            click.echo(f"  End: {canonical_event.end}")
-            click.echo(f"  Venue: {canonical_event.venue}")
-            click.echo(f"  Address: {canonical_event.address}")
-            click.echo(f"  URL: {canonical_event.url}")
-            click.echo(
-                f"  Sources: {', '.join(canonical_event.source_events)}")
-            click.echo()
 
 
 @dev.command()

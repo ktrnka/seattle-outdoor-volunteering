@@ -1,3 +1,4 @@
+from datetime import timezone
 from typing import Any, List, Optional
 import pandas as pd
 import splink.comparison_library as cl
@@ -142,14 +143,21 @@ def create_canonical_event_from_group(cluster_id, event_group: pd.DataFrame) -> 
         key=lambda x: x.map(lambda val: source_preferences.get(
             val, len(source_preferences)))
     )
-    # Generate a canonical ID based on normalized title and start date
+
+    events_with_time = sorted_group[sorted_group["start_time"].notnull()]
+    if not events_with_time.empty:
+        start = mode(events_with_time["start"])
+        end = mode(events_with_time["end"])
+    else:
+        start = mode(sorted_group["start"])
+        end = mode(sorted_group["end"])
 
     try:
         return CanonicalEvent(
             canonical_id=f"cluster_{cluster_id}",
             title=sorted_group["title"].iloc[0],
-            start=mode(event_group["start"]),
-            end=mode(event_group["end"]),
+            start=start.tz_localize(timezone.utc),
+            end=end.tz_localize(timezone.utc),
             venue=mode(event_group["venue"]),
             address=mode(event_group["address"]),
             url=sorted_group["url"].iloc[0],

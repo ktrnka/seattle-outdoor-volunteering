@@ -226,7 +226,7 @@ class DNDAExtractor(BaseListExtractor):
         except Exception:
             return None
 
-    def _extract_venue_from_dnda_event(self, dnda_event: DNDASourceEvent) -> str:
+    def _extract_venue_from_dnda_event(self, dnda_event: DNDASourceEvent) -> Optional[str]:
         """Extract venue name from DNDASourceEvent data."""
         # First try to extract from description
         if dnda_event.description:
@@ -242,8 +242,7 @@ class DNDAExtractor(BaseListExtractor):
             if venue:
                 return venue
 
-        # TODO: I hate this default
-        return "DNDA Event Location"
+        return None
 
     def _extract_venue_from_description(self, description: str) -> Optional[str]:
         """Extract venue name from HTML description."""
