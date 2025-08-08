@@ -2,6 +2,11 @@
 
 ## Short-Term
 
+### 8/8
+- The dedupe wasn't updating the database, so I'm partway through a refactor of the DB into a context manager to help
+- There are a number of dedupe issues remaining in cases where the duplicate events have different titles
+- I saw there's a Fremont event this weekend, but it's ONLY on the Fremont blog. That might make a good LLM pipeline test
+
 ### UI
 - Update to Pico 2.0 and their official CDN, not whatever's in here
 - Update CSS to be more responsive on mobile. It might be better to use Pico's lightweight column setup
