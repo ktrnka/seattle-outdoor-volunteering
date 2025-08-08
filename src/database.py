@@ -172,6 +172,7 @@ class Database:
     def __enter__(self):
         """Enter the context manager: decompress DB, create engine and session."""
         # Ensure database exists (decompresses if needed)
+        # TODO: Use a mkstemp file
         ensure_database_exists()
 
         # Create engine and session
