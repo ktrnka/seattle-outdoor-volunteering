@@ -1,16 +1,17 @@
 """Database module using SQLAlchemy for managing the events database."""
 
+import gzip
+import shutil
+import sqlite3
+import uuid
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine, String, DateTime, Float, Text, Integer, PrimaryKeyConstraint, text
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Mapped, mapped_column, object_session, sessionmaker, Session, declarative_base
 from sqlalchemy.sql import func
 from typing import List, Dict, Optional, Tuple
-import sqlite3
 
-import uuid
-
-from .config import DB_PATH, ensure_database_exists
+from .config import DB_PATH, DB_GZ, ensure_database_exists
 from .models import Event as PydanticEvent, CanonicalEvent as PydanticCanonicalEvent, EventGroupMembership as PydanticEventGroupMembership, ETLRun as PydanticETLRun
 
 Base = declarative_base()
@@ -157,6 +158,72 @@ class ETLRun(Base):
             status=self.status,
             num_rows=self.num_rows
         )
+
+
+class Database:
+    """Context manager for database operations that handles compression/decompression."""
+
+    def __init__(self, compress_on_exit: bool = True):
+        self.session: Optional[Session] = None
+        self.engine = None
+        self.compress_on_exit = compress_on_exit
+        self.initial_data_version = None
+
+    def __enter__(self):
+        """Enter the context manager: decompress DB, create engine and session."""
+        # Ensure database exists (decompresses if needed)
+        ensure_database_exists()
+
+        # Create engine and session
+        self.engine = create_engine(f'sqlite:///{DB_PATH}', echo=False)
+        SessionLocal = sessionmaker(bind=self.engine)
+        self.session = SessionLocal()
+
+        # Get the initial user_version to detect changes later
+        self.initial_data_version = self.get_data_version()
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context manager: close session and recompress DB if changed."""
+        if self.session:
+            if exc_type is not None:
+                # If there was an exception, rollback the session
+                self.session.rollback()
+            else:
+                # If no exception, commit any pending changes
+                self.session.commit()
+
+            db_changed = self.get_data_version() != self.initial_data_version
+
+            self.session.close()
+
+            # Only recompress if database changed and compression is enabled
+            if self.compress_on_exit and db_changed:
+                with open(DB_PATH, "rb") as src, gzip.open(DB_GZ, "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+
+    def get_data_version(self) -> int:
+        """Get the current data version from the database."""
+        assert self.session
+        version = self.session.execute(text("PRAGMA user_version")).scalar()
+        assert version is not None and isinstance(version, int)
+        return version
+
+    def get_source_events_count(self) -> int:
+        """Get the total count of events in the database."""
+        if not self.session:
+            raise RuntimeError(
+                "Database session not available. Use within 'with' statement.")
+        return self.session.query(Event).count()
+
+    def get_source_events(self) -> List[PydanticEvent]:
+        """Retrieve all events from the database sorted by start date."""
+        if not self.session:
+            raise RuntimeError(
+                "Database session not available. Use within 'with' statement.")
+        events = self.session.query(Event).order_by(Event.start).all()
+        return [event.to_pydantic() for event in events]
 
 
 def get_engine():
