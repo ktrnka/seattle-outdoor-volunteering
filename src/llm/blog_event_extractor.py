@@ -27,12 +27,13 @@ For datetimes, assume Pacific Time zone if not specified. Use ISO 8601 format: Y
 
 class ExtractedEvent(BaseModel):
     """Event data extracted from article content via LLM."""
+
     model_config = ConfigDict(from_attributes=True)
 
     title: str
     event_date: date
     start_datetime: datetime  # Full datetime in ISO format
-    end_datetime: datetime    # Full datetime in ISO format
+    end_datetime: datetime  # Full datetime in ISO format
 
     venue: Optional[str] = None
     description: Optional[str] = None
@@ -54,6 +55,7 @@ class ExtractedEvent(BaseModel):
 
 class ExtractedEventList(BaseModel):
     """List of extracted events from LLM response."""
+
     model_config = ConfigDict(from_attributes=True)
 
     events: List[ExtractedEvent]
@@ -70,13 +72,10 @@ def extract_articles(title: str, publication_date: str, body: str) -> List[Extra
     user_context = build_user_context(title, publication_date, body)
 
     response = client.chat.completions.parse(
-        messages=[
-            {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "user", "content": user_context}
-        ],
+        messages=[{"role": "system", "content": _SYSTEM_PROMPT}, {"role": "user", "content": user_context}],
         temperature=0.2,
         model="openai/gpt-4.1",
-        response_format=ExtractedEventList
+        response_format=ExtractedEventList,
     )
 
     event_list = response.choices[0].message.parsed

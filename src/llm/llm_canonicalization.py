@@ -99,7 +99,7 @@ def fill_prompt_messages(event: CanonicalEvent, source_events: List[Event]) -> L
         {
             "role": "user",
             "content": f"Canonical Event:\n{event.title}\n\nSource Events:\n" + "\n".join(f"- {se.title}" for se in source_events),
-        }
+        },
     ]
 
 
@@ -109,7 +109,7 @@ class RevisedCanonicalEvent(BaseModel):
 
     title: str
     venue: str
-    category: Literal['landscaping', 'litter', 'concert', 'other']
+    category: Literal["landscaping", "litter", "concert", "other"]
     description: str | None = None
 
 
@@ -152,9 +152,7 @@ def run_llm_canonicalization(event: CanonicalEvent, source_events: List[Event]):
     for line in content.planning_trace:
         print(f"- {line}")
 
-    print("\nTitle:", content.title,
-          f"(previously: {event.title if event.title != content.title else 'SAME'})")
-    print("Venue:", content.venue,
-          f"(previously: {event.venue if event.venue != content.venue else 'SAME'})")
+    print("\nTitle:", content.title, f"(previously: {event.title if event.title != content.title else 'SAME'})")
+    print("Venue:", content.venue, f"(previously: {event.venue if event.venue != content.venue else 'SAME'})")
     print("Category:", content.category)
     print("Description:", content.description)
