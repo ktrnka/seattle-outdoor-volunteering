@@ -16,8 +16,7 @@ from typing import Optional, Tuple
 def parse_time(time_str: str) -> datetime:
     """Parse a time like '9am' or '12:30pm' into a datetime object."""
 
-    norm_time_str = time_str.replace(
-        '&nbsp;', ' ').replace('&ndash;', '-').replace(" ", "").strip()
+    norm_time_str = time_str.replace("&nbsp;", " ").replace("&ndash;", "-").replace(" ", "").strip()
 
     for time_format in ("%I:%M%p", "%I%p", "%I:%M", "%I"):
         try:
@@ -34,7 +33,7 @@ def parse_date(date_str: str, after: Optional[datetime] = None) -> date:
         try:
             dt = datetime.strptime(date_str, date_format).date()
 
-            if '%Y' not in date_format:
+            if "%Y" not in date_format:
                 # If no year is provided, use the current year
                 dt = dt.replace(year=datetime.now().year)
 
@@ -57,15 +56,14 @@ def parse_range(date_str: str, time_range_str: str, tz: tzinfo, after: Optional[
     partial_date = parse_date(date_str, after)
 
     # Replace HTML en-dash and Unicode en-dash with regular dash
-    time_range_str = time_range_str.replace(
-        '&ndash;', '-').replace('\u2013', '-')
-    start_str, end_str = time_range_str.split('-')
+    time_range_str = time_range_str.replace("&ndash;", "-").replace("\u2013", "-")
+    start_str, end_str = time_range_str.split("-")
 
     partial_start_time = parse_time(start_str.strip())
     partial_end_time = parse_time(end_str.strip())
 
     # If the start time doesn't have an ampm marker, pick whatever leads to the shorter duration
-    if not start_str.strip().lower().endswith(('am', 'pm')):
+    if not start_str.strip().lower().endswith(("am", "pm")):
         if partial_start_time + timedelta(hours=12) < partial_end_time:
             partial_start_time += timedelta(hours=12)
 
@@ -80,7 +78,7 @@ def parse_range(date_str: str, time_range_str: str, tz: tzinfo, after: Optional[
 
 
 def parse_range_single_string(event_datetime_str: str, tz: tzinfo, after: Optional[datetime] = None) -> Tuple[datetime, datetime]:
-    date_str, time_range_str = event_datetime_str.rsplit(', ', 1)
+    date_str, time_range_str = event_datetime_str.rsplit(", ", 1)
 
     return parse_range(date_str, time_range_str, tz, after)
 

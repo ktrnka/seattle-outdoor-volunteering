@@ -18,6 +18,7 @@ RSS_URL = "https://fremontneighbor.com/feed/"
 
 class FremontArticle(BaseModel):
     """Fremont Neighbor RSS article."""
+
     model_config = ConfigDict(from_attributes=True)
 
     title: str
@@ -28,14 +29,17 @@ class FremontArticle(BaseModel):
     content: str
     guid: str
 
+
 def strip_html_tags(text: str) -> str:
     """Remove HTML tags from a string using regex."""
     if not text:
         return ""
     return re.sub(r"<[^>]+>", "", text)
 
+
 class FremontNeighborExtractor(BaseListExtractor):
     """Fremont Neighbor blog extractor for RSS feed with LLM event classification."""
+
     source = "FRE"
 
     # Only run LLM extraction for articles within this window
@@ -44,10 +48,7 @@ class FremontNeighborExtractor(BaseListExtractor):
     @classmethod
     def fetch(cls):
         """Fetch raw RSS content from Fremont Neighbor blog."""
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (compatible; SeattleVolunteerBot/1.0)',
-            'Accept': 'application/rss+xml, application/xml, text/xml, */*'
-        }
+        headers = {"User-Agent": "Mozilla/5.0 (compatible; SeattleVolunteerBot/1.0)", "Accept": "application/rss+xml, application/xml, text/xml, */*"}
         response = requests.get(RSS_URL, timeout=30, headers=headers)
         response.raise_for_status()
         return cls(response.text)
@@ -71,17 +72,12 @@ class FremontNeighborExtractor(BaseListExtractor):
             if article and article.pub_date >= datetime.now(timezone.utc) - self.extraction_window:
                 # Use LLM to extract events from article content
                 extracted_events = extract_articles(
-                    title=article.title,
-                    publication_date=str(article.pub_date),
-                    body=strip_html_tags(article.content)
+                    title=article.title, publication_date=str(article.pub_date), body=strip_html_tags(article.content)
                 )
                 for extracted in extracted_events:
                     events.append(
                         extracted.to_common_event(
-                            source=self.source,
-                            source_id=generate_source_id(
-                                article.guid, extracted.event_date),
-                            url=article.link
+                            source=self.source, source_id=generate_source_id(article.guid, extracted.event_date), url=article.link
                         )
                     )
 
@@ -102,13 +98,17 @@ class FremontNeighborExtractor(BaseListExtractor):
             link_elem = item.find("link")
             pub_date_elem = item.find("pubDate")
             description_elem = item.find("description")
-            content_elem = item.find(
-                "{http://purl.org/rss/1.0/modules/content/}encoded")
+            content_elem = item.find("{http://purl.org/rss/1.0/modules/content/}encoded")
             guid_elem = item.find("guid")
 
-            if (title_elem is None or link_elem is None or pub_date_elem is None or
-                title_elem.text is None or link_elem.text is None or
-                    pub_date_elem.text is None):
+            if (
+                title_elem is None
+                or link_elem is None
+                or pub_date_elem is None
+                or title_elem.text is None
+                or link_elem.text is None
+                or pub_date_elem.text is None
+            ):
                 return None
 
             # Parse categories
@@ -120,19 +120,15 @@ class FremontNeighborExtractor(BaseListExtractor):
             # Parse publication date - safe to access text now
             pub_date_str = pub_date_elem.text
             # Format: "Fri, 08 Aug 2025 13:02:00 +0000"
-            pub_date = datetime.strptime(
-                pub_date_str, "%a, %d %b %Y %H:%M:%S %z")
+            pub_date = datetime.strptime(pub_date_str, "%a, %d %b %Y %H:%M:%S %z")
 
             return FremontArticle(
-                title=FremontNeighborExtractor._normalize_text(
-                    title_elem.text),
+                title=FremontNeighborExtractor._normalize_text(title_elem.text),
                 link=normalize_url(link_elem.text.strip()),
                 pub_date=pub_date,
                 categories=categories,
-                description=FremontNeighborExtractor._normalize_text(
-                    description_elem.text if description_elem is not None else None),
-                content=FremontNeighborExtractor._normalize_text(
-                    content_elem.text if content_elem is not None else None),
+                description=FremontNeighborExtractor._normalize_text(description_elem.text if description_elem is not None else None),
+                content=FremontNeighborExtractor._normalize_text(content_elem.text if content_elem is not None else None),
                 guid=guid_elem.text.strip() if guid_elem is not None and guid_elem.text else "",
             )
         except Exception:

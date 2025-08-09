@@ -31,10 +31,10 @@ def normalize_title(title: str) -> str:
     normalized = html.unescape(normalized)
 
     # Remove all other non-word characters (keep only letters, numbers, spaces)
-    normalized = re.sub(r'[^\w\s]', ' ', normalized)
+    normalized = re.sub(r"[^\w\s]", " ", normalized)
 
     # Collapse multiple spaces into single spaces
-    normalized = re.sub(r'\s+', ' ', normalized)
+    normalized = re.sub(r"\s+", " ", normalized)
 
     # Strip leading/trailing whitespace
     return normalized.strip()
@@ -61,7 +61,7 @@ def group_events_by_title_and_date(events: List[Event]) -> Dict[Tuple[str, date]
     return dict(groups)
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def mode(values: Iterable[Optional[T]]) -> Optional[T]:
@@ -99,7 +99,7 @@ def is_gsp_url(url: str) -> bool:
         True if URL is from GSP
     """
     parsed = urlparse(str(url))
-    return 'greenseattle' in parsed.netloc.lower()
+    return "greenseattle" in parsed.netloc.lower()
 
 
 def select_preferred_url(events: List[Event]) -> str:
@@ -136,7 +136,7 @@ def generate_canonical_id(normalized_title: str, event_date: date) -> str:
     """
     # Create a deterministic hash from title and date
     content = f"{normalized_title}:{event_date.isoformat()}"
-    hash_obj = hashlib.sha256(content.encode('utf-8'))
+    hash_obj = hashlib.sha256(content.encode("utf-8"))
     return hash_obj.hexdigest()[:16]  # Use first 16 chars for shorter IDs
 
 
@@ -190,8 +190,7 @@ def create_canonical_event(event_group: List[Event], normalized_title: str, even
     tags = sorted(list(all_tags))
 
     # Create source events list
-    source_events = [
-        f"{event.source}:{event.source_id}" for event in event_group]
+    source_events = [f"{event.source}:{event.source_id}" for event in event_group]
 
     return CanonicalEvent(
         canonical_id=canonical_id,
@@ -205,7 +204,7 @@ def create_canonical_event(event_group: List[Event], normalized_title: str, even
         latitude=latitude,
         longitude=longitude,
         tags=tags,
-        source_events=source_events
+        source_events=source_events,
     )
 
 
@@ -228,8 +227,7 @@ def deduplicate_events(events: List[Event]) -> List[CanonicalEvent]:
 
     for (normalized_title, event_date), event_group in event_groups.items():
         # Create canonical event from this group
-        canonical_event = create_canonical_event(
-            event_group, normalized_title, event_date)
+        canonical_event = create_canonical_event(event_group, normalized_title, event_date)
         canonical_events.append(canonical_event)
 
     return canonical_events

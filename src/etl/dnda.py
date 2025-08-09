@@ -19,6 +19,7 @@ API_BASE_URL = "https://dnda.org/wp-json/mec/v1/events"
 
 class DNDASourceEvent(BaseModel):
     """Structured data extracted from DNDA JSON API."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -49,6 +50,7 @@ class DNDASourceEvent(BaseModel):
 
 class DNDAExtractor(BaseListExtractor):
     """Extractor for Delridge Neighborhoods Development Association (DNDA) events."""
+
     source = "DNDA"
 
     def extract(self) -> List[Event]:
@@ -61,7 +63,7 @@ class DNDAExtractor(BaseListExtractor):
         events = []
         for event_data in events_data:
             # Only extract volunteer/restoration/cleanup related events
-            title = event_data.get('title', '')
+            title = event_data.get("title", "")
             if not self._is_volunteer_event(title):
                 continue
 
@@ -79,11 +81,11 @@ class DNDAExtractor(BaseListExtractor):
         """Extract structured DNDASourceEvent from JSON data."""
         try:
             # Required fields
-            event_id = event_data.get('id')
-            title = event_data.get('title', '').strip()
-            url = event_data.get('url', '')
-            start = event_data.get('start', '')
-            end = event_data.get('end', '')
+            event_id = event_data.get("id")
+            title = event_data.get("title", "").strip()
+            url = event_data.get("url", "")
+            start = event_data.get("start", "")
+            end = event_data.get("end", "")
 
             if not all([event_id, title, url, start, end]):
                 return None
@@ -102,27 +104,26 @@ class DNDAExtractor(BaseListExtractor):
                 title=title,
                 start=start,
                 end=end,
-                start_str=event_data.get('startStr'),
-                end_str=event_data.get('endStr'),
-                image=event_data.get('image'),
+                start_str=event_data.get("startStr"),
+                end_str=event_data.get("endStr"),
+                image=event_data.get("image"),
                 url=url,
-                background_color=event_data.get('backgroundColor'),
-                border_color=event_data.get('borderColor'),
-                description=event_data.get('description'),
-                localtime=event_data.get('localtime'),
-                location=event_data.get('location'),
-                start_date=event_data.get('start_date'),
-                start_time=event_data.get('start_time'),
-                end_date=event_data.get('end_date'),
-                end_time=event_data.get('end_time'),
-                start_date_str=event_data.get('startDateStr'),
-                end_date_str=event_data.get('endDateStr'),
-                start_day=event_data.get('startDay'),
-                labels=event_data.get('labels'),
-                reason_for_cancellation=event_data.get(
-                    'reason_for_cancellation'),
-                loca_time_html=event_data.get('locaTimeHtml'),
-                gridsquare=event_data.get('gridsquare')
+                background_color=event_data.get("backgroundColor"),
+                border_color=event_data.get("borderColor"),
+                description=event_data.get("description"),
+                localtime=event_data.get("localtime"),
+                location=event_data.get("location"),
+                start_date=event_data.get("start_date"),
+                start_time=event_data.get("start_time"),
+                end_date=event_data.get("end_date"),
+                end_time=event_data.get("end_time"),
+                start_date_str=event_data.get("startDateStr"),
+                end_date_str=event_data.get("endDateStr"),
+                start_day=event_data.get("startDay"),
+                labels=event_data.get("labels"),
+                reason_for_cancellation=event_data.get("reason_for_cancellation"),
+                loca_time_html=event_data.get("locaTimeHtml"),
+                gridsquare=event_data.get("gridsquare"),
             )
 
         except Exception:
@@ -130,7 +131,7 @@ class DNDAExtractor(BaseListExtractor):
             return None
 
     @classmethod
-    def fetch(cls) -> 'DNDAExtractor':
+    def fetch(cls) -> "DNDAExtractor":
         """Fetch events from DNDA API."""
         # Build the API URL with appropriate date range
         # Get events from today to 3 months from now
@@ -144,54 +145,50 @@ class DNDAExtractor(BaseListExtractor):
 
         # Build query parameters
         params = {
-            'show_past_events': '0',
-            'show_only_past_events': '0',
-            'show_only_one_occurrence': '0',
-            'categories': '',
-            'multiCategories': '',
-            'location': 'undefined',
-            'organizer': 'undefined',
-            'speaker': 'undefined',
-            'tag': 'undefined',
-            'label': 'undefined',
-            'cost_min': 'undefined',
-            'cost_max': 'undefined',
-            'display_label': '1',
-            'reason_for_cancellation': '',
-            'is_category_page': '',
-            'cat_id': '',
-            'local_time': '',
-            'filter_category': '',
-            'filter_location': '',
-            'filter_organizer': '',
-            'filter_label': '',
-            'filter_tag': '',
-            'filter_author': '',
-            'locale': 'en',
-            'lang': 'en',
-            'startParam': start_param,
-            'endParam': end_param,
-            'timeZone': '-7'  # Pacific timezone offset
+            "show_past_events": "0",
+            "show_only_past_events": "0",
+            "show_only_one_occurrence": "0",
+            "categories": "",
+            "multiCategories": "",
+            "location": "undefined",
+            "organizer": "undefined",
+            "speaker": "undefined",
+            "tag": "undefined",
+            "label": "undefined",
+            "cost_min": "undefined",
+            "cost_max": "undefined",
+            "display_label": "1",
+            "reason_for_cancellation": "",
+            "is_category_page": "",
+            "cat_id": "",
+            "local_time": "",
+            "filter_category": "",
+            "filter_location": "",
+            "filter_organizer": "",
+            "filter_label": "",
+            "filter_tag": "",
+            "filter_author": "",
+            "locale": "en",
+            "lang": "en",
+            "startParam": start_param,
+            "endParam": end_param,
+            "timeZone": "-7",  # Pacific timezone offset
         }
 
         # Make the request with appropriate headers
         headers = {
-            'Accept': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
         }
 
-        response = requests.get(
-            API_BASE_URL, params=params, headers=headers, timeout=30)
+        response = requests.get(API_BASE_URL, params=params, headers=headers, timeout=30)
         response.raise_for_status()
 
         return cls(response.text)
 
     def _is_volunteer_event(self, title: str) -> bool:
         """Check if the event title indicates a volunteer activity."""
-        volunteer_keywords = [
-            'volunteer', 'restoration', 'cleanup', 'stewardship',
-            'weeding', 'planting', 'invasive', 'forest'
-        ]
+        volunteer_keywords = ["volunteer", "restoration", "cleanup", "stewardship", "weeding", "planting", "invasive", "forest"]
         title_lower = title.lower()
         return any(keyword in title_lower for keyword in volunteer_keywords)
 
@@ -219,7 +216,7 @@ class DNDAExtractor(BaseListExtractor):
                 venue=venue,
                 address=address,
                 url=HttpUrl(normalize_url(dnda_event.url)),
-                source_dict=dnda_event.model_dump_json()
+                source_dict=dnda_event.model_dump_json(),
             )
 
         # TODO: Consolidate error handling
@@ -230,8 +227,7 @@ class DNDAExtractor(BaseListExtractor):
         """Extract venue name from DNDASourceEvent data."""
         # First try to extract from description
         if dnda_event.description:
-            venue = self._extract_venue_from_description(
-                dnda_event.description)
+            venue = self._extract_venue_from_description(dnda_event.description)
             if venue:
                 return venue
 
@@ -246,10 +242,10 @@ class DNDAExtractor(BaseListExtractor):
 
     def _extract_venue_from_description(self, description: str) -> Optional[str]:
         """Extract venue name from HTML description."""
-        soup = BeautifulSoup(description, 'html.parser')
+        soup = BeautifulSoup(description, "html.parser")
 
         # Look for "Location:" followed by a link or text
-        location_pattern = r'<strong>Location:\s*</strong>\s*<a[^>]*>([^<]+)</a>'
+        location_pattern = r"<strong>Location:\s*</strong>\s*<a[^>]*>([^<]+)</a>"
         match = re.search(location_pattern, description, re.IGNORECASE)
         if match:
             return match.group(1).strip()
@@ -258,10 +254,10 @@ class DNDAExtractor(BaseListExtractor):
         text = soup.get_text()
         park_patterns = [
             # "at ParkName" pattern
-            r'\bat\s+(\w+(?:\s+\w+)*\s+(?:Park|Wetland|Bog))\b',
+            r"\bat\s+(\w+(?:\s+\w+)*\s+(?:Park|Wetland|Bog))\b",
             # Just park names with word boundaries
-            r'\b(\w+(?:\s+\w+)*\s+(?:Park|Wetland|Bog))\b',
-            r'\b(Camp\s+\w+)\b',
+            r"\b(\w+(?:\s+\w+)*\s+(?:Park|Wetland|Bog))\b",
+            r"\b(Camp\s+\w+)\b",
         ]
 
         for pattern in park_patterns:
@@ -276,8 +272,8 @@ class DNDAExtractor(BaseListExtractor):
         # Common venue patterns in addresses
         venue_patterns = [
             # Optional "at" prefix, multi-word park names
-            r'(?:at\s+)?(\w+(?:\s+\w+)*\s+(?:Park|Wetland|Bog))',
-            r'(Camp\s+\w+)',
+            r"(?:at\s+)?(\w+(?:\s+\w+)*\s+(?:Park|Wetland|Bog))",
+            r"(Camp\s+\w+)",
         ]
 
         for pattern in venue_patterns:

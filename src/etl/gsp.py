@@ -23,9 +23,9 @@ CAL_URL = "https://seattle.greencitypartnerships.org/event/calendar/"
 
 def _extract_source_id_from_url(event_url: str) -> str | None:
     """Extract source_id from GSP event URL."""
-    if event_url and '/event/' in event_url:
+    if event_url and "/event/" in event_url:
         try:
-            return event_url.split('/event/')[-1].split('/')[0]
+            return event_url.split("/event/")[-1].split("/")[0]
         except Exception:
             pass
     return None
@@ -33,6 +33,7 @@ def _extract_source_id_from_url(event_url: str) -> str | None:
 
 class GSPBaseExtractor(BaseListExtractor):
     """Base class for GSP extractors with shared utility methods."""
+
     source = "GSP"
 
     @staticmethod
@@ -43,7 +44,7 @@ class GSPBaseExtractor(BaseListExtractor):
     @staticmethod
     def _normalize_event_url(event_url, base_url):
         """Normalize a GSP event URL."""
-        if event_url and event_url.startswith('/'):
+        if event_url and event_url.startswith("/"):
             event_url = "https://seattle.greencitypartnerships.org" + event_url
         return normalize_url(event_url or base_url)
 
@@ -52,8 +53,7 @@ class GSPBaseExtractor(BaseListExtractor):
         """Create zero-duration start/end times for date-only events."""
         # Create midnight in Seattle time first, then convert to UTC
         # Date-only events have zero duration (same start/end time)
-        start_seattle = datetime(
-            year, month, day, 0, 0, 0, tzinfo=SEATTLE_TZ)
+        start_seattle = datetime(year, month, day, 0, 0, 0, tzinfo=SEATTLE_TZ)
         start_utc = start_seattle.astimezone(timezone.utc)
         end_utc = start_utc  # Zero duration indicates this is a date-only event
         return start_utc, end_utc
@@ -72,7 +72,7 @@ class GSPBaseExtractor(BaseListExtractor):
             venue=venue,
             address=None,
             url=HttpUrl(url),
-            source_dict=json.dumps(extra_fields) if extra_fields else None
+            source_dict=json.dumps(extra_fields) if extra_fields else None,
         )
 
 
@@ -82,11 +82,15 @@ class GSPAPIExtractor(GSPBaseExtractor):
     @classmethod
     def fetch(cls):
         """Fetch raw JSON from the GSP API endpoint."""
-        response = requests.get(API_URL, timeout=30, headers={
-            "Accept": "application/json, text/javascript, */*; q=0.01",
-            "X-Requested-With": "XMLHttpRequest",
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        })
+        response = requests.get(
+            API_URL,
+            timeout=30,
+            headers={
+                "Accept": "application/json, text/javascript, */*; q=0.01",
+                "X-Requested-With": "XMLHttpRequest",
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            },
+        )
         response.raise_for_status()
         return cls(response.text)
 
@@ -95,7 +99,7 @@ class GSPAPIExtractor(GSPBaseExtractor):
         data = json.loads(self.raw_data)
         events = []
 
-        for row in data['aaData']:
+        for row in data["aaData"]:
             if not row or not row[0]:
                 continue
 
@@ -118,7 +122,7 @@ class GSPAPIExtractor(GSPBaseExtractor):
                     continue
 
                 title = title_link.get_text(strip=True)
-                event_url = str(title_link.get('href', ''))
+                event_url = str(title_link.get("href", ""))
 
                 # Extract source_id from URL
                 source_id = _extract_source_id_from_url(event_url)
@@ -138,23 +142,20 @@ class GSPAPIExtractor(GSPBaseExtractor):
                 # Parse date
                 try:
                     # Convert MM/DD/YYYY to datetime
-                    date_parts = date_text.split('/')
+                    date_parts = date_text.split("/")
                     if len(date_parts) == 3:
                         month, day, year = map(int, date_parts)
                         # API only provides date, not time - create date-only event
-                        start, end = self._create_date_only_times(
-                            year, month, day)
+                        start, end = self._create_date_only_times(year, month, day)
                     else:
                         raise ValueError("Invalid date format")
                 except Exception as e:
                     # Skip events with unparseable dates - don't create hallucinated events
-                    print(
-                        f"Error parsing GSP date '{date_text}' for event '{title}': {e}")
+                    print(f"Error parsing GSP date '{date_text}' for event '{title}': {e}")
                     continue
 
                 normalized_url = self._normalize_event_url(event_url, API_URL)
-                evt = self._create_event(
-                    source_id, title, start, end, venue, normalized_url)
+                evt = self._create_event(source_id, title, start, end, venue, normalized_url)
                 events.append(evt)
 
             except Exception:
@@ -179,8 +180,7 @@ class GSPCalendarExtractor(GSPBaseExtractor):
     def fetch(cls):
         """Fetch raw HTML from the GSP calendar."""
 
-        html = requests.get(cls.build_url(
-            date.today(), date.today() + timedelta(days=30)), timeout=30).text
+        html = requests.get(cls.build_url(date.today(), date.today() + timedelta(days=30)), timeout=30).text
         return cls(html)
 
     def extract(self) -> List[Event]:
@@ -199,7 +199,7 @@ class GSPCalendarExtractor(GSPBaseExtractor):
                 title = title_link.get_text(strip=True)
 
                 # Note: These are relative URLs
-                event_url = str(title_link.get('href', ''))
+                event_url = str(title_link.get("href", ""))
 
                 # Extract source_id from URL
                 source_id = _extract_source_id_from_url(event_url)
@@ -214,8 +214,8 @@ class GSPCalendarExtractor(GSPBaseExtractor):
 
                 # Parse date - format like "July 28, 9am-12:30pm @ Burke-Gilman Trail"
                 # Extract the date and time part before @
-                if '@' in date_text:
-                    date_part, venue_part = date_text.split('@', 1)
+                if "@" in date_text:
+                    date_part, venue_part = date_text.split("@", 1)
                     venue = venue_part.strip()
                 else:
                     date_part = date_text
@@ -223,18 +223,15 @@ class GSPCalendarExtractor(GSPBaseExtractor):
 
                 description_element = event_div.select("p")[1]
                 if description_element:
-                    description = description_element.find(
-                        string=True, recursive=False).strip()  # type: ignore
+                    description = description_element.find(string=True, recursive=False).strip()  # type: ignore
                 else:
                     description = None
 
                 # Parse the date and time range
-                start, end = parse_range_single_string(
-                    date_part.strip(), SEATTLE_TZ)
+                start, end = parse_range_single_string(date_part.strip(), SEATTLE_TZ)
 
                 normalized_url = self._normalize_event_url(event_url, CAL_URL)
-                evt = self._create_event(
-                    source_id, title, start, end, venue, normalized_url, description=description)
+                evt = self._create_event(source_id, title, start, end, venue, normalized_url, description=description)
                 events.append(evt)
             except Exception:
                 # Skip events that can't be parsed
@@ -245,6 +242,7 @@ class GSPCalendarExtractor(GSPBaseExtractor):
 
 class GSPDetailEvent(BaseModel):
     """Definition of a recurring manual event."""
+
     model_config = ConfigDict(from_attributes=True)
 
     title: str
@@ -259,13 +257,11 @@ class GSPDetailEvent(BaseModel):
     def to_source_event(self) -> Event:
         """Convert to a source event."""
         # Parse a date and time string like "August 1, 2025 9:30am - 11:30am"
-        start, end = self.datetimes.split('-')
-        start = parser.parse(start.strip()).replace(
-            tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+        start, end = self.datetimes.split("-")
+        start = parser.parse(start.strip()).replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
 
         # Get the date from start and the time from end.strip
-        end_time = parser.parse(end.strip()).replace(
-            tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+        end_time = parser.parse(end.strip()).replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
         end = start.replace(
             hour=end_time.hour,
             minute=end_time.minute,
@@ -279,7 +275,7 @@ class GSPDetailEvent(BaseModel):
             end=end,
             venue=None,  # No venue info in detail page
             url=HttpUrl(normalize_url(str(self.url))),
-            source_dict=self.model_dump_json()
+            source_dict=self.model_dump_json(),
         )
 
 
@@ -287,19 +283,18 @@ def extract_immediate_text(element):
     """Extract text from an element, handling nested tags."""
     if not element:
         return ""
-    immediate_text = ''.join(
-        s for s in element.contents if isinstance(s, NavigableString)
-    ).strip()
+    immediate_text = "".join(s for s in element.contents if isinstance(s, NavigableString)).strip()
     return immediate_text
 
 
 class GSPDetailPageExtractor(BaseDetailExtractor):
     """Extractor for GSP detail HTML page."""
+
     source = "GSP_DETAIL"
 
     def extract_detail_event(self) -> GSPDetailEvent:
         """Extract event details from the HTML page."""
-        soup = BeautifulSoup(self.raw_data, 'html.parser')
+        soup = BeautifulSoup(self.raw_data, "html.parser")
 
         # All the details are under <section class="whitebox panel">
         main_section = soup.select_one("#main")
@@ -328,13 +323,12 @@ class GSPDetailPageExtractor(BaseDetailExtractor):
 
         # Pull out the activities section and simplify whitespacing
         description = left_paragraphs[0].get_text(strip=True)
-        description = re.sub(r'\s+', ' ', description)
+        description = re.sub(r"\s+", " ", description)
 
         # Pull out contact info
         contact_name = extract_immediate_text(right_paragraphs[1])
         contact_email = right_paragraphs[1].select_one("a[href^='mailto:']")
-        contact_email = contact_email.get_text(
-            strip=True) if contact_email else None
+        contact_email = contact_email.get_text(strip=True) if contact_email else None
 
         return GSPDetailEvent(
             title=title,
@@ -352,7 +346,7 @@ class GSPDetailPageExtractor(BaseDetailExtractor):
         return detail_event.to_source_event()
 
     @classmethod
-    def fetch(cls, url: str) -> 'GSPDetailPageExtractor':
+    def fetch(cls, url: str) -> "GSPDetailPageExtractor":
         """Fetch raw HTML from the detail page URL."""
 
         response = requests.get(url, timeout=30)

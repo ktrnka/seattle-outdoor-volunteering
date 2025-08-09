@@ -35,9 +35,7 @@ def load_source_events() -> pd.DataFrame:
         DataFrame containing source events
     """
     sqlite_connection = get_regular_connection()
-    df = pd.read_sql_query(
-        "SELECT * FROM events", sqlite_connection, parse_dates=["start", "end"]
-    )
+    df = pd.read_sql_query("SELECT * FROM events", sqlite_connection, parse_dates=["start", "end"])
     df["normalized_title"] = df["title"].apply(normalize_title)
     df["start_date"] = df["start"].dt.date.astype(str)
 
@@ -48,8 +46,7 @@ def load_source_events() -> pd.DataFrame:
     df.loc[df["start"] == df["end"], "start_time"] = None
 
     # Create a URL list col of URL and same_as
-    df["urls"] = df.apply(lambda row: create_url_list(
-        row["url"], row["same_as"]), axis=1)
+    df["urls"] = df.apply(lambda row: create_url_list(row["url"], row["same_as"]), axis=1)
 
     # Special fields used by Splink
     df["source_dataset"] = df["source"]
@@ -76,9 +73,7 @@ def cluster_events(df: pd.DataFrame) -> pd.DataFrame:
     settings = SettingsCreator(
         link_type="link_only",
         comparisons=[
-            cl.JaroAtThresholds("normalized_title").configure(
-                term_frequency_adjustments=True
-            ),
+            cl.JaroAtThresholds("normalized_title").configure(term_frequency_adjustments=True),
             cl.JaroAtThresholds("address", [0.75]),
             cl.ArrayIntersectAtSizes("urls", [1]),
             cl.ExactMatch("start_time"),
@@ -100,19 +95,12 @@ def cluster_events(df: pd.DataFrame) -> pd.DataFrame:
 
     linker.training.estimate_u_using_random_sampling(max_pairs=5e6)
 
-    linker.training.estimate_parameters_using_expectation_maximisation(
-        block_on("normalized_title")
-    )
+    linker.training.estimate_parameters_using_expectation_maximisation(block_on("normalized_title"))
 
-    linker.training.estimate_parameters_using_expectation_maximisation(
-        block_on("start_date")
-    )
+    linker.training.estimate_parameters_using_expectation_maximisation(block_on("start_date"))
 
-    pairwise_predictions = linker.inference.predict(
-        threshold_match_probability=0.1)
-    clusters = linker.clustering.cluster_pairwise_predictions_at_threshold(
-        pairwise_predictions
-    )
+    pairwise_predictions = linker.inference.predict(threshold_match_probability=0.1)
+    clusters = linker.clustering.cluster_pairwise_predictions_at_threshold(pairwise_predictions)
     return clusters.as_pandas_dataframe()
 
 
@@ -135,14 +123,9 @@ def create_canonical_event_from_group(cluster_id, event_group: pd.DataFrame) -> 
         CanonicalEvent object
     """
 
-    source_preferences = {source: i for i,
-                          source in enumerate(["DNDA", "EC", "GSP", "SPR"])}
+    source_preferences = {source: i for i, source in enumerate(["DNDA", "EC", "GSP", "SPR"])}
 
-    sorted_group = event_group.sort_values(
-        by="source",
-        key=lambda x: x.map(lambda val: source_preferences.get(
-            val, len(source_preferences)))
-    )
+    sorted_group = event_group.sort_values(by="source", key=lambda x: x.map(lambda val: source_preferences.get(val, len(source_preferences))))
 
     events_with_time = sorted_group[sorted_group["start_time"].notnull()]
     if not events_with_time.empty:
@@ -183,8 +166,7 @@ def create_canonical_events(df_clusters: pd.DataFrame) -> List[CanonicalEvent]:
     grouped = df_clusters.groupby("cluster_id")
 
     for cluster_id, group in grouped:
-        canonical_events.append(
-            create_canonical_event_from_group(cluster_id, group))
+        canonical_events.append(create_canonical_event_from_group(cluster_id, group))
 
     return canonical_events
 
@@ -206,8 +188,7 @@ def run_splink_deduplication(show_examples: bool = True):
             if len(cluster_df) <= 1:
                 continue
 
-            cols = ["source", "unique_id", "title",
-                    "address", "start_date", "start_time"]
+            cols = ["source", "unique_id", "title", "address", "start_date", "start_time"]
             print(f"\nCluster {cluster_id}:")
             print(cluster_df[cols])
 

@@ -16,6 +16,7 @@ SPU_CLEANUP_URL = "https://www.seattle.gov/utilities/volunteer/all-hands-neighbo
 
 class SPUSourceEvent(BaseModel):
     """Structured data extracted from SPU All Hands Neighborhood Cleanup table."""
+
     model_config = ConfigDict(from_attributes=True)
 
     date: str  # Raw date string like "Saturday, August 9"
@@ -28,6 +29,7 @@ class SPUSourceEvent(BaseModel):
 
 class SPUExtractor(BaseListExtractor):
     """Seattle Public Utilities All Hands Neighborhood Cleanup extractor."""
+
     source = "SPU"
 
     @classmethod
@@ -79,7 +81,7 @@ class SPUExtractor(BaseListExtractor):
             location_cell = cells[2]
             location = location_cell.get_text(strip=True)
             # Clean up location text (remove extra whitespace, line breaks)
-            location = re.sub(r'\s+', ' ', location).strip()
+            location = re.sub(r"\s+", " ", location).strip()
 
             # Extract Google Maps link if present
             google_maps_link = None
@@ -93,18 +95,13 @@ class SPUExtractor(BaseListExtractor):
             # Parse start and end times from the time text
             start_time = time_text
             end_time = None
-            time_parts = re.split(r'[–\-]', time_text)
+            time_parts = re.split(r"[–\-]", time_text)
             if len(time_parts) == 2:
                 start_time = time_parts[0].strip()
                 end_time = time_parts[1].strip()
 
             return SPUSourceEvent(
-                date=date,
-                neighborhood=neighborhood,
-                location=location,
-                google_maps_link=google_maps_link,
-                start_time=start_time,
-                end_time=end_time
+                date=date, neighborhood=neighborhood, location=location, google_maps_link=google_maps_link, start_time=start_time, end_time=end_time
             )
 
         except Exception:
@@ -114,24 +111,20 @@ class SPUExtractor(BaseListExtractor):
         """Convert SPUSourceEvent to Event model."""
         try:
             try:
-                start_datetime, end_datetime = parse_range(
-                    spu_event.date, f"{spu_event.start_time} - {spu_event.end_time}", SEATTLE_TZ)
+                start_datetime, end_datetime = parse_range(spu_event.date, f"{spu_event.start_time} - {spu_event.end_time}", SEATTLE_TZ)
                 start_datetime = start_datetime.astimezone(timezone.utc)
                 end_datetime = end_datetime.astimezone(timezone.utc)
             except Exception:
-                print(
-                    f"Failed to parse date/time for event: {spu_event.date}, {spu_event.start_time} - {spu_event.end_time}")
+                print(f"Failed to parse date/time for event: {spu_event.date}, {spu_event.start_time} - {spu_event.end_time}")
                 return None
 
             # Parse venue and address from location string
-            venue, address = self._parse_location_and_address(
-                spu_event.location)
+            venue, address = self._parse_location_and_address(spu_event.location)
 
             # Generate source_id from date and neighborhood
             # Format: "2025-08-09-othello"
             date_str = start_datetime.strftime("%Y-%m-%d")
-            neighborhood_clean = re.sub(
-                r'[^a-z0-9]', '', spu_event.neighborhood.lower())
+            neighborhood_clean = re.sub(r"[^a-z0-9]", "", spu_event.neighborhood.lower())
             source_id = f"{date_str}-{neighborhood_clean}"
 
             # Create title
@@ -146,7 +139,7 @@ class SPUExtractor(BaseListExtractor):
                 venue=venue,
                 address=address,
                 url=HttpUrl(SPU_CLEANUP_URL),
-                source_dict=spu_event.model_dump_json()
+                source_dict=spu_event.model_dump_json(),
             )
 
         except Exception:
@@ -166,13 +159,13 @@ class SPUExtractor(BaseListExtractor):
         address = None
 
         # Check if there's an address in parentheses
-        paren_match = re.search(r'\(([^)]+)\)', location_text)
+        paren_match = re.search(r"\(([^)]+)\)", location_text)
         if paren_match:
             address = paren_match.group(1).strip()
             # Remove the parentheses part to get the venue name
-            venue = re.sub(r'\s*\([^)]+\)', '', location_text).strip()
+            venue = re.sub(r"\s*\([^)]+\)", "", location_text).strip()
 
         # Clean up venue name (remove line breaks, extra spaces)
-        venue = re.sub(r'\s+', ' ', venue).strip()
+        venue = re.sub(r"\s+", " ", venue).strip()
 
         return venue, address

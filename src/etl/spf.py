@@ -16,6 +16,7 @@ SPF_EVENTS_URL = "https://www.seattleparksfoundation.org/events/"
 
 class SPFOrganizer(BaseModel):
     """Organizer information from SPF schema.org JSON-LD."""
+
     model_config = ConfigDict(from_attributes=True)
 
     name: Optional[str] = None
@@ -28,6 +29,7 @@ class SPFOrganizer(BaseModel):
 
 class SPFAddress(BaseModel):
     """Address information from SPF schema.org JSON-LD PostalAddress."""
+
     model_config = ConfigDict(from_attributes=True)
 
     type: Optional[str] = None
@@ -40,6 +42,7 @@ class SPFAddress(BaseModel):
 
 class SPFLocation(BaseModel):
     """Location information from SPF schema.org JSON-LD."""
+
     model_config = ConfigDict(from_attributes=True)
 
     name: Optional[str] = None
@@ -52,6 +55,7 @@ class SPFLocation(BaseModel):
 
 class SPFSourceEvent(BaseModel):
     """Structured data extracted from SPF schema.org JSON-LD."""
+
     model_config = ConfigDict(from_attributes=True)
 
     name: str
@@ -69,6 +73,7 @@ class SPFSourceEvent(BaseModel):
 
 class SPFExtractor(BaseListExtractor):
     """Seattle Parks Foundation extractor - parses schema.org JSON-LD data."""
+
     source = "SPF"
 
     @classmethod
@@ -153,7 +158,7 @@ class SPFExtractor(BaseListExtractor):
                         address_locality=address_raw.get("addressLocality"),
                         address_region=address_raw.get("addressRegion"),
                         postal_code=address_raw.get("postalCode"),
-                        address_country=address_raw.get("addressCountry")
+                        address_country=address_raw.get("addressCountry"),
                     )
 
                 location_data = SPFLocation(
@@ -162,7 +167,7 @@ class SPFExtractor(BaseListExtractor):
                     url=location_raw.get("url"),
                     address=address_data,
                     telephone=location_raw.get("telephone"),
-                    same_as=location_raw.get("sameAs")
+                    same_as=location_raw.get("sameAs"),
                 )
 
             # Extract organizer data
@@ -175,7 +180,7 @@ class SPFExtractor(BaseListExtractor):
                     url=organizer_raw.get("url"),
                     telephone=organizer_raw.get("telephone"),
                     email=organizer_raw.get("email"),
-                    same_as=organizer_raw.get("sameAs")
+                    same_as=organizer_raw.get("sameAs"),
                 )
 
             return SPFSourceEvent(
@@ -189,7 +194,7 @@ class SPFExtractor(BaseListExtractor):
                 end_date=end_date,
                 location=location_data,
                 organizer=organizer_data,
-                performer=performer
+                performer=performer,
             )
 
         except (ValueError, TypeError, KeyError):
@@ -199,10 +204,8 @@ class SPFExtractor(BaseListExtractor):
         """Convert SPFSourceEvent to Event model."""
         try:
             # Parse dates - these should already be in proper format
-            start_date = parser.isoparse(
-                spf_event.start_date).astimezone(timezone.utc)
-            end_date = parser.isoparse(
-                spf_event.end_date).astimezone(timezone.utc)
+            start_date = parser.isoparse(spf_event.start_date).astimezone(timezone.utc)
+            end_date = parser.isoparse(spf_event.end_date).astimezone(timezone.utc)
 
             # Extract venue and address from location
             venue = None
@@ -215,10 +218,8 @@ class SPFExtractor(BaseListExtractor):
                     locality = address_obj.address_locality or ""
                     region = address_obj.address_region or ""
 
-                    address_parts = [part for part in [
-                        street, locality, region] if part]
-                    address = ", ".join(
-                        address_parts) if address_parts else None
+                    address_parts = [part for part in [street, locality, region] if part]
+                    address = ", ".join(address_parts) if address_parts else None
 
             # Check if this is a Green Seattle Partnership event
             is_gsp_event = False
@@ -229,8 +230,7 @@ class SPFExtractor(BaseListExtractor):
                     is_gsp_event = True
 
             # Generate a source_id from URL
-            source_id = spf_event.url.split(
-                "/")[-2] if spf_event.url.endswith("/") else spf_event.url.split("/")[-1]
+            source_id = spf_event.url.split("/")[-2] if spf_event.url.endswith("/") else spf_event.url.split("/")[-1]
             if not source_id:
                 source_id = str(hash(spf_event.url))
 
@@ -247,7 +247,7 @@ class SPFExtractor(BaseListExtractor):
                 latitude=None,  # Not available in schema.org data
                 longitude=None,  # Not available in schema.org data
                 tags=["Green Seattle Partnership"] if is_gsp_event else [],
-                source_dict=json.dumps(spf_event.model_dump())
+                source_dict=json.dumps(spf_event.model_dump()),
             )
 
         except (ValueError, TypeError, KeyError):

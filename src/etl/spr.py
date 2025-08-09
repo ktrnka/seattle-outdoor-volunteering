@@ -17,6 +17,7 @@ RSS_URL = "https://www.trumba.com/calendars/volunteer-1.rss"
 
 class SPRSourceData(BaseModel):
     """Structured data extracted from SPR RSS feed."""
+
     model_config = ConfigDict(from_attributes=True)
 
     title: str
@@ -37,6 +38,7 @@ class SPRSourceData(BaseModel):
 
 class SPRExtractor(BaseListExtractor):
     """Seattle Parks & Recreation extractor for RSS feed."""
+
     source = "SPR"
 
     @classmethod
@@ -82,30 +84,29 @@ class SPRExtractor(BaseListExtractor):
 
         # Initialize all source data fields
         source_data = {
-            'title': title,
-            'description': self._extract_description_text(description),
-            'location': None,
-            'event_types': None,
-            'neighborhoods': None,
-            'parks': None,
-            'sponsoring_organization': None,
-            'contact': None,
-            'contact_phone': None,
-            'contact_email': None,
-            'audience': None,
-            'pre_register': None,
-            'cost': None,
-            'link': None
+            "title": title,
+            "description": self._extract_description_text(description),
+            "location": None,
+            "event_types": None,
+            "neighborhoods": None,
+            "parks": None,
+            "sponsoring_organization": None,
+            "contact": None,
+            "contact_phone": None,
+            "contact_email": None,
+            "audience": None,
+            "pre_register": None,
+            "cost": None,
+            "link": None,
         }
 
         # Parse structured fields from description
-        lines = description.replace(
-            '<br/>', '\n').replace('<br>', '\n').split('\n')
+        lines = description.replace("<br/>", "\n").replace("<br>", "\n").split("\n")
         lines = [line.strip() for line in lines if line.strip()]
 
         # First line is usually the address/location
         if lines:
-            source_data['location'] = self._clean_html(lines[0])
+            source_data["location"] = self._clean_html(lines[0])
 
         # Parse structured fields
         for line in lines:
@@ -113,78 +114,72 @@ class SPRExtractor(BaseListExtractor):
             line = self._clean_html(line)
 
             # Extract structured fields
-            if ':' in line:
-                field, value = line.split(':', 1)
+            if ":" in line:
+                field, value = line.split(":", 1)
                 field = field.strip().lower()
                 value = value.strip()
 
                 if field == "event types":
-                    source_data['event_types'] = value
+                    source_data["event_types"] = value
                 elif field == "neighborhoods":
-                    source_data['neighborhoods'] = value
+                    source_data["neighborhoods"] = value
                 elif field == "parks":
-                    source_data['parks'] = value
+                    source_data["parks"] = value
                 elif field == "sponsoring organization":
-                    source_data['sponsoring_organization'] = value
+                    source_data["sponsoring_organization"] = value
                 elif field == "contact":
-                    source_data['contact'] = value
+                    source_data["contact"] = value
                 elif field == "contact phone":
-                    source_data['contact_phone'] = value
+                    source_data["contact_phone"] = value
                 elif field == "contact email":
                     # Extract email from potential HTML link
-                    email_match = re.search(
-                        r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', value)
+                    email_match = re.search(r"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})", value)
                     if email_match:
-                        source_data['contact_email'] = email_match.group(1)
+                        source_data["contact_email"] = email_match.group(1)
                     else:
-                        source_data['contact_email'] = value
+                        source_data["contact_email"] = value
                 elif field == "audience":
-                    source_data['audience'] = value
+                    source_data["audience"] = value
                 elif field == "pre-register":
-                    source_data['pre_register'] = value
+                    source_data["pre_register"] = value
                 elif field == "cost":
-                    source_data['cost'] = value
+                    source_data["cost"] = value
                 elif field == "more info":
                     # Extract the raw URL from the "More info" field without normalization
                     # Use the original line to get the raw href value
                     url_match = re.search(r'href="([^"]+)"', original_line)
                     if url_match:
-                        source_data['link'] = url_match.group(1)
+                        source_data["link"] = url_match.group(1)
 
         return SPRSourceData(**source_data)
 
     def _convert_to_event(self, item, spr_data: SPRSourceData) -> Event:
         """Convert SPRSourceData and RSS item metadata to Event."""
         # Define namespace map for XML parsing
-        namespaces = {
-            'x-trumba': 'http://schemas.trumba.com/rss/x-trumba'
-        }
+        namespaces = {"x-trumba": "http://schemas.trumba.com/rss/x-trumba"}
 
         description_elem = item.find("description")
         description = description_elem.text if description_elem is not None else ""
 
         link_elem = item.find("link")
-        link = normalize_url(
-            link_elem.text) if link_elem is not None else RSS_URL
+        link = normalize_url(link_elem.text) if link_elem is not None else RSS_URL
 
         guid_elem = item.find("guid")
         guid = guid_elem.text if guid_elem is not None else ""
 
         # Extract x-trumba:weblink (GSP URL for Green Seattle Partnership events)
         weblink_elem = item.find(".//x-trumba:weblink", namespaces)
-        same_as_url = HttpUrl(normalize_url(
-            weblink_elem.text)) if weblink_elem is not None else None
+        same_as_url = HttpUrl(normalize_url(weblink_elem.text)) if weblink_elem is not None else None
 
         # Extract source_id from GUID (format: http://uid.trumba.com/event/187593769)
         source_id = ""
         if guid:
-            match = re.search(r'/event/(\d+)', guid)
+            match = re.search(r"/event/(\d+)", guid)
             if match:
                 source_id = match.group(1)
 
         # Parse datetime from description for Event fields
-        address, venue, cost, start_dt, end_dt, tags = self._parse_description(
-            description)
+        address, venue, cost, start_dt, end_dt, tags = self._parse_description(description)
 
         # Skip events that don't have valid datetime information
         if start_dt is None or end_dt is None:
@@ -192,8 +187,7 @@ class SPRExtractor(BaseListExtractor):
 
         # Convert to UTC (assume Pacific time if timezone-naive)
         if start_dt.tzinfo is None:
-            start_dt = start_dt.replace(
-                tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+            start_dt = start_dt.replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
         if end_dt.tzinfo is None:
             end_dt = end_dt.replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
 
@@ -209,7 +203,7 @@ class SPRExtractor(BaseListExtractor):
             cost=cost,
             tags=tags,
             same_as=same_as_url,
-            source_dict=json.dumps(spr_data.model_dump())
+            source_dict=json.dumps(spr_data.model_dump()),
         )
 
     @staticmethod
@@ -223,7 +217,7 @@ class SPRExtractor(BaseListExtractor):
             cleaned_line = SPRExtractor._clean_html(line)
             # Look for a line that contains a year (20XX) and time (am/pm)
             # This distinguishes actual datetime lines from description text that mentions times
-            if re.search(r'20\d{2}', cleaned_line) and re.search(r'[^A-Za-z](am|pm)\b', cleaned_line, re.IGNORECASE):
+            if re.search(r"20\d{2}", cleaned_line) and re.search(r"[^A-Za-z](am|pm)\b", cleaned_line, re.IGNORECASE):
                 return cleaned_line, i
         return None
 
@@ -241,8 +235,7 @@ class SPRExtractor(BaseListExtractor):
         # Format 1: "Address <br/>Date, Time <br/><br/>Description <br/><br/><b>Field</b>: Value"
         # Format 2: "Park Name<br/>Address Line 1<br/>City, State Zip <br/>Date, Time <br/><br/>Description..."
 
-        lines = description.replace(
-            '<br/>', '\n').replace('<br>', '\n').split('\n')
+        lines = description.replace("<br/>", "\n").replace("<br>", "\n").split("\n")
         lines = [line.strip() for line in lines if line.strip()]
 
         if lines:
@@ -251,17 +244,15 @@ class SPRExtractor(BaseListExtractor):
                 datetime_line, datetime_line_index = datetime_result
                 try:
                     # Parse the date and time range
-                    start_dt, end_dt = parse_range_single_string(
-                        datetime_line, SEATTLE_TZ)
+                    start_dt, end_dt = parse_range_single_string(datetime_line, SEATTLE_TZ)
                 except ValueError as e:
                     print(f"Error parsing date/time '{datetime_line}': {e}")
                     start_dt = None
                     end_dt = None
 
                 # Build address from lines before the datetime line
-                address_lines = [self._clean_html(
-                    line) for line in lines[:datetime_line_index]]
-                address = ', '.join(address_lines) if address_lines else ""
+                address_lines = [self._clean_html(line) for line in lines[:datetime_line_index]]
+                address = ", ".join(address_lines) if address_lines else ""
             else:
                 # Fallback: use first line if no datetime found
                 address = self._clean_html(lines[0]) if lines else ""
@@ -272,8 +263,8 @@ class SPRExtractor(BaseListExtractor):
             line = self._clean_html(line)
 
             # Extract structured fields
-            if ':' in line:
-                field, value = line.split(':', 1)
+            if ":" in line:
+                field, value = line.split(":", 1)
                 field = field.strip().lower()
                 value = value.strip()
 
@@ -281,7 +272,7 @@ class SPRExtractor(BaseListExtractor):
                     cost = value
                 elif field == "parks" and value and not venue:
                     # Extract park name from parks field, handle links like "Green Lake Park"
-                    parks_match = re.search(r'>([^<]+)<', value)
+                    parks_match = re.search(r">([^<]+)<", value)
                     if parks_match:
                         venue = parks_match.group(1).strip()
                     else:
@@ -293,7 +284,7 @@ class SPRExtractor(BaseListExtractor):
 
             # Extract venue from description text as fallback
             elif not venue and ("Join us for a restoration work party at" in line or "park" in line.lower()):
-                venue_match = re.search(r'at ([^-]+?)(?:\s*-|$)', line)
+                venue_match = re.search(r"at ([^-]+?)(?:\s*-|$)", line)
                 if venue_match:
                     venue = venue_match.group(1).strip()
 
@@ -303,19 +294,16 @@ class SPRExtractor(BaseListExtractor):
     def _clean_html(text: str) -> str:
         """Remove HTML tags and decode entities."""
         # Remove HTML tags
-        text = re.sub(r'<[^>]+>', '', text)
+        text = re.sub(r"<[^>]+>", "", text)
         # Decode common HTML entities
-        text = text.replace('&amp;', '&').replace(
-            '&lt;', '<').replace('&gt;', '>')
-        text = text.replace('&nbsp;', ' ').replace('&ndash;', '–')
+        text = text.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+        text = text.replace("&nbsp;", " ").replace("&ndash;", "–")
         return text.strip()
 
     def _extract_description_text(self, description: str) -> str:
         """Extract the main description text, skipping address/date and structured fields."""
-        lines = description.replace(
-            '<br/>', '\n').replace('<br>', '\n').split('\n')
-        lines = [self._clean_html(line.strip())
-                 for line in lines if line.strip()]
+        lines = description.replace("<br/>", "\n").replace("<br>", "\n").split("\n")
+        lines = [self._clean_html(line.strip()) for line in lines if line.strip()]
 
         # Skip first two lines (address and date/time)
         # Find lines that are plain text description (not structured fields)
@@ -323,12 +311,23 @@ class SPRExtractor(BaseListExtractor):
         for i, line in enumerate(lines):
             if i < 2:  # Skip address and date lines
                 continue
-            if ':' in line and any(field in line.lower() for field in
-                                   ['event types', 'neighborhoods', 'parks', 'sponsoring organization',
-                                   'contact', 'audience', 'pre-register', 'cost', 'more info']):
+            if ":" in line and any(
+                field in line.lower()
+                for field in [
+                    "event types",
+                    "neighborhoods",
+                    "parks",
+                    "sponsoring organization",
+                    "contact",
+                    "audience",
+                    "pre-register",
+                    "cost",
+                    "more info",
+                ]
+            ):
                 # This is a structured field, stop collecting description
                 break
-            if line and not line.startswith('<'):  # Skip HTML tags
+            if line and not line.startswith("<"):  # Skip HTML tags
                 description_lines.append(line)
 
-        return ' '.join(description_lines).strip()
+        return " ".join(description_lines).strip()

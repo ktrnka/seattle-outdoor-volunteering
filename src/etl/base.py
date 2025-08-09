@@ -5,6 +5,7 @@ from ..models import Event
 
 class BaseListExtractor(abc.ABC):
     """Base extractor for event list pages, calendar pages, etc"""
+
     source: str  # Source code for the event extractor
 
     def __init__(self, raw_data: str):
@@ -12,7 +13,7 @@ class BaseListExtractor(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def fetch(cls) -> 'BaseListExtractor':
+    def fetch(cls) -> "BaseListExtractor":
         """Fetch raw data and return an instance of the extractor."""
         ...
 
@@ -24,6 +25,7 @@ class BaseListExtractor(abc.ABC):
 
 class BaseDetailExtractor(abc.ABC):
     """Base extractor for event detail pages"""
+
     source: str  # Source code for the event detail extractor
 
     def __init__(self, url: str, raw_data: str):
@@ -32,7 +34,7 @@ class BaseDetailExtractor(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def fetch(cls, url: str) -> 'BaseDetailExtractor':
+    def fetch(cls, url: str) -> "BaseDetailExtractor":
         """Fetch raw data from the detail page URL."""
         ...
 
