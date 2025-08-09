@@ -5,6 +5,9 @@ on:
     - cron:  '0 7 * * *'   # 07:00 UTC daily
   workflow_dispatch:
 
+permissions:
+  models: read
+
 jobs:
   run-etl:
     runs-on: ubuntu-latest
