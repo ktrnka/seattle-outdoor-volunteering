@@ -3,6 +3,7 @@ import shutil
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
+import traceback
 from typing import Optional
 
 import click
@@ -124,6 +125,8 @@ def etl(only_run: Optional[str] = None):
             )
         except Exception as e:
             click.echo(f"{extractor_class.__name__}: ERROR - {str(e)}")
+            traceback.print_exception(e)
+
             # Record failed ETL run
             database.record_etl_run(
                 source=extractor_class.source,  # Use class attribute since instance may not exist
