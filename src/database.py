@@ -11,7 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column, object_session, sessionmaker, 
 from sqlalchemy.sql import func
 from typing import List, Dict, Optional, Tuple
 
-from .config import DB_PATH, DB_GZ, ensure_database_exists
+from .config import DB_PATH, DB_GZ
 from .models import (
     Event as PydanticEvent,
     CanonicalEvent as PydanticCanonicalEvent,
@@ -151,6 +151,15 @@ class ETLRun(Base):
 class NoSessionError(RuntimeError):
     def __init__(self, message: str = "Database session not available. Use within 'with' statement."):
         super().__init__(message)
+
+
+def ensure_database_exists() -> None:
+    """Ensure the uncompressed database exists by extracting from gzipped version if needed."""
+    if not DB_PATH.exists() and DB_GZ.exists():
+        print(f"Extracting {DB_GZ} to {DB_PATH}")
+        with gzip.open(DB_GZ, 'rb') as f_in:
+            with open(DB_PATH, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
 
 
 class Database:
@@ -302,15 +311,21 @@ class Database:
 
         event = self.session.query(CanonicalEvent).filter(CanonicalEvent.title.ilike(f"%{title}%")).first()
         if event:
-            # Find all source events for this canonical event
-            source_events = (
-                self.session.query(Event)
-                .join(EventGroupMembership, (Event.source == EventGroupMembership.source) & (Event.source_id == EventGroupMembership.source_id))
-                .filter(EventGroupMembership.canonical_id == event.canonical_id)
-                .all()
-            )
-            return event.to_pydantic(), [e.to_pydantic() for e in source_events]
+            return event.to_pydantic(), self.get_source_events_by_canonical_id(event.canonical_id)
         return None
+    
+    def get_source_events_by_canonical_id(self, canonical_id: str) -> List[PydanticEvent]:
+        """Get all source events that belong to a specific canonical event."""
+        if not self.session:
+            raise NoSessionError()
+
+        source_events = (
+            self.session.query(Event)
+            .join(EventGroupMembership, (Event.source == EventGroupMembership.source) & (Event.source_id == EventGroupMembership.source_id))
+            .filter(EventGroupMembership.canonical_id == canonical_id)
+            .all()
+        )
+        return [event.to_pydantic() for event in source_events]
 
     def get_source_updated_stats(self) -> Dict[str, datetime]:
         """Get the most recent successful ETL run datetime for each source."""

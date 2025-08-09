@@ -1,10 +1,9 @@
 import re
 from typing import List, Optional
-from datetime import datetime, timezone
+from datetime import timezone
 
 import requests
 from bs4 import BeautifulSoup
-from dateutil import parser
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from src.etl.date_utils import parse_range

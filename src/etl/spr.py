@@ -1,7 +1,7 @@
 import re
 import xml.etree.ElementTree as ET
 import json
-from datetime import datetime, timezone
+from datetime import timezone
 from typing import List, Optional, Tuple
 import requests
 from pydantic import BaseModel, ConfigDict, HttpUrl
