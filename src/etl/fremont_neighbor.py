@@ -44,13 +44,24 @@ class FremontNeighborExtractor(BaseListExtractor):
     @classmethod
     def fetch(cls):
         """Fetch raw RSS content from Fremont Neighbor blog."""
-        response = requests.get(RSS_URL, timeout=30)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (compatible; SeattleVolunteerBot/1.0)',
+            'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+        }
+        response = requests.get(RSS_URL, timeout=30, headers=headers)
+        response.raise_for_status()
         return cls(response.text)
 
     def extract(self) -> List[Event]:
         """Extract events from Fremont Neighbor RSS feed using LLM classification."""
-        # Raise on failure
-        root = ET.fromstring(self.raw_data)
+        try:
+            # Raise on failure
+            root = ET.fromstring(self.raw_data)
+        except ET.ParseError as e:
+            print(f"XML Parse Error: {e}")
+            print(f"First 200 chars: {self.raw_data[:200]}")
+            print(f"Last 200 chars: {self.raw_data[-200:]}")
+            raise
 
         events = []
 

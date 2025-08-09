@@ -7,18 +7,18 @@ from typing import Optional
 
 import click
 
-
 from . import database
 from .config import DB_GZ, DB_PATH
 from .etl.deduplication import deduplicate_events
 from .etl.dnda import DNDAExtractor
 from .etl.earthcorps import EarthCorpsCalendarExtractor
+from .etl.fremont_neighbor import FremontNeighborExtractor
 from .etl.gsp import GSPCalendarExtractor
 from .etl.manual import ManualExtractor
 from .etl.spf import SPFExtractor
+from .etl.splink_dedupe import run_splink_deduplication
 from .etl.spr import SPRExtractor
 from .etl.spu import SPUExtractor
-from .etl.splink_dedupe import run_splink_deduplication
 from .models import SEATTLE_TZ
 from .site import generator
 
@@ -90,6 +90,7 @@ def etl(only_run: Optional[str] = None):
         "SPU": SPUExtractor,
         "DNDA": DNDAExtractor,
         "EarthCorps": EarthCorpsCalendarExtractor,
+        "FremontNeighbor": FremontNeighborExtractor,
         "Manual": ManualExtractor,
     }
 
@@ -135,31 +136,6 @@ def etl(only_run: Optional[str] = None):
     # Save newly extracted events to database
     click.echo("Saving new events to database...")
     database.upsert_source_events(source_events)
-
-    # Now run deduplication on ALL events in the database
-    click.echo("Loading all source events from database...")
-    all_source_events = database.get_source_events()
-
-    if not all_source_events:
-        click.echo(
-            "No source events found in database after upsert. Something went wrong.")
-        return
-
-    click.echo(
-        f"Running deduplication on {len(all_source_events)} total events...")
-    canonical_events = deduplicate_events(all_source_events)
-
-    # Show summary
-    total_groups_with_duplicates = sum(
-        1 for canonical in canonical_events if len(canonical.source_events) > 1)
-    click.echo(
-        f"Created {len(canonical_events)} canonical events from {len(all_source_events)} source events")
-    click.echo(
-        f"Found {total_groups_with_duplicates} groups with multiple sources")
-
-    # Save canonical events and memberships to database
-    click.echo("Updating canonical events in database...")
-    database.overwrite_canonical_events(canonical_events)
 
     # Compress database for git
     with open(DB_PATH, "rb") as src, gzip.open(DB_GZ, "wb") as dst:
@@ -234,35 +210,6 @@ def deduplicate_old(verbose: bool = False, dry_run: bool = False):
         click.echo("Deduplication complete!")
     else:
         click.echo("Dry run enabled. No changes were made.")
-
-
-@cli.command()
-@click.option('--all', is_flag=True, help='Show all canonical events')
-def list_canonical_events(all: bool = False):
-    """List canonical events from the new deduplication system."""
-    if not all:
-        canonical_events = database.get_future_canonical_events()
-    else:
-        canonical_events = database.get_canonical_events()
-    click.echo(f"{len(canonical_events)} events\n")
-
-    for event in canonical_events:
-        # Format date/time
-        if event.start.hour == 0 and event.start.minute == 0 and event.start == event.end:
-            time_str = event.start.strftime('%a %-m/%-d/%Y (date only)')
-        else:
-            time_str = event.start.strftime('%a %-m/%-d/%Y from %-I:%M%p')
-            if event.end != event.start:
-                time_str += event.end.strftime(' - %-I:%M%p')
-
-        # Show the event info
-        click.echo(f"• {event.title}")
-        click.echo(f"  {time_str}")
-        if event.venue:
-            click.echo(f"  {event.venue}")
-        click.echo(f"  Sources: {', '.join(event.source_events)}")
-        click.echo(f"  {event.url}")
-        click.echo()
 
 
 @dev.command()
@@ -393,6 +340,56 @@ def event_type_stats():
                         f"    Tags: {', '.join(event.tags[:3])}{'...' if len(event.tags) > 3 else ''}")
         else:
             click.echo("  No examples found")
+
+
+@dev.command()
+@click.argument('source', required=True)
+@click.option('--canonical', is_flag=True, help='Show canonical events instead of source events')
+@click.option('--limit', default=20, help='Maximum number of events to show (default: 20)')
+def show_events(source: str, canonical: bool = False, limit: int = 20):
+    """Show events from a specific source (e.g., GSP, SPR, FRE)."""
+    if canonical:
+        events = database.get_canonical_events()
+        # Filter canonical events that have the specified source
+        filtered_events = [e for e in events if any(source in unique_id for unique_id in e.source_events)]
+        event_type = "canonical events"
+    else:
+        events = database.get_source_events()
+        # Filter source events by source
+        filtered_events = [e for e in events if e.source == source]
+        event_type = "source events"
+    
+    if not filtered_events:
+        click.echo(f"No {event_type} found for source '{source}'")
+        return
+    
+    # Sort by start date
+    filtered_events.sort(key=lambda e: e.start)
+    
+    # Limit results
+    display_events = filtered_events[:limit]
+    
+    click.echo(f"Showing {len(display_events)} of {len(filtered_events)} {event_type} for source '{source}':")
+    click.echo("=" * 60)
+    
+    for event in display_events:
+        # Format date/time
+        if event.start.hour == 0 and event.start.minute == 0 and event.start == event.end:
+            time_str = event.start.strftime('%a %-m/%-d/%Y (date only)')
+        else:
+            time_str = event.start.strftime('%a %-m/%-d/%Y from %-I:%M%p')
+            if event.end != event.start:
+                time_str += event.end.strftime(' - %-I:%M%p')
+
+        click.echo(f"\n• {event.title}")
+        click.echo(f"  {time_str}")
+        if event.venue:
+            click.echo(f"  {event.venue}")
+        if canonical:
+            click.echo(f"  Sources: {', '.join(event.source_events)}")
+        else:
+            click.echo(f"  Source ID: {event.source_id}")
+        click.echo(f"  {event.url}")
 
 
 @dev.command()
