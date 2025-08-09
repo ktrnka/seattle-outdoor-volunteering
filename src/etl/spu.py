@@ -45,17 +45,9 @@ class SPUExtractor(BaseListExtractor):
 
         # Find the table containing events
         # The table has headers: Date, Neighborhood, Meeting Location, Time
-        table = soup.find("table")
-        if not table:
-            return events
 
-        # Find all table rows (skip the header row)
-        tbody = table.find("tbody")
-        if tbody:
-            rows = tbody.find_all("tr")
-        else:
-            all_rows = table.find_all("tr")
-            rows = all_rows[1:] if len(all_rows) > 1 else []
+        # Assume the first table
+        rows = soup.select("table:nth-of-type(1) tbody tr")
 
         for row in rows:
             cells = row.find_all(["th", "td"])

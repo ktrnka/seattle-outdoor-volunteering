@@ -183,7 +183,7 @@ class SPRExtractor(BaseListExtractor):
 
         # Skip events that don't have valid datetime information
         if start_dt is None or end_dt is None:
-            return None
+            raise ValueError(f"Missing start or end date for event: {spr_data.title}: start={start_dt}, end={end_dt}")
 
         # Convert to UTC (assume Pacific time if timezone-naive)
         if start_dt.tzinfo is None:

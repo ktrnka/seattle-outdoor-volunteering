@@ -1,9 +1,9 @@
 import json
 import re
 from datetime import timezone, datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, cast
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from dateutil import parser
 from pydantic import HttpUrl
 
@@ -75,20 +75,17 @@ class EarthCorpsCalendarExtractor(BaseListExtractor):
     def _extract_year_month(self, soup: BeautifulSoup) -> tuple[int, int]:
         """Extract year and month from navigation links."""
         # Look for previous/next month navigation links
-        nav = soup.find("div", class_="month-nav")
-        if nav:
-            # Extract from "Previous" link like "/volunteer/calendar/2025/7/"
-            prev_link = nav.find("a")
-            if prev_link and hasattr(prev_link, "get"):
-                href = prev_link.get("href")
-                if href:
-                    match = re.search(r"/calendar/(\d{4})/(\d{1,2})/", str(href))
-                    if match:
-                        year = int(match.group(1))
-                        prev_month = int(match.group(2))
-                        # Current month is next month from previous
-                        month = prev_month + 1
-                        return year, month
+        prev_link = soup.select_one("div.month-nav a[href*='/volunteer/calendar/']")
+        if prev_link:
+            href = cast(Tag, prev_link).get("href")
+            if href:
+                match = re.search(r"/calendar/(\d{4})/(\d{1,2})/", str(href))
+                if match:
+                    year = int(match.group(1))
+                    prev_month = int(match.group(2))
+                    # Current month is next month from previous
+                    month = prev_month + 1
+                    return year, month
 
         # Fallback to current date
         today = datetime.now()
@@ -98,7 +95,8 @@ class EarthCorpsCalendarExtractor(BaseListExtractor):
         """Extract the JavaScript events_by_date object."""
         # Find script tag containing events_by_date
         for script in soup.find_all("script"):
-            if hasattr(script, "string") and script.string and "events_by_date" in script.string:
+            script = cast(Tag, script)
+            if script.string and "events_by_date" in script.string:
                 script_content = script.string
 
                 # Extract the JSON from the JavaScript variable

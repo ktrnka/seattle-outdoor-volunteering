@@ -1,9 +1,9 @@
 from datetime import datetime, date, timedelta, timezone
-from typing import List, Optional
+from typing import List, Optional, cast
 import json
 import re
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from bs4.element import NavigableString
 from dateutil import parser
 from pydantic import BaseModel, ConfigDict, HttpUrl
@@ -327,7 +327,7 @@ class GSPDetailPageExtractor(BaseDetailExtractor):
 
         # Pull out contact info
         contact_name = extract_immediate_text(right_paragraphs[1])
-        contact_email = right_paragraphs[1].select_one("a[href^='mailto:']")
+        contact_email = cast(Tag, right_paragraphs[1]).select_one("a[href^='mailto:']")
         contact_email = contact_email.get_text(strip=True) if contact_email else None
 
         return GSPDetailEvent(
