@@ -59,4 +59,4 @@ addopts = "-m 'not llm'"
 
 [tool.ruff]
 line-length = 150
-
+extend-select = ["I", "F401"]

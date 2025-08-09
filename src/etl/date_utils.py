@@ -74,4 +74,3 @@ def parse_range_single_string(event_datetime_str: str, tz: tzinfo, after: Option
     date_str, time_range_str = event_datetime_str.rsplit(", ", 1)
 
     return parse_range(date_str, time_range_str, tz, after)
-

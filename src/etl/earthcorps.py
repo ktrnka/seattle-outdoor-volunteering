@@ -1,7 +1,7 @@
 import json
 import re
 from datetime import timezone, datetime, timedelta
-from typing import List, Optional, cast
+from typing import List, Optional
 import requests
 from bs4 import BeautifulSoup, Tag
 from dateutil import parser
@@ -76,8 +76,8 @@ class EarthCorpsCalendarExtractor(BaseListExtractor):
         """Extract year and month from navigation links."""
         # Look for previous/next month navigation links
         prev_link = soup.select_one("div.month-nav a[href*='/volunteer/calendar/']")
-        if prev_link:
-            href = cast(Tag, prev_link).get("href")
+        if prev_link and isinstance(prev_link, Tag):
+            href = prev_link.get("href")
             if href:
                 match = re.search(r"/calendar/(\d{4})/(\d{1,2})/", str(href))
                 if match:
@@ -95,7 +95,7 @@ class EarthCorpsCalendarExtractor(BaseListExtractor):
         """Extract the JavaScript events_by_date object."""
         # Find script tag containing events_by_date
         for script in soup.find_all("script"):
-            script = cast(Tag, script)
+            assert isinstance(script, Tag)
             if script.string and "events_by_date" in script.string:
                 script_content = script.string
 
