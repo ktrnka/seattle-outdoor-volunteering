@@ -101,7 +101,8 @@ def test_fremont_neighbor_llm_extraction():
 
     # Extract events using LLM
     try:
-        extracted_events = extract_articles(article.title, content)
+        extracted_events = extract_articles(
+            article.title, str(article.pub_date), content)
 
         print(f"\nExtracted {len(extracted_events)} events:")
         for i, event in enumerate(extracted_events, 1):
@@ -122,9 +123,9 @@ def test_fremont_neighbor_llm_extraction():
         event_dates = [event.event_date for event in extracted_events]
         print(f"\nEvent dates found: {event_dates}")
 
-        # Should have August 10 and August 16 (LLM might default to 2024)
+        # Should have August 10 and August 16 (2025)
         from datetime import date
-        expected_dates = [date(2024, 8, 10), date(2024, 8, 16)]
+        expected_dates = [date(2025, 8, 10), date(2025, 8, 16)]
 
         for expected_date in expected_dates:
             assert expected_date in event_dates, f"Expected date {expected_date} not found in {event_dates}"

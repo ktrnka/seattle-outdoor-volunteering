@@ -45,15 +45,15 @@ class ExtractedEventList(BaseModel):
     events: List[ExtractedEvent]
 
 
-def build_user_context(title: str, body: str) -> str:
-    return f"Title: {title}\nBody: {body}\n"
+def build_user_context(title: str, publication_date: str, body: str) -> str:
+    return f"Title: {title}\nPublication Date: {publication_date}\nBody: {body}\n"
 
 
-def extract_articles(title: str, body: str) -> List[ExtractedEvent]:
+def extract_articles(title: str, publication_date: str, body: str) -> List[ExtractedEvent]:
     """Extract events from article content using LLM."""
 
     client = get_client()
-    user_context = build_user_context(title, body)
+    user_context = build_user_context(title, publication_date, body)
 
     response = client.chat.completions.parse(
         messages=[
