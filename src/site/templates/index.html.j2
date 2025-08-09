@@ -1,19 +1,60 @@
 <!doctype html>
-<html data-theme="light">
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>Seattle Outdoor Volunteer Calendar</title>
-  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
   <style>
+    /* CSS Variables for theming */
+    :root {
+      --desaturated-bg: #f0f5f0;
+      --contrast-bg: #ffffff;
+      --container-shadow: rgba(0, 0, 0, 0.1);
+      --date-header-border: #dee2e6;
+      --debug-btn-hover-bg: #f0f0f0;
+      --debug-btn-badge-bg: #007bff;
+      --debug-btn-badge-color: #ffffff;
+      --modal-source-bg: #f8f9fa;
+      --modal-source-border: #dee2e6;
+    }
+    
+    /* Dark mode variables */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --desaturated-bg: #2d3e2d;
+        --contrast-bg: #1a2e1a;
+        --container-shadow: rgba(0, 0, 0, 0.3);
+        --date-header-border: #4a5a4a;
+        --debug-btn-hover-bg: #3a4a3a;
+        --debug-btn-badge-bg: #0056b3;
+        --debug-btn-badge-color: #ffffff;
+        --modal-source-bg: #3a4a3a;
+        --modal-source-border: #4a5a4a;
+      }
+    }
+
+    /* Apply CSS variables to styles */
+    body {
+      background-color: var(--desaturated-bg);
+    }
+    main.container {
+      background-color: var(--contrast-bg);
+      border-radius: 0.5rem;
+      box-shadow: 0 2px 8px var(--container-shadow);
+      padding: 1.5rem;
+    }
+    
     .add-to-calendar { font-size: 0.8em; padding: 0.25rem 0.5rem; }
     .date-header { 
-      background-color: white; 
+      background-color: var(--contrast-bg); 
       font-weight: bold; 
       text-align: center; 
       font-size: 1.1em;
       padding-top: 1.5rem;
       padding-bottom: 0.75rem;
-      border-bottom: 2px solid #dee2e6;
+      border-bottom: 2px solid var(--date-header-border);
     }
     .date-header:first-child {
       padding-top: 0.75rem;
@@ -40,12 +81,12 @@
     }
     .debug-btn:hover {
       opacity: 1;
-      background-color: #f0f0f0;
+      background-color: var(--debug-btn-hover-bg);
       border-radius: 3px;
     }
     .debug-btn small {
-      background-color: #007bff;
-      color: white;
+      background-color: var(--debug-btn-badge-bg);
+      color: var(--debug-btn-badge-color);
       padding: 0.1rem 0.3rem;
       border-radius: 0.75rem;
       font-size: 0.75em;
@@ -67,8 +108,7 @@
       overflow-y: auto;
       min-height: 0;
     }
-    #debug-modal header,
-    #debug-modal footer {
+    #debug-modal header {
       flex-shrink: 0;
     }
   </style>
@@ -137,7 +177,7 @@
     <dialog id="debug-modal">
       <article>
         <header>
-          <button aria-label="Close" rel="prev" data-close-modal></button>
+          <button aria-label="Close" rel="prev" onclick="closeDebugModal()"></button>
           <h3 id="debug-modal-title">Event Debug Information</h3>
         </header>
         <main id="debug-modal-content">
@@ -147,9 +187,6 @@
           <h6>Deduplication Process</h6>
           <p><small>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</small></p>
         </main>
-        <footer>
-          <button data-close-modal>Close</button>
-        </footer>
       </article>
     </dialog>
 
@@ -178,6 +215,11 @@
     const modal = document.getElementById('debug-modal');
     const modalTitle = document.getElementById('debug-modal-title');
     const modalContent = document.getElementById('debug-modal-content');
+    
+    // Function to close the debug modal (called by the X button)
+    function closeDebugModal() {
+      modal.close();
+    }
     
     // Load debug data
     const debugData = JSON.parse(document.getElementById('debug-data').textContent);
@@ -214,7 +256,7 @@
       if (!sourceDict) return '<em>None</em>';
       try {
         const parsed = JSON.parse(sourceDict);
-        return `<pre style="font-size: 0.8em; max-height: 200px; overflow-y: auto; background-color: #f8f9fa; padding: 0.5rem; border-radius: 0.25rem; white-space: pre-wrap;">${JSON.stringify(parsed, null, 2)}</pre>`;
+        return `<pre style="font-size: 0.8em; overflow-y: auto; background-color: var(--contrast-bg); padding: 0.5rem; border-radius: 0.25rem; white-space: pre-wrap;">${JSON.stringify(parsed, null, 2)}</pre>`;
       } catch (e) {
         // If it's not valid JSON, just display as text
         return `<code style="word-break: break-all;">${sourceDict}</code>`;
@@ -232,16 +274,16 @@
           return;
         }
         
-        modalTitle.textContent = `Debug Info: ${data.title}`;
+        modalTitle.textContent = data.title;
         
-        let content = '<h6>Source Records</h6>';
+        let content = '';
         
         if (data.source_events.length === 0) {
           content += '<p><small><em>No source events found.</em></small></p>';
         } else {
           data.source_events.forEach((event, index) => {
             content += `
-              <div style="margin-bottom: 1.5rem; padding: 1rem; border: 1px solid #dee2e6; border-radius: 0.25rem; background-color: #f8f9fa;">
+              <div style="margin-bottom: 1.5rem; padding: 1rem; border: 1px solid var(--modal-source-border); border-radius: 0.25rem; background-color: var(--contrast-bg);">
                 <h6>Source ${index + 1}: ${event.source}</h6>
                 <table style="font-size: 0.85em; margin: 0;">
                   <tr><td><strong>Source ID:</strong></td><td><code>${event.source_id}</code></td></tr>
@@ -261,14 +303,13 @@
         }
         
         modalContent.innerHTML = content;
+        
+        // Reset scroll position to top when opening modal (with slight delay to ensure DOM is ready)
+        setTimeout(() => {
+          modalContent.scrollTop = 0;
+        }, 0);
+        
         modal.showModal();
-      }
-    });
-    
-    // Close modal when close button is clicked
-    document.addEventListener('click', (e) => {
-      if (e.target.dataset.closeModal !== undefined) {
-        modal.close();
       }
     });
     

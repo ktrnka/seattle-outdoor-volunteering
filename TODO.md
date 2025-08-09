@@ -3,18 +3,15 @@
 ## Short-Term
 
 ### 8/8
-- The dedupe wasn't updating the database, so I'm partway through a refactor of the DB into a context manager to help
 - There are a number of dedupe issues remaining in cases where the duplicate events have different titles
 
 ### UI
-- Update to Pico 2.0 and their official CDN, not whatever's in here
-- Update CSS to be more responsive on mobile. It might be better to use Pico's lightweight column setup
+- Remove scrollbar memory on the modal (I tried, but it led to a quick flash-change on opening)
 
 ### Code Quality
 - Refactor most pipelines to look like extracting CustomSourceEvent (with mostly strings) then generate SourceEvent with the standard fields
 - Refactor most of the date extraction code: GSP, SPR, SPU could share some code
 - In general, catch errors higher up the call stack to simplify the code and log errors more effectively
-- Fix bs4 type errors
 - Trim down much of the data wrangling at the extraction layer. Simplify it!
 
 ### Data Quality
@@ -26,10 +23,13 @@
 
 ## Long-Term
 
+- Generalize the blog support from Fremont to support other blogs
+
 ### New Data Sources
-- King County stuff
+- King County
   - https://parksvolunteer.kingcounty.gov/ or https://kingcounty.gov/en/dept/dnrp/nature-recreation/parks-recreation/king-county-parks/get-involved/volunteer
   - https://kcls.org/faq/volunteer/
+  - Note: This is using a platform called Golden, which looks pretty locked down (nice API but they inject an API key into the page which is passed along, probably a temp one)
 - WTA Work Parties: https://www.wta.org/volunteer/schedule/
 - **Neighborhood blogs**: RSS/blog parsing with LLM classification
   - Ballard, Fremont, Wallyhood blogs
@@ -37,7 +37,6 @@
 - **Facebook Groups**:
   - Sparkling Wallingford: https://www.facebook.com/groups/1192189949067573/events
   - We Heart Seattle cleanups: https://www.facebook.com/groups/weheartseattle/events
-- **RSS/Blog support**: Once LLM integration is ready, add support for RSS feeds and event calendars
 - **Incremental crawling of detail pages**: Fill in missing details for events, enriching the data, and unlocking a click-to-expand feature for more information
 - Other
   - https://www.seattlegreenways.org/get-involved/upcoming-events/
