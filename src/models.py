@@ -6,11 +6,12 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
 # Seattle timezone
-SEATTLE_TZ = ZoneInfo('America/Los_Angeles')
+SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
 
 
 class RecurringPattern(str, Enum):
     """Supported recurring patterns for manual events."""
+
     FIRST_SATURDAY = "first_saturday"
     FIRST_SUNDAY = "first_sunday"
     SECOND_SATURDAY = "second_saturday"
@@ -24,18 +25,18 @@ class RecurringPattern(str, Enum):
 class Event(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    source:   str
+    source: str
     source_id: str
-    title:    str
-    start:    datetime  # Should be timezone-aware (UTC)
-    end:      datetime  # Should be timezone-aware (UTC)
-    venue:    Optional[str] = None
-    address:  Optional[str] = None
-    url:      HttpUrl
-    cost:     Optional[str] = None
+    title: str
+    start: datetime  # Should be timezone-aware (UTC)
+    end: datetime  # Should be timezone-aware (UTC)
+    venue: Optional[str] = None
+    address: Optional[str] = None
+    url: HttpUrl
+    cost: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    tags:     Optional[List[str]] = []
+    tags: Optional[List[str]] = []
     # URL of the canonical/primary version of this event (from raw source data)
     same_as: Optional[HttpUrl] = None
     # Source-specific structured data as JSON dict
@@ -66,6 +67,7 @@ class Event(BaseModel):
 
 class CanonicalEvent(BaseModel):
     """Canonical event created by merging duplicate events from multiple sources."""
+
     model_config = ConfigDict(from_attributes=True)
 
     canonical_id: str  # Generated unique ID for the canonical event
@@ -88,7 +90,7 @@ class CanonicalEvent(BaseModel):
         Yields tuples of (source, source_id) for each source event.
         """
         for source_event in self.source_events:
-            source, source_id = source_event.split(':', 1)
+            source, source_id = source_event.split(":", 1)
             yield source, source_id
 
     def has_time_info(self) -> bool:
@@ -113,37 +115,37 @@ class CanonicalEvent(BaseModel):
             str: One of 'parks', 'cleanup', or 'other'
         """
         # Check URL first for Green Seattle Partnership
-        if self.url and 'seattle.greencitypartnerships.org' in str(self.url):
-            return 'parks'
+        if self.url and "seattle.greencitypartnerships.org" in str(self.url):
+            return "parks"
 
         # Check title for specific keywords
         title_lower = self.title.lower()
-        if 'cleanup' in title_lower:
-            return 'cleanup'
-        if 'forest restoration' in title_lower:
-            return 'parks'
+        if "cleanup" in title_lower:
+            return "cleanup"
+        if "forest restoration" in title_lower:
+            return "parks"
 
         # Check tags
         if self.tags:
             tags_lower = [tag.lower() for tag in self.tags]
 
             # Check for cleanup events
-            cleanup_indicators = ['cleanup', 'litter patrol']
+            cleanup_indicators = ["cleanup", "litter patrol"]
             if any(indicator in tag for tag in tags_lower for indicator in cleanup_indicators):
-                return 'cleanup'
+                return "cleanup"
 
             # Check for parks/restoration events
-            parks_indicators = [
-                'green seattle partnership', 'volunteer/work party']
+            parks_indicators = ["green seattle partnership", "volunteer/work party"]
             if any(indicator in tag for tag in tags_lower for indicator in parks_indicators):
-                return 'parks'
+                return "parks"
 
         # Everything else
-        return 'other'
+        return "other"
 
 
 class EventGroupMembership(BaseModel):
     """Represents membership of a source event in a canonical event group."""
+
     model_config = ConfigDict(from_attributes=True)
 
     canonical_id: str
@@ -153,6 +155,7 @@ class EventGroupMembership(BaseModel):
 
 class ETLRun(BaseModel):
     """Tracks ETL runs for each data source."""
+
     model_config = ConfigDict(from_attributes=True)
 
     source: str  # Data source identifier (e.g., "GSP", "SPR", "SPF")

@@ -157,8 +157,8 @@ def ensure_database_exists() -> None:
     """Ensure the uncompressed database exists by extracting from gzipped version if needed."""
     if not DB_PATH.exists() and DB_GZ.exists():
         print(f"Extracting {DB_GZ} to {DB_PATH}")
-        with gzip.open(DB_GZ, 'rb') as f_in:
-            with open(DB_PATH, 'wb') as f_out:
+        with gzip.open(DB_GZ, "rb") as f_in:
+            with open(DB_PATH, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
 
 
@@ -313,7 +313,7 @@ class Database:
         if event:
             return event.to_pydantic(), self.get_source_events_by_canonical_id(event.canonical_id)
         return None
-    
+
     def get_source_events_by_canonical_id(self, canonical_id: str) -> List[PydanticEvent]:
         """Get all source events that belong to a specific canonical event."""
         if not self.session:
