@@ -1,13 +1,6 @@
-# Formats from SPR
-# Event format: Sunday, August 3, 2025, 8&amp;nbsp;&amp;ndash;&amp;nbsp;11am
-# Publication date: 03 Aug 2025 15:45:00 GMT
-
-# Formats from SPU (no year)
-# Saturday, August 9
-# 10 am &ndash; 12 pm
-
-# Formats from GSP
-# July 28, 9am-12:30pm (no year)
+"""
+Utilities for parsing dates across a range of formats.
+"""
 
 from datetime import date, datetime, timedelta, tzinfo
 from typing import Optional, Tuple
@@ -82,26 +75,3 @@ def parse_range_single_string(event_datetime_str: str, tz: tzinfo, after: Option
 
     return parse_range(date_str, time_range_str, tz, after)
 
-
-# def parse_gsp_range(event_datetime_str: str, after: Optional[datetime] = None) -> Tuple[datetime, datetime]:
-#     """
-#     Parse a date like July 28, 9am-12:30pm
-#     """
-
-#     date_str, time_range_str = event_datetime_str.split(', ')
-
-#     start_str, end_str = time_range_str.split('-')
-
-#     partial_date = datetime.strptime(
-#         date_str + " " + str(date.today().year), "%B %d %Y").date()
-#     partial_start_time = parse_time(start_str.strip())
-#     partial_end_time = parse_time(end_str.strip())
-
-#     if after and partial_date < after.date():
-#         # If the date is before the 'after' date, adjust to next year
-#         partial_date = partial_date.replace(year=after.year + 1)
-
-#     start_dt = datetime.combine(partial_date, partial_start_time.time())
-#     end_dt = datetime.combine(partial_date, partial_end_time.time())
-
-#     return start_dt, end_dt

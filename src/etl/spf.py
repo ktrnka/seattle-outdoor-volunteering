@@ -243,9 +243,6 @@ class SPFExtractor(BaseListExtractor):
                 venue=venue,
                 address=address,
                 url=HttpUrl(normalize_url(spf_event.url)),
-                cost=None,  # Not available in schema.org data
-                latitude=None,  # Not available in schema.org data
-                longitude=None,  # Not available in schema.org data
                 tags=["Green Seattle Partnership"] if is_gsp_event else [],
                 source_dict=json.dumps(spf_event.model_dump()),
             )

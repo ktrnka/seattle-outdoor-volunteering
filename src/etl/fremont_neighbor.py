@@ -1,4 +1,5 @@
 import html
+import re
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional
@@ -11,7 +12,6 @@ from src.llm.blog_event_extractor import extract_articles
 from ..models import Event
 from .base import BaseListExtractor
 from .url_utils import normalize_url
-import re
 
 RSS_URL = "https://fremontneighbor.com/feed/"
 
@@ -155,57 +155,3 @@ def generate_source_id(article_guid: str, event_date: date) -> str:
         post_id = article_guid.split("/")[-1] or article_guid
 
     return f"{post_id}_{event_date.isoformat()}"
-
-    # def _create_event_from_extraction(self, article: FremontArticle, extracted: ExtractedEvent) -> Optional[Event]:
-    #     """Create an Event object from the article and extracted data."""
-    #     if not extracted.title:
-    #         return None
-
-    #     try:
-    #         # Use article publication date as fallback
-    #         event_datetime = article.pub_date
-
-    #         # Try to parse extracted date if available
-    #         if extracted.date_time:
-    #             # This is a simplified date parser - could be enhanced
-    #             try:
-    #                 # Try common date formats
-    #                 for fmt in ["%B %d", "%B %d, %Y", "%m/%d/%Y", "%Y-%m-%d"]:
-    #                     try:
-    #                         parsed_date = datetime.strptime(
-    #                             extracted.date_time, fmt)
-    #                         # If no year, use current year
-    #                         if parsed_date.year == 1900:
-    #                             parsed_date = parsed_date.replace(
-    #                                 year=datetime.now().year)
-    #                         # Convert to Seattle timezone
-    #                         event_datetime = parsed_date.replace(
-    #                             tzinfo=SEATTLE_TZ)
-    #                         break
-    #                     except ValueError:
-    #                         continue
-    #             except Exception:
-    #                 # Fallback to article date
-    #                 pass
-
-    #         # Convert to UTC for storage
-    #         event_datetime_utc = event_datetime.astimezone(timezone.utc)
-
-    #         # Generate source_id from article GUID or URL
-    #         source_id = article.guid if article.guid else article.link
-    #         # Clean source_id to make it more stable
-    #         source_id = re.sub(r'[^\w\-]', '_', source_id)
-
-    #         return Event(
-    #             source=self.source,
-    #             source_id=source_id,
-    #             title=extracted.title.strip(),
-    #             venue=extracted.venue.strip() if extracted.venue else "Fremont",
-    #             start=event_datetime_utc,
-    #             # Use same time for start/end since blog posts don't specify duration
-    #             end=event_datetime_utc,
-    #             url=HttpUrl(article.link),
-    #         )
-    #     except Exception:
-    #         # Return None for events that can't be properly parsed
-    #         return None
