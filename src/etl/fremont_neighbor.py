@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, HttpUrl
 from .base import BaseListExtractor
 from .url_utils import normalize_url
 from ..models import Event, SEATTLE_TZ
-from ..llm import get_client
+from ..llm.llm import get_client
 
 RSS_URL = "https://fremontneighbor.com/feed/"
 

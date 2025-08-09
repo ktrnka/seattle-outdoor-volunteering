@@ -3,9 +3,9 @@ from typing import List, Literal
 
 from pydantic import BaseModel
 
-from src.llm import get_client
+from .llm import get_client
 
-from .models import CanonicalEvent, Event
+from ..models import CanonicalEvent, Event
 
 
 _SYSTEM = """
