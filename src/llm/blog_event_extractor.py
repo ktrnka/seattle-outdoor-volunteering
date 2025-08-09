@@ -1,9 +1,9 @@
 from datetime import date, datetime
 from typing import List, Optional
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from .llm import get_client
-
+from ..models import Event
 
 _SYSTEM_PROMPT = """
 You are an expert at extracting volunteer event information from blog articles. 
@@ -16,8 +16,6 @@ Return your response as a JSON object with these fields:
     - event_date: extracted event date (YYYY-MM-DD format)
     - start_datetime: full start datetime in ISO 8601 format (YYYY-MM-DDTHH:MM:SS) - combine event_date with start time
     - end_datetime: full end datetime in ISO 8601 format (YYYY-MM-DDTHH:MM:SS) - combine event_date with end time
-    - start_time: extracted event start time (if available, for reference)
-    - end_time: extracted event end time (if available, for reference)
     - venue: location/venue name (if available) 
     - description: brief description of the volunteer activity (if available)
     - contact_info: any contact information mentioned (if available)
@@ -33,14 +31,25 @@ class ExtractedEvent(BaseModel):
 
     title: str
     event_date: date
-    start_datetime: Optional[datetime] = None  # Full datetime in ISO format
-    end_datetime: Optional[datetime] = None    # Full datetime in ISO format
-    start_time: Optional[str] = None  # Raw start time string from article
-    end_time: Optional[str] = None  # Raw end time string from article
+    start_datetime: datetime  # Full datetime in ISO format
+    end_datetime: datetime    # Full datetime in ISO format
 
     venue: Optional[str] = None
     description: Optional[str] = None
     contact_info: Optional[str] = None
+
+    def to_common_event(self, source: str, source_id: str, url: str) -> Event:
+        """Convert to common Event model."""
+        return Event(
+            source=source,
+            source_id=source_id,
+            url=HttpUrl(url),
+            title=self.title,
+            start=self.start_datetime,
+            end=self.end_datetime,
+            venue=self.venue,
+            source_dict=self.model_dump_json(),
+        )
 
 
 class ExtractedEventList(BaseModel):
@@ -52,27 +61,6 @@ class ExtractedEventList(BaseModel):
 
 def build_user_context(title: str, publication_date: str, body: str) -> str:
     return f"Title: {title}\nPublication Date: {publication_date}\nBody: {body}\n"
-
-
-def generate_source_id(article_guid: str, event_date: date) -> str:
-    """Generate a unique source_id for an event based on article GUID and event date.
-
-    Args:
-        article_guid: The GUID from the RSS article (e.g., "https://fremontneighbor.com/?p=683")
-        event_date: The date of the event
-
-    Returns:
-        A unique source_id string combining post ID and event date (e.g., "683_2025-08-10")
-    """
-    # Extract the post ID from the GUID URL
-    # Format: https://fremontneighbor.com/?p=683 -> 683
-    if "?p=" in article_guid:
-        post_id = article_guid.split("?p=")[-1]
-    else:
-        # Fallback: use the last part of the URL or the whole GUID if no ?p= found
-        post_id = article_guid.split("/")[-1] or article_guid
-
-    return f"{post_id}_{event_date.isoformat()}"
 
 
 def extract_articles(title: str, publication_date: str, body: str) -> List[ExtractedEvent]:
