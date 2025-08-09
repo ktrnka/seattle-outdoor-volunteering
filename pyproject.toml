@@ -52,6 +52,10 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = [
+    "llm: marks tests that use LLM APIs (deselect with '-m \"not llm\"')",
+]
+addopts = "-m 'not llm'"
 
 [tool.ruff]
 line-length = 150
