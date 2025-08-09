@@ -3,22 +3,9 @@ from typing import List, Literal
 
 from pydantic import BaseModel
 
+from src.llm import get_client
+
 from .models import CanonicalEvent, Event
-
-import os
-from openai import OpenAI
-
-
-def get_client() -> OpenAI:
-    """Cascade for the token. Prefer the """
-    token = os.environ["GITHUB_TOKEN"]
-    endpoint = "https://models.github.ai/inference"
-
-    client = OpenAI(
-        base_url=endpoint,
-        api_key=token,
-    )
-    return client
 
 
 _SYSTEM = """
