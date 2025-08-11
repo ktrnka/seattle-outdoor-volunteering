@@ -29,6 +29,9 @@ jobs:
     
     - name: Ingest new data
       run: uv run seattle-volunteering etl
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+
 
     - name: Merge duplicate events
       run: uv run seattle-volunteering deduplicate
