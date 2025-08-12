@@ -1,9 +1,10 @@
 from datetime import date, datetime
 from typing import List, Optional
+
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
-from .llm import get_client
 from ..models import Event
+from .llm import debug_list_catalog, get_client
 
 _SYSTEM_PROMPT = """
 You are an expert at extracting volunteer event information from blog articles. 
@@ -71,10 +72,15 @@ def extract_articles(title: str, publication_date: str, body: str) -> List[Extra
     client = get_client()
     user_context = build_user_context(title, publication_date, body)
 
+    # Define target model at start
+    target_model = "openai/gpt-4.1"
+
+    debug_list_catalog(target_model)
+
     response = client.chat.completions.parse(
         messages=[{"role": "system", "content": _SYSTEM_PROMPT}, {"role": "user", "content": user_context}],
         temperature=0.2,
-        model="openai/gpt-4.1",
+        model=target_model,
         response_format=ExtractedEventList,
     )
 
