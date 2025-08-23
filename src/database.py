@@ -225,6 +225,13 @@ class Database:
             raise NoSessionError()
         events = self.session.query(Event).order_by(Event.start).all()
         return [event.to_pydantic() for event in events]
+    
+    def get_source_event(self, source: str, source_id: str) -> Optional[PydanticEvent]:
+        """Retrieve a single event by source and source_id."""
+        if not self.session:
+            raise NoSessionError()
+        event = self.session.query(Event).filter(Event.source == source, Event.source_id == source_id).first()
+        return event.to_pydantic() if event else None
 
     def init_database(self, reset: bool = False):
         """Initialize the database by creating all tables."""

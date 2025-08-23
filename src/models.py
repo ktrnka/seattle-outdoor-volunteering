@@ -162,3 +162,22 @@ class ETLRun(BaseModel):
     run_datetime: datetime  # When the ETL run occurred (UTC timezone-aware)
     status: str  # "success" or "failure"
     num_rows: int = 0  # Number of events retrieved
+
+
+class EventCategory(str, Enum):
+    """Supported event categories for LLM classification."""
+    
+    VOLUNTEER_PARKS = "volunteer/parks"
+    VOLUNTEER_LITTER = "volunteer/litter"
+    SOCIAL_EVENT = "social_event"
+    CONCERT = "concert"
+    OTHER = "other"
+
+
+class LLMEventCategorization(BaseModel):
+    """Result of LLM-based event categorization."""
+    
+    model_config = ConfigDict(from_attributes=True)
+    
+    category: EventCategory
+    reasoning: Optional[str] = None  # Optional explanation of the categorization

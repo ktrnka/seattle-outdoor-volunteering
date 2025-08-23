@@ -363,6 +363,59 @@ def test_llm_canonicalization(event_title: str):
         run_llm_canonicalization(*data)
 
 
+@dev.command()
+@click.argument("source", required=True)
+@click.argument("source_id", required=True)
+def test_event_categorization(source: str, source_id: str):
+    """Test LLM-based event categorization on a specific source event."""
+    from .llm.event_categorization import categorize_event
+    
+    with database.Database() as db:
+        # Find the source event
+        target_event = db.get_source_event(source, source_id)
+
+        if not target_event:
+            click.echo(f"Error: No source event found with source='{source}' and source_id='{source_id}'")
+            return
+
+        # Display event info
+        click.echo("Event to categorize:")
+        click.echo("=" * 50)
+        click.echo(f"Source: {target_event.source}")
+        click.echo(f"Source ID: {target_event.source_id}")
+                
+        if not target_event:
+            click.echo(f"Error: No source event found with source='{source}' and source_id='{source_id}'")
+            return
+            
+        # Display event info
+        click.echo("Event to categorize:")
+        click.echo("=" * 50)
+        click.echo(f"Source: {target_event.source}")
+        click.echo(f"Source ID: {target_event.source_id}")
+        click.echo(f"Title: {target_event.title}")
+        if target_event.venue:
+            click.echo(f"Venue: {target_event.venue}")
+        click.echo(f"URL: {target_event.url}")
+        if target_event.tags:
+            click.echo(f"Existing tags: {', '.join(target_event.tags)}")
+        
+        click.echo("\nCategorizing with LLM...")
+        
+        try:
+            categorization = categorize_event(target_event)
+            click.echo("\nLLM Categorization Result:")
+            click.echo("=" * 50)
+            click.echo(f"Category: {categorization.category.value}")
+            if categorization.reasoning:
+                click.echo(f"Reasoning: {categorization.reasoning}")
+                
+        except Exception as e:
+            click.echo(f"\nError during categorization: {e}")
+            import traceback
+            traceback.print_exc()
+
+
 # Add the dev group to the main CLI
 cli.add_command(dev)
 
