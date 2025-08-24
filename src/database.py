@@ -17,6 +17,7 @@ from .models import (
     CanonicalEvent as PydanticCanonicalEvent,
     EventGroupMembership as PydanticEventGroupMembership,
     ETLRun as PydanticETLRun,
+    LLMEventCategorization,
 )
 
 Base = declarative_base()
@@ -248,11 +249,37 @@ class Database:
         return [event.to_pydantic() for event in events]
     
     def get_source_event(self, source: str, source_id: str) -> Optional[PydanticEvent]:
-        """Retrieve a single event by source and source_id."""
+        """Retrieve a single event by source and source_id, with optional enrichment data."""
         if not self.session:
             raise NoSessionError()
-        event = self.session.query(Event).filter(Event.source == source, Event.source_id == source_id).first()
-        return event.to_pydantic() if event else None
+            
+        # Try to get event with enrichment data first
+        result = (
+            self.session.query(Event, EnrichedSourceEvent)
+            .outerjoin(EnrichedSourceEvent, 
+                      (Event.source == EnrichedSourceEvent.source) & 
+                      (Event.source_id == EnrichedSourceEvent.source_id))
+            .filter(Event.source == source, Event.source_id == source_id)
+            .first()
+        )
+        
+        if not result:
+            return None
+            
+        event, enrichment = result
+        pydantic_event = event.to_pydantic()
+        
+        # If enrichment exists, parse and attach it
+        if enrichment:
+            import json
+            
+            from .models import LLMEventCategorization
+            
+            llm_categorization_dict = json.loads(enrichment.llm_categorization)
+            llm_categorization = LLMEventCategorization(**llm_categorization_dict)
+            pydantic_event.llm_categorization = llm_categorization
+            
+        return pydantic_event
 
     def get_enriched_source_events(self, limit: int = 20) -> List[PydanticEvent]:
         """
@@ -292,6 +319,45 @@ class Database:
             enriched_events.append(pydantic_event)
             
         return enriched_events
+
+    def store_event_enrichment(self, source: str, source_id: str, llm_categorization: LLMEventCategorization) -> None:
+        """Store LLM enrichment data for a source event."""
+        if not self.session:
+            raise NoSessionError()
+            
+        import json
+        from datetime import datetime, timezone
+        
+        try:
+            # Convert Pydantic model to JSON
+            categorization_json = llm_categorization.model_dump_json()
+            
+            # For now, use empty metadata
+            metadata_json = json.dumps({})
+            
+            # Create enrichment record
+            enrichment_data = {
+                "source": source,
+                "source_id": source_id,
+                "llm_categorization": categorization_json,
+                "llm_request_metadata": metadata_json,
+                "created_at": datetime.now(timezone.utc),
+                "processing_status": "success",
+                "error_message": None,
+            }
+            
+            # Use upsert to handle potential duplicates
+            stmt = insert(EnrichedSourceEvent).values(**enrichment_data)
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["source", "source_id"], 
+                set_=enrichment_data
+            )
+            self.session.execute(stmt)
+            self.session.commit()
+            
+        except Exception as e:
+            self.session.rollback()
+            raise e
 
     def init_database(self, reset: bool = False):
         """Initialize the database by creating all tables."""

@@ -368,24 +368,14 @@ def test_llm_canonicalization(event_title: str):
 @dev.command()
 @click.argument("source", required=True)
 @click.argument("source_id", required=True)
-def test_event_categorization(source: str, source_id: str):
-    """Test LLM-based event categorization on a specific source event."""
-    from .llm.event_categorization import categorize_event
+def categorize_event(source: str, source_id: str):
+    """Categorize a source event with LLM and store the result."""
+    from .llm.event_categorization import categorize_event as llm_categorize
     
     with database.Database() as db:
-        # Find the source event
+        # Find the source event (will include enrichment if it exists)
         target_event = db.get_source_event(source, source_id)
 
-        if not target_event:
-            click.echo(f"Error: No source event found with source='{source}' and source_id='{source_id}'")
-            return
-
-        # Display event info
-        click.echo("Event to categorize:")
-        click.echo("=" * 50)
-        click.echo(f"Source: {target_event.source}")
-        click.echo(f"Source ID: {target_event.source_id}")
-                
         if not target_event:
             click.echo(f"Error: No source event found with source='{source}' and source_id='{source_id}'")
             return
@@ -402,20 +392,34 @@ def test_event_categorization(source: str, source_id: str):
         if target_event.tags:
             click.echo(f"Existing tags: {', '.join(target_event.tags)}")
         
-        click.echo("\nCategorizing with LLM...")
-        
-        try:
-            categorization = categorize_event(target_event)
-            click.echo("\nLLM Categorization Result:")
+        # Check if already categorized
+        if target_event.llm_categorization:
+            click.echo("\nExisting LLM Categorization:")
             click.echo("=" * 50)
-            click.echo(f"Category: {categorization.category.value}")
-            if categorization.reasoning:
-                click.echo(f"Reasoning: {categorization.reasoning}")
+            click.echo(f"Category: {target_event.llm_categorization.category.value}")
+            if target_event.llm_categorization.reasoning:
+                click.echo(f"Reasoning: {target_event.llm_categorization.reasoning}")
+            click.echo("(Already categorized - showing existing result)")
+        else:
+            click.echo("\nCategorizing with LLM...")
+            
+            try:
+                categorization = llm_categorize(target_event)
                 
-        except Exception as e:
-            click.echo(f"\nError during categorization: {e}")
-            import traceback
-            traceback.print_exc()
+                # Store the result in the database
+                db.store_event_enrichment(target_event.source, target_event.source_id, categorization)
+                
+                click.echo("\nLLM Categorization Result:")
+                click.echo("=" * 50)
+                click.echo(f"Category: {categorization.category.value}")
+                if categorization.reasoning:
+                    click.echo(f"Reasoning: {categorization.reasoning}")
+                click.echo("(Stored in database)")
+                    
+            except Exception as e:
+                click.echo(f"\nError during categorization: {e}")
+                import traceback
+                traceback.print_exc()
 
 
 @dev.command()
