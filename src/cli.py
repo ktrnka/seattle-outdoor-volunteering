@@ -341,6 +341,8 @@ def show_events(source: str, canonical: bool = False, limit: int = 20):
                 click.echo(f"  Sources: {', '.join(event.source_events)}")
             else:
                 click.echo(f"  Source ID: {event.source_id}")
+            if event.tags:
+                click.echo(f"  Tags: {', '.join(event.tags)}")
             click.echo(f"  {event.url}")
 
 
@@ -414,6 +416,57 @@ def test_event_categorization(source: str, source_id: str):
             click.echo(f"\nError during categorization: {e}")
             import traceback
             traceback.print_exc()
+
+
+@dev.command()
+def create_enrichment_table():
+    """Create the enriched_source_events table for LLM categorization."""
+    from .database import EnrichedSourceEvent
+    
+    with database.Database() as db:
+        # Create just the enrichment table
+        EnrichedSourceEvent.__table__.create(db.engine, checkfirst=True)
+        click.echo("Created enriched_source_events table successfully!")
+
+
+@dev.command()
+@click.option("--limit", default=10, help="Maximum number of enriched events to show (default: 10)")
+def show_enriched_events(limit: int = 10):
+    """Show source events with their LLM enrichment data."""
+    with database.Database() as db:
+        enriched_events = db.get_enriched_source_events(limit=limit)
+        
+        if not enriched_events:
+            click.echo("No enriched events found in database.")
+            return
+            
+        click.echo(f"Showing {len(enriched_events)} enriched events:")
+        click.echo("=" * 60)
+        
+        for event in enriched_events:
+            # Format date/time
+            if event.start.hour == 0 and event.start.minute == 0 and event.start == event.end:
+                time_str = event.start.strftime("%a %-m/%-d/%Y (date only)")
+            else:
+                time_str = event.start.strftime("%a %-m/%-d/%Y from %-I:%M%p")
+                if event.end != event.start:
+                    time_str += event.end.strftime(" - %-I:%M%p")
+
+            click.echo(f"\n• {event.title}")
+            click.echo(f"  {time_str}")
+            if event.venue:
+                click.echo(f"  {event.venue}")
+            click.echo(f"  Source: {event.source}:{event.source_id}")
+            
+            # Show LLM categorization
+            if event.llm_categorization:
+                click.echo(f"  LLM Category: {event.llm_categorization.category.value}")
+                if event.llm_categorization.reasoning:
+                    click.echo(f"  LLM Reasoning: {event.llm_categorization.reasoning}")
+            else:
+                click.echo("  LLM Category: Not available")
+                
+            click.echo(f"  {event.url}")
 
 
 # Add the dev group to the main CLI

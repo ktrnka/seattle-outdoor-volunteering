@@ -22,6 +22,25 @@ class RecurringPattern(str, Enum):
     FOURTH_SUNDAY = "fourth_sunday"
 
 
+class EventCategory(str, Enum):
+    """Supported event categories for LLM classification."""
+    
+    VOLUNTEER_PARKS = "volunteer/parks"
+    VOLUNTEER_LITTER = "volunteer/litter"
+    SOCIAL_EVENT = "social_event"
+    CONCERT = "concert"
+    OTHER = "other"
+
+
+class LLMEventCategorization(BaseModel):
+    """Result of LLM-based event categorization."""
+    
+    model_config = ConfigDict(from_attributes=True)
+    
+    category: EventCategory
+    reasoning: Optional[str] = None  # Optional explanation of the categorization
+
+
 class Event(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -41,6 +60,8 @@ class Event(BaseModel):
     same_as: Optional[HttpUrl] = None
     # Source-specific structured data as JSON dict
     source_dict: Optional[str] = None
+    # LLM-based categorization (populated when joining with enrichment table)
+    llm_categorization: Optional[LLMEventCategorization] = None
 
     @property
     def start_local(self, tz: ZoneInfo = SEATTLE_TZ) -> datetime:
@@ -162,22 +183,3 @@ class ETLRun(BaseModel):
     run_datetime: datetime  # When the ETL run occurred (UTC timezone-aware)
     status: str  # "success" or "failure"
     num_rows: int = 0  # Number of events retrieved
-
-
-class EventCategory(str, Enum):
-    """Supported event categories for LLM classification."""
-    
-    VOLUNTEER_PARKS = "volunteer/parks"
-    VOLUNTEER_LITTER = "volunteer/litter"
-    SOCIAL_EVENT = "social_event"
-    CONCERT = "concert"
-    OTHER = "other"
-
-
-class LLMEventCategorization(BaseModel):
-    """Result of LLM-based event categorization."""
-    
-    model_config = ConfigDict(from_attributes=True)
-    
-    category: EventCategory
-    reasoning: Optional[str] = None  # Optional explanation of the categorization
