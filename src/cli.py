@@ -430,6 +430,53 @@ def categorize_event(source: str, source_id: str):
 
 
 @dev.command()
+@click.argument("max_events", type=int, required=True)
+def enrich_source_events(max_events: int):
+    """Categorize uncategorized source events with LLM, up to max_events."""
+    from .llm.event_categorization import categorize_event as llm_categorize
+    
+    with database.Database() as db:
+        # Get uncategorized events
+        uncategorized_events = db.get_uncategorized_source_events(limit=max_events)
+        
+        if not uncategorized_events:
+            click.echo("No uncategorized events found.")
+            return
+            
+        click.echo(f"Found {len(uncategorized_events)} uncategorized events. Processing up to {max_events}...")
+        
+        success_count = 0
+        error_count = 0
+        
+        for i, event in enumerate(uncategorized_events, 1):
+            click.echo(f"\n[{i}/{len(uncategorized_events)}] Processing: {event.title}")
+            click.echo(f"  Source: {event.source}:{event.source_id}")
+            
+            try:
+                categorization = llm_categorize(event)
+                
+                # Store the result in the database
+                db.store_event_enrichment(event.source, event.source_id, categorization)
+                
+                click.echo(f"  ✓ Categorized as: {categorization.category.value}")
+                if categorization.reasoning:
+                    # Truncate reasoning for display
+                    reasoning_preview = categorization.reasoning[:60] + "..." if len(categorization.reasoning) > 60 else categorization.reasoning
+                    click.echo(f"  Reasoning: {reasoning_preview}")
+                
+                success_count += 1
+                
+            except Exception as e:
+                click.echo(f"  ✗ Error: {str(e)}")
+                error_count += 1
+                # Continue processing other events
+                
+        click.echo("\nProcessing complete:")
+        click.echo(f"  Successfully categorized: {success_count}")
+        click.echo(f"  Errors: {error_count}")
+
+
+@dev.command()
 def create_enrichment_table():
     """Create the enriched_source_events table for LLM categorization."""
     from .database import EnrichedSourceEvent

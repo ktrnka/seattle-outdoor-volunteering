@@ -302,6 +302,30 @@ class Database:
         
         return [event.to_pydantic(enrichment) for event, enrichment in results]
 
+    def get_uncategorized_source_events(self, limit: int = 20) -> List[PydanticEvent]:
+        """
+        Retrieve source events that don't have enrichment data yet.
+        
+        Returns:
+            List of Events without llm_categorization
+        """
+        if not self.session:
+            raise NoSessionError()
+            
+        # Use left anti join to find events without enrichment
+        results = (
+            self.session.query(Event)
+            .outerjoin(EnrichedSourceEvent, 
+                      (Event.source == EnrichedSourceEvent.source) & 
+                      (Event.source_id == EnrichedSourceEvent.source_id))
+            .filter(EnrichedSourceEvent.source.is_(None))  # Anti join condition
+            .order_by(Event.start)
+            .limit(limit)
+            .all()
+        )
+        
+        return [event.to_pydantic() for event in results]
+
     def store_event_enrichment(self, source: str, source_id: str, llm_categorization: LLMEventCategorization) -> None:
         """Store LLM enrichment data for a source event."""
         if not self.session:
