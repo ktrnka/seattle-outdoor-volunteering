@@ -365,6 +365,28 @@ def test_llm_canonicalization(event_title: str):
         run_llm_canonicalization(*data)
 
 
+def _display_event_info(event) -> None:
+    """Helper to display basic event information."""
+    click.echo(f"Source: {event.source}")
+    click.echo(f"Source ID: {event.source_id}")
+    click.echo(f"Title: {event.title}")
+    if event.venue:
+        click.echo(f"Venue: {event.venue}")
+    click.echo(f"URL: {event.url}")
+    if event.tags:
+        click.echo(f"Existing tags: {', '.join(event.tags)}")
+
+
+def _display_llm_categorization(categorization, status_note: str = "") -> None:
+    """Helper to display LLM categorization results."""
+    click.echo("=" * 50)
+    click.echo(f"Category: {categorization.category.value}")
+    if categorization.reasoning:
+        click.echo(f"Reasoning: {categorization.reasoning}")
+    if status_note:
+        click.echo(f"({status_note})")
+
+
 @dev.command()
 @click.argument("source", required=True)
 @click.argument("source_id", required=True)
@@ -383,23 +405,12 @@ def categorize_event(source: str, source_id: str):
         # Display event info
         click.echo("Event to categorize:")
         click.echo("=" * 50)
-        click.echo(f"Source: {target_event.source}")
-        click.echo(f"Source ID: {target_event.source_id}")
-        click.echo(f"Title: {target_event.title}")
-        if target_event.venue:
-            click.echo(f"Venue: {target_event.venue}")
-        click.echo(f"URL: {target_event.url}")
-        if target_event.tags:
-            click.echo(f"Existing tags: {', '.join(target_event.tags)}")
+        _display_event_info(target_event)
         
         # Check if already categorized
         if target_event.llm_categorization:
             click.echo("\nExisting LLM Categorization:")
-            click.echo("=" * 50)
-            click.echo(f"Category: {target_event.llm_categorization.category.value}")
-            if target_event.llm_categorization.reasoning:
-                click.echo(f"Reasoning: {target_event.llm_categorization.reasoning}")
-            click.echo("(Already categorized - showing existing result)")
+            _display_llm_categorization(target_event.llm_categorization, "Already categorized - showing existing result")
         else:
             click.echo("\nCategorizing with LLM...")
             
@@ -410,11 +421,7 @@ def categorize_event(source: str, source_id: str):
                 db.store_event_enrichment(target_event.source, target_event.source_id, categorization)
                 
                 click.echo("\nLLM Categorization Result:")
-                click.echo("=" * 50)
-                click.echo(f"Category: {categorization.category.value}")
-                if categorization.reasoning:
-                    click.echo(f"Reasoning: {categorization.reasoning}")
-                click.echo("(Stored in database)")
+                _display_llm_categorization(categorization, "Stored in database")
                     
             except Exception as e:
                 click.echo(f"\nError during categorization: {e}")

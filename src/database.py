@@ -1,6 +1,7 @@
 """Database module using SQLAlchemy for managing the events database."""
 
 import gzip
+import json
 import shutil
 import sqlite3
 import uuid
@@ -53,9 +54,17 @@ class Event(Base):
 
     __table_args__ = (PrimaryKeyConstraint("source", "source_id"),)
 
-    def to_pydantic(self) -> PydanticEvent:
-        """Convert SQLAlchemy model to Pydantic model."""
+    def to_pydantic(self, enrichment: Optional['EnrichedSourceEvent'] = None) -> PydanticEvent:
+        """Convert SQLAlchemy model to Pydantic model, optionally with enrichment data."""
         tags = [tag.strip() for tag in self.tags.split(",")] if self.tags else []
+
+        # Parse enrichment data if provided
+        llm_categorization = None
+        if enrichment:
+            from .models import LLMEventCategorization
+            
+            llm_categorization_dict = json.loads(enrichment.llm_categorization)
+            llm_categorization = LLMEventCategorization(**llm_categorization_dict)
 
         return PydanticEvent(
             source=self.source,
@@ -72,6 +81,7 @@ class Event(Base):
             tags=tags,
             same_as=self.same_as,  # type: ignore
             source_dict=self.source_dict,
+            llm_categorization=llm_categorization,
         )
 
 
@@ -267,19 +277,7 @@ class Database:
             return None
             
         event, enrichment = result
-        pydantic_event = event.to_pydantic()
-        
-        # If enrichment exists, parse and attach it
-        if enrichment:
-            import json
-            
-            from .models import LLMEventCategorization
-            
-            llm_categorization_dict = json.loads(enrichment.llm_categorization)
-            llm_categorization = LLMEventCategorization(**llm_categorization_dict)
-            pydantic_event.llm_categorization = llm_categorization
-            
-        return pydantic_event
+        return event.to_pydantic(enrichment)
 
     def get_enriched_source_events(self, limit: int = 20) -> List[PydanticEvent]:
         """
@@ -302,31 +300,12 @@ class Database:
             .all()
         )
         
-        enriched_events = []
-        for event, enrichment in results:
-            import json
-            
-            from .models import LLMEventCategorization
-            
-            # Parse the LLM categorization JSON into Pydantic model
-            llm_categorization_dict = json.loads(enrichment.llm_categorization)
-            llm_categorization = LLMEventCategorization(**llm_categorization_dict)
-            
-            # Convert to Pydantic Event and add the categorization
-            pydantic_event = event.to_pydantic()
-            pydantic_event.llm_categorization = llm_categorization
-            
-            enriched_events.append(pydantic_event)
-            
-        return enriched_events
+        return [event.to_pydantic(enrichment) for event, enrichment in results]
 
     def store_event_enrichment(self, source: str, source_id: str, llm_categorization: LLMEventCategorization) -> None:
         """Store LLM enrichment data for a source event."""
         if not self.session:
             raise NoSessionError()
-            
-        import json
-        from datetime import datetime, timezone
         
         try:
             # Convert Pydantic model to JSON
