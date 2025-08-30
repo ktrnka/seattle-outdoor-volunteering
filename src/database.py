@@ -518,6 +518,57 @@ class Database:
 
         return stats
 
+    def get_data_freshness_grid(self, days: int = 5) -> Dict[str, Dict[str, bool]]:
+        """Get data freshness grid showing success/failure for each source by date.
+        
+        Returns:
+            Dict mapping source -> Dict mapping date string (YYYY-MM-DD) -> bool (success status)
+        """
+        if not self.session:
+            raise NoSessionError()
+
+        # Calculate date range (last N days)
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=days - 1)
+
+        # Get all ETL runs in the date range
+        start_datetime = datetime.combine(start_date, datetime.min.time(), timezone.utc)
+        end_datetime = datetime.combine(end_date, datetime.max.time(), timezone.utc)
+        
+        runs = (
+            self.session.query(ETLRun)
+            .filter(ETLRun.run_datetime >= start_datetime)
+            .filter(ETLRun.run_datetime <= end_datetime)
+            .order_by(ETLRun.run_datetime.desc())
+            .all()
+        )
+
+        # Initialize grid with all dates and sources
+        grid = {}
+        all_sources = set()
+        
+        # First pass: collect all sources
+        for run in runs:
+            all_sources.add(run.source)
+        
+        # Initialize grid with False (no successful run) for all source/date combinations
+        for source in all_sources:
+            grid[source] = {}
+            current_date = start_date
+            while current_date <= end_date:
+                grid[source][current_date.strftime('%Y-%m-%d')] = False
+                current_date += timedelta(days=1)
+
+        # Second pass: mark successful runs
+        for run in runs:
+            if run.status == "success":
+                run_date = read_utc(run.run_datetime).date()
+                date_str = run_date.strftime('%Y-%m-%d')
+                if run.source in grid and date_str in grid[run.source]:
+                    grid[run.source][date_str] = True
+
+        return grid
+
     def record_etl_run(self, source: str, status: str, num_rows: int) -> None:
         """Record an ETL run for a data source."""
         if not self.session:

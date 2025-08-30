@@ -192,14 +192,35 @@
 
     <footer>
       <small>Built automatically every night. Data may lag sources.</small>
-      {% if source_stats %}
+      {% if freshness_grid %}
       <div style="margin-top: 1rem;">
-        <small><strong>Data Source Updates:</strong></small>
-        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-        {% for source, last_updated in source_stats.items() %}
-          <li><small><strong>{{ source }}:</strong> {{ last_updated.strftime('%-m/%-d/%Y at %-I:%M%p')|lower }}</small></li>
-        {% endfor %}
-        </ul>
+        <small><strong>Data Source Updates (Last 5 Days):</strong></small>
+        <table style="margin: 0.5rem 0; font-size: 0.85em; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="text-align: left; padding: 0.25rem 0.5rem; border-bottom: 1px solid var(--date-header-border);">Source</th>
+              {% for date_info in freshness_dates %}
+              <th style="text-align: center; padding: 0.25rem 0.5rem; border-bottom: 1px solid var(--date-header-border);">{{ date_info.display }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for source in freshness_grid.keys()|sort %}
+            <tr>
+              <td style="padding: 0.25rem 0.5rem; font-weight: bold;">{{ source }}</td>
+              {% for date_info in freshness_dates %}
+              <td style="text-align: center; padding: 0.25rem 0.5rem;">
+                {% if freshness_grid[source][date_info.date_str] %}
+                  <span style="color: #28a745; font-weight: bold;" title="Successful update on {{ date_info.date.strftime('%B %-d, %Y') }}">✓</span>
+                {% else %}
+                  <span style="color: #dc3545; font-weight: bold;" title="No successful update on {{ date_info.date.strftime('%B %-d, %Y') }}">✗</span>
+                {% endif %}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
       {% endif %}
     </footer>

@@ -101,6 +101,21 @@ def build(output_dir: Path):
             pacific_datetime = utc_datetime.astimezone(SEATTLE_TZ)
             source_stats_pacific[source] = pacific_datetime
 
+        # Get data freshness grid for the last 5 days
+        freshness_grid = db.get_data_freshness_grid(days=5)
+        
+        # Generate date headers for the grid (last 5 days)
+        from datetime import date, timedelta
+        today = date.today()
+        freshness_dates = []
+        for i in range(4, -1, -1):  # 4, 3, 2, 1, 0 (most recent last)
+            date_obj = today - timedelta(days=i)
+            freshness_dates.append({
+                'date': date_obj,
+                'date_str': date_obj.strftime('%Y-%m-%d'),
+                'display': date_obj.strftime('%-m/%-d')
+            })
+
         env = Environment(
             loader=FileSystemLoader(Path(__file__).parent / "templates"),
             autoescape=select_autoescape()
@@ -109,6 +124,8 @@ def build(output_dir: Path):
         html = tmpl.render(
             events_by_date=events_by_date,
             source_stats=source_stats_pacific,
+            freshness_grid=freshness_grid,
+            freshness_dates=freshness_dates,
             debug_data=debug_data
         )
         output_dir.mkdir(parents=True, exist_ok=True)
