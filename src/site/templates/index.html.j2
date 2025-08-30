@@ -265,8 +265,9 @@
     
     // Open modal when debug button is clicked
     document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('debug-btn')) {
-        const canonicalId = e.target.dataset.canonicalId;
+      const debugBtn = e.target.closest('.debug-btn');
+      if (debugBtn) {
+        const canonicalId = debugBtn.dataset.canonicalId;
         const data = debugData[canonicalId];
         
         if (!data) {
