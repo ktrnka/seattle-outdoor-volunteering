@@ -264,24 +264,26 @@ def event_type_stats():
         click.echo("\nEvent type distribution:")
         click.echo("=" * 40)
 
-        for event_type in ["parks", "cleanup", "other"]:
-            count = type_counter[event_type]
+        # Show all event types found, sorted by count
+        for event_type, count in type_counter.most_common():
             percentage = (count / len(events)) * 100 if events else 0
-            click.echo(f"{event_type:<10} {count:>4} ({percentage:>5.1f}%)")
+            click.echo(f"{event_type:<20} {count:>4} ({percentage:>5.1f}%)")
 
         # Show some examples for each type
         click.echo("\nExample events by type:")
         click.echo("=" * 40)
 
         examples_per_type = 3
-        type_examples = {"parks": [], "cleanup": [], "other": []}
+        type_examples = {}
 
         for event in events:
             event_type = event.get_event_type()
+            if event_type not in type_examples:
+                type_examples[event_type] = []
             if len(type_examples[event_type]) < examples_per_type:
                 type_examples[event_type].append(event)
 
-        for event_type in ["parks", "cleanup", "other"]:
+        for event_type in sorted(type_examples.keys()):
             click.echo(f"\n{event_type.upper()}:")
             if type_examples[event_type]:
                 for event in type_examples[event_type]:

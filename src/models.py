@@ -133,54 +133,29 @@ class CanonicalEvent(BaseModel):
         Determine the event type based on LLM categorization (via tags), URL, and title.
         
         Priority order:
-        1. LLM categorization (from tags with llm: prefix)
-        2. Hardcoded rules based on URL, title, and other tags
+        1. LLM categorization (from tags with llm: prefix) - returned directly
+        2. Hardcoded rules mapped to LLM categories for consistency
 
         Returns:
-            str: One of 'parks', 'cleanup', 'social_event', 'concert', or 'other'
+            str: LLM category like 'volunteer/parks', 'volunteer/litter', 'social_event', 'concert', or 'other'
         """
         # Check for LLM categorization in tags first
         if self.tags:
             for tag in self.tags:
                 if tag.startswith("llm:"):
-                    llm_category = tag[4:]  # Remove "llm:" prefix
-                    # Map LLM categories to frontend event types
-                    if llm_category == "volunteer/parks":
-                        return "parks"
-                    elif llm_category == "volunteer/litter":
-                        return "cleanup"
-                    elif llm_category == "social_event":
-                        return "social_event"
-                    elif llm_category == "concert":
-                        return "concert"
-                    elif llm_category == "other":
-                        return "other"
+                    return tag[4:]  # Remove "llm:" prefix and return the LLM category directly
         
-        # Fall back to existing hardcoded rules
+        # Fall back to existing hardcoded rules, mapped to LLM categories
         # Check URL first for Green Seattle Partnership
         if self.url and "seattle.greencitypartnerships.org" in str(self.url):
-            return "parks"
+            return "volunteer/parks"
 
         # Check title for specific keywords
         title_lower = self.title.lower()
         if "cleanup" in title_lower:
-            return "cleanup"
-        if "forest restoration" in title_lower:
-            return "parks"
-
-        # Check tags
-        if self.tags:
-            tags_lower = [tag.lower() for tag in self.tags]
-
-            # Check for cleanup events
-            cleanup_indicators = ["cleanup", "litter patrol"]
-            if any(indicator in tag for tag in tags_lower for indicator in cleanup_indicators):
-                return "cleanup"
-
-            # Check for parks/restoration events
-            parks_indicators = ["green seattle partnership", "volunteer/work party"]
-            if any(indicator in tag for tag in tags_lower for indicator in parks_indicators):
-                return "parks"
+            return "volunteer/litter"
+        if "restoration" in title_lower:
+            return "volunteer/parks"
 
         # Everything else
         return "other"
