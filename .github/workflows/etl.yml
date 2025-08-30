@@ -30,6 +30,11 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
 
+    - name: Enrich events with LLM categorization
+      run: uv run seattle-volunteering dev enrich-source-events 50
+      continue-on-error: true
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
 
     - name: Merge duplicate events
       run: uv run seattle-volunteering deduplicate
