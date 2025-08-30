@@ -6,18 +6,27 @@ import shutil
 import sqlite3
 import uuid
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import create_engine, String, DateTime, Float, Text, Integer, PrimaryKeyConstraint, text
-from sqlalchemy.dialects.sqlite import insert
-from sqlalchemy.orm import Mapped, mapped_column, object_session, sessionmaker, Session, declarative_base
-from sqlalchemy.sql import func
-from typing import List, Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
-from .config import DB_PATH, DB_GZ
+from sqlalchemy import DateTime, Float, Integer, PrimaryKeyConstraint, String, Text, create_engine, text
+from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy.orm import Mapped, Session, declarative_base, mapped_column, object_session, sessionmaker
+from sqlalchemy.sql import func
+
+from .config import DB_GZ, DB_PATH
+from .models import (
+    CanonicalEvent as PydanticCanonicalEvent,
+)
+from .models import (
+    ETLRun as PydanticETLRun,
+)
 from .models import (
     Event as PydanticEvent,
-    CanonicalEvent as PydanticCanonicalEvent,
+)
+from .models import (
     EventGroupMembership as PydanticEventGroupMembership,
-    ETLRun as PydanticETLRun,
+)
+from .models import (
     LLMEventCategorization,
 )
 
@@ -216,6 +225,7 @@ class Database:
 
         # Get the initial user_version to detect changes later
         self.initial_data_version = self.get_data_version()
+        self._save_needed = False
 
         return self
 
@@ -233,11 +243,12 @@ class Database:
 
             db_changed = self.get_data_version() != self.initial_data_version
             print(f"Database changed? {db_changed}")
+            print(f"self._save_needed: {self._save_needed}")
 
             self.session.close()
 
             # Only recompress if database changed and compression is enabled
-            if self.compress_on_exit and db_changed:
+            if self.compress_on_exit and self._save_needed:
                 print(f"Recompressing database to {DB_GZ}")
                 with open(DB_PATH, "rb") as src, gzip.open(DB_GZ, "wb") as dst:
                     shutil.copyfileobj(src, dst)
@@ -335,36 +346,32 @@ class Database:
         if not self.session:
             raise NoSessionError()
         
-        try:
-            # Convert Pydantic model to JSON
-            categorization_json = llm_categorization.model_dump_json()
-            
-            # For now, use empty metadata
-            metadata_json = json.dumps({})
-            
-            # Create enrichment record
-            enrichment_data = {
-                "source": source,
-                "source_id": source_id,
-                "llm_categorization": categorization_json,
-                "llm_request_metadata": metadata_json,
-                "created_at": datetime.now(timezone.utc),
-                "processing_status": "success",
-                "error_message": None,
-            }
-            
-            # Use upsert to handle potential duplicates
-            stmt = insert(EnrichedSourceEvent).values(**enrichment_data)
-            stmt = stmt.on_conflict_do_update(
-                index_elements=["source", "source_id"], 
-                set_=enrichment_data
-            )
-            self.session.execute(stmt)
-            self.session.commit()
-            
-        except Exception as e:
-            self.session.rollback()
-            raise e
+        # Convert Pydantic model to JSON
+        categorization_json = llm_categorization.model_dump_json()
+        
+        # For now, use empty metadata
+        metadata_json = json.dumps({})
+        
+        # Create enrichment record
+        enrichment_data = {
+            "source": source,
+            "source_id": source_id,
+            "llm_categorization": categorization_json,
+            "llm_request_metadata": metadata_json,
+            "created_at": datetime.now(timezone.utc),
+            "processing_status": "success",
+            "error_message": None,
+        }
+        
+        # Use upsert to handle potential duplicates
+        stmt = insert(EnrichedSourceEvent).values(**enrichment_data)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["source", "source_id"], 
+            set_=enrichment_data
+        )
+        self.session.execute(stmt)
+
+        self.commit()
 
     def init_database(self, reset: bool = False):
         """Initialize the database by creating all tables."""
@@ -384,35 +391,31 @@ class Database:
         if not self.session:
             raise NoSessionError()
 
-        try:
-            for event in events:
-                # Convert Pydantic model to dict for upsert
-                event_data = {
-                    "source": event.source,
-                    "source_id": event.source_id,
-                    "title": event.title,
-                    "start": event.start.astimezone(timezone.utc),
-                    "end": event.end.astimezone(timezone.utc),
-                    "venue": event.venue,
-                    "address": event.address,
-                    "url": str(event.url),
-                    "cost": event.cost,
-                    "latitude": event.latitude,
-                    "longitude": event.longitude,
-                    "tags": ",".join(event.tags) if event.tags else "",
-                    "same_as": str(event.same_as) if event.same_as else None,
-                    "source_dict": event.source_dict,
-                }
+        for event in events:
+            # Convert Pydantic model to dict for upsert
+            event_data = {
+                "source": event.source,
+                "source_id": event.source_id,
+                "title": event.title,
+                "start": event.start.astimezone(timezone.utc),
+                "end": event.end.astimezone(timezone.utc),
+                "venue": event.venue,
+                "address": event.address,
+                "url": str(event.url),
+                "cost": event.cost,
+                "latitude": event.latitude,
+                "longitude": event.longitude,
+                "tags": ",".join(event.tags) if event.tags else "",
+                "same_as": str(event.same_as) if event.same_as else None,
+                "source_dict": event.source_dict,
+            }
 
-                # Use SQLite-specific upsert syntax
-                stmt = insert(Event).values(**event_data)
-                stmt = stmt.on_conflict_do_update(index_elements=["source", "source_id"], set_=event_data)
-                self.session.execute(stmt)
+            # Use SQLite-specific upsert syntax
+            stmt = insert(Event).values(**event_data)
+            stmt = stmt.on_conflict_do_update(index_elements=["source", "source_id"], set_=event_data)
+            self.session.execute(stmt)
 
-            self.session.commit()
-        except Exception as e:
-            self.session.rollback()
-            raise e
+        self.commit()
 
     def get_upcoming_source_events(self, days_ahead: int = 30) -> List[PydanticEvent]:
         """Retrieve upcoming events within the specified number of days."""
@@ -574,60 +577,63 @@ class Database:
         if not self.session:
             raise NoSessionError()
 
-        try:
-            etl_run = ETLRun(id=str(uuid.uuid4()), source=source, run_datetime=datetime.now(timezone.utc), status=status, num_rows=num_rows)
-            self.session.add(etl_run)
-            self.session.commit()
-        except Exception:
-            self.session.rollback()
-            raise
+        etl_run = ETLRun(id=str(uuid.uuid4()), source=source, run_datetime=datetime.now(timezone.utc), status=status, num_rows=num_rows)
+        self.session.add(etl_run)
+        self.commit()
 
     def overwrite_canonical_events(self, canonical_events: List[PydanticCanonicalEvent]) -> None:
         """Overwrite all canonical events in the database."""
         if not self.session:
             raise NoSessionError()
 
-        try:
-            # Clear existing canonical events first
-            self.session.query(CanonicalEvent).delete()
+        # Clear existing canonical events first
+        self.session.query(CanonicalEvent).delete()
 
-            for canonical_event in canonical_events:
-                # Convert Pydantic model to dict for upsert
-                event_data = {
+        for canonical_event in canonical_events:
+            # Convert Pydantic model to dict for upsert
+            event_data = {
+                "canonical_id": canonical_event.canonical_id,
+                "title": canonical_event.title,
+                "start": canonical_event.start.astimezone(timezone.utc),
+                "end": canonical_event.end.astimezone(timezone.utc),
+                "venue": canonical_event.venue,
+                "address": canonical_event.address,
+                "url": str(canonical_event.url),
+                "cost": canonical_event.cost,
+                "latitude": canonical_event.latitude,
+                "longitude": canonical_event.longitude,
+                "tags": ",".join(canonical_event.tags) if canonical_event.tags else "",
+            }
+
+            # Use SQLite-specific upsert syntax
+            stmt = insert(CanonicalEvent).values(**event_data)
+            stmt = stmt.on_conflict_do_update(index_elements=["canonical_id"], set_=event_data)
+            self.session.execute(stmt)
+
+            # Make sure to link source events to this canonical event
+            for source, source_id in canonical_event.iter_source_events():
+                membership_data = {
                     "canonical_id": canonical_event.canonical_id,
-                    "title": canonical_event.title,
-                    "start": canonical_event.start.astimezone(timezone.utc),
-                    "end": canonical_event.end.astimezone(timezone.utc),
-                    "venue": canonical_event.venue,
-                    "address": canonical_event.address,
-                    "url": str(canonical_event.url),
-                    "cost": canonical_event.cost,
-                    "latitude": canonical_event.latitude,
-                    "longitude": canonical_event.longitude,
-                    "tags": ",".join(canonical_event.tags) if canonical_event.tags else "",
+                    "source": source,
+                    "source_id": source_id,
                 }
-
-                # Use SQLite-specific upsert syntax
-                stmt = insert(CanonicalEvent).values(**event_data)
-                stmt = stmt.on_conflict_do_update(index_elements=["canonical_id"], set_=event_data)
+                stmt = insert(EventGroupMembership).values(**membership_data)
+                stmt = stmt.on_conflict_do_update(index_elements=["canonical_id", "source", "source_id"], set_=membership_data)
                 self.session.execute(stmt)
 
-                # Make sure to link source events to this canonical event
-                for source, source_id in canonical_event.iter_source_events():
-                    membership_data = {
-                        "canonical_id": canonical_event.canonical_id,
-                        "source": source,
-                        "source_id": source_id,
-                    }
-                    stmt = insert(EventGroupMembership).values(**membership_data)
-                    stmt = stmt.on_conflict_do_update(index_elements=["canonical_id", "source", "source_id"], set_=membership_data)
-                    self.session.execute(stmt)
+        self.commit()
 
+    def commit(self):
+        """Commit the current session and flag that we need to save changes."""
+        if not self.session:
+            raise NoSessionError()
+
+        try:
             self.session.commit()
+            self._save_needed = True
         except Exception:
             self.session.rollback()
             raise
-
 
 #### SEE IF I CAN DELETE THESE!
 
