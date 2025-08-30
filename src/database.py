@@ -221,20 +221,24 @@ class Database:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit the context manager: close session and recompress DB if changed."""
+        print("Database.__exit__")
         if self.session:
             if exc_type is not None:
                 # If there was an exception, rollback the session
+                print(f"Rolling back database session due to error: {exc_val}")
                 self.session.rollback()
             else:
                 # If no exception, commit any pending changes
                 self.session.commit()
 
             db_changed = self.get_data_version() != self.initial_data_version
+            print(f"Database changed? {db_changed}")
 
             self.session.close()
 
             # Only recompress if database changed and compression is enabled
             if self.compress_on_exit and db_changed:
+                print(f"Recompressing database to {DB_GZ}")
                 with open(DB_PATH, "rb") as src, gzip.open(DB_GZ, "wb") as dst:
                     shutil.copyfileobj(src, dst)
 
