@@ -130,11 +130,33 @@ class CanonicalEvent(BaseModel):
 
     def get_event_type(self) -> str:
         """
-        Determine the event type based on tags, URL, and title.
+        Determine the event type based on LLM categorization (via tags), URL, and title.
+        
+        Priority order:
+        1. LLM categorization (from tags with llm: prefix)
+        2. Hardcoded rules based on URL, title, and other tags
 
         Returns:
-            str: One of 'parks', 'cleanup', or 'other'
+            str: One of 'parks', 'cleanup', 'social_event', 'concert', or 'other'
         """
+        # Check for LLM categorization in tags first
+        if self.tags:
+            for tag in self.tags:
+                if tag.startswith("llm:"):
+                    llm_category = tag[4:]  # Remove "llm:" prefix
+                    # Map LLM categories to frontend event types
+                    if llm_category == "volunteer/parks":
+                        return "parks"
+                    elif llm_category == "volunteer/litter":
+                        return "cleanup"
+                    elif llm_category == "social_event":
+                        return "social_event"
+                    elif llm_category == "concert":
+                        return "concert"
+                    elif llm_category == "other":
+                        return "other"
+        
+        # Fall back to existing hardcoded rules
         # Check URL first for Green Seattle Partnership
         if self.url and "seattle.greencitypartnerships.org" in str(self.url):
             return "parks"

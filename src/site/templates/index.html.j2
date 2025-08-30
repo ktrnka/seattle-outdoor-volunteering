@@ -138,7 +138,7 @@
           </td>
           <td>
             <a href="{{ e.url }}">
-              {% if e.event_type == 'parks' %}🌳{% elif e.event_type == 'cleanup' %}🗑️{% else %}🤝{% endif %} {{ e.title }}
+              {% if e.event_type == 'parks' %}🌳{% elif e.event_type == 'cleanup' %}🗑️{% elif e.event_type == 'social_event' %}🤝{% elif e.event_type == 'concert' %}🎵{% else %}❓{% endif %} {{ e.title }}
             </a>
           </td>
           <td>

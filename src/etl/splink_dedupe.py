@@ -35,7 +35,14 @@ def load_source_events() -> pd.DataFrame:
         DataFrame containing source events
     """
     sqlite_connection = get_regular_connection()
-    df = pd.read_sql_query("SELECT * FROM events", sqlite_connection, parse_dates=["start", "end"])
+    # Join with enrichment table to get LLM categorization
+    query = """
+    SELECT e.*, 
+           json_extract(ese.llm_categorization, '$.category') as llm_category
+    FROM events e
+    LEFT JOIN enriched_source_events ese ON e.source = ese.source AND e.source_id = ese.source_id
+    """
+    df = pd.read_sql_query(query, sqlite_connection, parse_dates=["start", "end"])
     df["normalized_title"] = df["title"].apply(normalize_title)
     df["start_date"] = df["start"].dt.date.astype(str)
 
@@ -111,6 +118,30 @@ def mode(series: pd.Series) -> Optional[Any]:
     return series.mode().iloc[0]
 
 
+def aggregate_llm_categories(event_group: pd.DataFrame) -> List[str]:
+    """
+    Aggregate LLM categories from a group of events using majority vote.
+    
+    Args:
+        event_group: DataFrame containing events in the group
+        
+    Returns:
+        List of tags to include in canonical event
+    """
+    # Get non-null LLM categories
+    llm_categories = event_group["llm_category"].dropna()
+    
+    if llm_categories.empty:
+        return []
+    
+    # Count categories and get the most common one
+    category_counts = llm_categories.value_counts()
+    most_common_category = category_counts.index[0]
+    
+    # Return as a list with the llm: prefix for clarity
+    return [f"llm:{most_common_category}"]
+
+
 def create_canonical_event_from_group(cluster_id, event_group: pd.DataFrame) -> CanonicalEvent:
     """
     Create a CanonicalEvent from a group of events.
@@ -135,6 +166,13 @@ def create_canonical_event_from_group(cluster_id, event_group: pd.DataFrame) -> 
         start = mode(sorted_group["start"])
         end = mode(sorted_group["end"])
 
+    # Ensure start and end are not None
+    if start is None or end is None:
+        raise ValueError(f"Could not determine start/end times for cluster {cluster_id}")
+
+    # Aggregate LLM categories into tags
+    tags = aggregate_llm_categories(event_group)
+
     try:
         return CanonicalEvent(
             canonical_id=f"cluster_{cluster_id}",
@@ -145,6 +183,7 @@ def create_canonical_event_from_group(cluster_id, event_group: pd.DataFrame) -> 
             address=mode(event_group["address"]),
             url=sorted_group["url"].iloc[0],
             source_events=sorted_group["unique_id"].tolist(),
+            tags=tags,
         )
     except:
         print(f"Error creating canonical event for cluster {cluster_id}")
