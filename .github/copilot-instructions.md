@@ -8,14 +8,16 @@ An ETL pipeline that scrapes Seattle-area outdoor volunteer events into a SQLite
 - If instructions don't seem feasible (e.g., extracting data that doesn't exist in the source, conflicting requirements), stop development and ask for guidance rather than making assumptions. Clear communication prevents wasted effort and ensures the right solution.
 - **For bug reports and data quality issues**: Always start with TDD - create a failing test that reproduces the problem before attempting any fixes
 - **For new features**: Ask whether to use TDD or implement directly, depending on complexity and risk
+- **For complex integrations**: Start with a 5-minute architecture discussion before coding.
 - After completing a major feature or refactor, do a small post-mortem. Reflect on what went well and what could be improved. Then consider some small incremental changes to our development process that might improve our workflow. Then review them with me and collaborate to update the copilot instructions.
 
 ## Architecture & Data Flow
 ```
-Sources (GSP/SPR/SPF) → BaseExtractor → Event models → Deduplication → SQLite → Site Generator → HTML
+Sources (GSP/SPR/SPF) → BaseExtractor → Event models → LLM Enrichment → Deduplication → SQLite → Site Generator → HTML
 ```
 
 - **ETL Sources**: Each has a dedicated extractor inheriting from `BaseExtractor` in `src/etl/`
+- **LLM Enrichment**: Event categorization stored in `enriched_source_events` table, integrated via `llm_categorization` field
 - **Deduplication**: Smart precedence-based matching in `src/etl/deduplication.py` - GSP events are canonical
 - **Database**: SQLAlchemy with both Pydantic models (`src/models.py`) and SQLAlchemy models (`src/database.py`)
 - **Site Generation**: Jinja2 templates in `src/site/templates/` with timezone-aware datetime handling
