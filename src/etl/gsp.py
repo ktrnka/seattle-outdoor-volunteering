@@ -1,7 +1,8 @@
-from datetime import datetime, date, timedelta, timezone
-from typing import List, Optional, cast
 import json
 import re
+from datetime import date, datetime, timedelta, timezone
+from typing import List, Optional, cast
+
 import requests
 from bs4 import BeautifulSoup, Tag
 from bs4.element import NavigableString
@@ -10,9 +11,9 @@ from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from src.etl.date_utils import parse_range_single_string
 
-from .base import BaseListExtractor, BaseDetailExtractor
+from ..models import SEATTLE_TZ, Event
+from .base import BaseDetailExtractor, BaseListExtractor
 from .url_utils import normalize_url
-from ..models import Event, SEATTLE_TZ
 
 # New API endpoint that returns JSON with up to 100 events
 API_URL = "https://seattle.greencitypartnerships.org/event/map/?sEcho=2&iColumns=1&sColumns=&iDisplayStart=0&iDisplayLength=100&sNames=&sort=date"
