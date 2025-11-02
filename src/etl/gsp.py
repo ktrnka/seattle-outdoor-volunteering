@@ -1,7 +1,8 @@
-from datetime import datetime, date, timedelta, timezone
-from typing import List, Optional, cast
 import json
 import re
+from datetime import date, datetime, timedelta, timezone
+from typing import List, Optional, cast
+
 import requests
 from bs4 import BeautifulSoup, Tag
 from bs4.element import NavigableString
@@ -10,9 +11,9 @@ from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from src.etl.date_utils import parse_range_single_string
 
-from .base import BaseListExtractor, BaseDetailExtractor
+from ..models import SEATTLE_TZ, Event
+from .base import BaseDetailExtractor, BaseListExtractor
 from .url_utils import normalize_url
-from ..models import Event, SEATTLE_TZ
 
 # New API endpoint that returns JSON with up to 100 events
 API_URL = "https://seattle.greencitypartnerships.org/event/map/?sEcho=2&iColumns=1&sColumns=&iDisplayStart=0&iDisplayLength=100&sNames=&sort=date"
@@ -258,21 +259,17 @@ class GSPDetailEvent(BaseModel):
         """Convert to a source event."""
         # Parse a date and time string like "August 1, 2025 9:30am - 11:30am"
         start, end = self.datetimes.split("-")
-        start = parser.parse(start.strip()).replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+        start = parser.parse(start.strip()).replace(tzinfo=SEATTLE_TZ)
 
-        # Get the date from start and the time from end.strip
-        end_time = parser.parse(end.strip()).replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-        end = start.replace(
-            hour=end_time.hour,
-            minute=end_time.minute,
-        )
+        # Pull the date, DST, etc from "start"
+        end = parser.parse(end.strip(), default=start)
 
         return Event(
             source=GSPDetailPageExtractor.source,
             source_id=self.source_id,
             title=self.title,
-            start=start,
-            end=end,
+            start=start.astimezone(timezone.utc),
+            end=end.astimezone(timezone.utc),
             venue=None,  # No venue info in detail page
             url=HttpUrl(normalize_url(str(self.url))),
             source_dict=self.model_dump_json(),
