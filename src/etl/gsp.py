@@ -259,21 +259,17 @@ class GSPDetailEvent(BaseModel):
         """Convert to a source event."""
         # Parse a date and time string like "August 1, 2025 9:30am - 11:30am"
         start, end = self.datetimes.split("-")
-        start = parser.parse(start.strip()).replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
+        start = parser.parse(start.strip()).replace(tzinfo=SEATTLE_TZ)
 
-        # Get the date from start and the time from end.strip
-        end_time = parser.parse(end.strip()).replace(tzinfo=SEATTLE_TZ).astimezone(timezone.utc)
-        end = start.replace(
-            hour=end_time.hour,
-            minute=end_time.minute,
-        )
+        # Pull the date, DST, etc from "start"
+        end = parser.parse(end.strip(), default=start)
 
         return Event(
             source=GSPDetailPageExtractor.source,
             source_id=self.source_id,
             title=self.title,
-            start=start,
-            end=end,
+            start=start.astimezone(timezone.utc),
+            end=end.astimezone(timezone.utc),
             venue=None,  # No venue info in detail page
             url=HttpUrl(normalize_url(str(self.url))),
             source_dict=self.model_dump_json(),
