@@ -189,6 +189,27 @@ class EnrichedSourceEvent(Base):
     __table_args__ = (PrimaryKeyConstraint("source", "source_id"),)
 
 
+class DetailPageEnrichment(Base):
+    """SQLAlchemy model for storing detail page enrichment data for any source."""
+
+    __tablename__ = "detail_page_enrichments"
+
+    # Reference to source event (no formal FK for now)
+    source: Mapped[str] = mapped_column(String, nullable=False)
+    source_id: Mapped[str] = mapped_column(String, nullable=False)
+    
+    # Detail page crawl results stored as JSON
+    detail_page_url: Mapped[str] = mapped_column(Text, nullable=False)  # URL that was crawled
+    enrichment_data: Mapped[str] = mapped_column(Text, nullable=False)  # JSON string of extracted data
+    
+    # Processing metadata
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    processing_status: Mapped[str] = mapped_column(String, nullable=False)  # "success", "failed", "pending"
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)  # Only set if failed
+
+    __table_args__ = (PrimaryKeyConstraint("source", "source_id"),)
+
+
 class NoSessionError(RuntimeError):
     def __init__(self, message: str = "Database session not available. Use within 'with' statement."):
         super().__init__(message)
@@ -372,6 +393,97 @@ class Database:
         self.session.execute(stmt)
 
         self.commit()
+
+    def get_unenriched_detail_page_events(self, source: str, limit: int = 20) -> List[PydanticEvent]:
+        """
+        Get upcoming source events that don't have detail page enrichment yet.
+        
+        Args:
+            source: Source to filter by (e.g., "SPF")
+            limit: Maximum number of events to return
+            
+        Returns:
+            List of upcoming events without detail page enrichment, sorted by start date (soonest first)
+        """
+        if not self.session:
+            raise NoSessionError()
+        
+        now = datetime.now(timezone.utc)
+            
+        # Left join with detail_page_enrichments and filter for nulls (anti-join)
+        # Only include upcoming events, sorted by start date ascending
+        results = (
+            self.session.query(Event)
+            .outerjoin(DetailPageEnrichment,
+                      (Event.source == DetailPageEnrichment.source) &
+                      (Event.source_id == DetailPageEnrichment.source_id))
+            .filter(Event.source == source)
+            .filter(Event.start >= now)  # Only upcoming events
+            .filter(DetailPageEnrichment.source.is_(None))  # Anti join condition
+            .order_by(Event.start.asc())  # Soonest events first
+            .limit(limit)
+            .all()
+        )
+        
+        return [event.to_pydantic() for event in results]
+
+    def store_detail_page_enrichment(
+        self, 
+        source: str, 
+        source_id: str, 
+        detail_page_url: str,
+        enrichment_data: dict,
+        status: str = "success",
+        error_message: Optional[str] = None
+    ) -> None:
+        """
+        Store detail page enrichment data for a source event.
+        
+        Args:
+            source: Event source (e.g., "SPF")
+            source_id: Event source ID
+            detail_page_url: URL that was crawled
+            enrichment_data: Dictionary of extracted data
+            status: Processing status ("success", "failed", "pending")
+            error_message: Error details if failed
+        """
+        if not self.session:
+            raise NoSessionError()
+        
+        # Convert enrichment data dict to JSON
+        enrichment_json = json.dumps(enrichment_data)
+        
+        # Log what we're storing
+        print(f"[store_detail_page_enrichment] Storing enrichment for {source}:{source_id}")
+        print(f"  URL: {detail_page_url}")
+        print(f"  Status: {status}")
+        print(f"  Data keys: {list(enrichment_data.keys())}")
+        if enrichment_data:
+            print(f"  Data preview: {str(enrichment_data)[:200]}...")
+        if error_message:
+            print(f"  Error: {error_message}")
+        
+        # Create enrichment record
+        enrichment_record = {
+            "source": source,
+            "source_id": source_id,
+            "detail_page_url": detail_page_url,
+            "enrichment_data": enrichment_json,
+            "fetched_at": datetime.now(timezone.utc),
+            "processing_status": status,
+            "error_message": error_message,
+        }
+        
+        # Use upsert to handle potential duplicates
+        stmt = insert(DetailPageEnrichment).values(**enrichment_record)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["source", "source_id"], 
+            set_=enrichment_record
+        )
+        self.session.execute(stmt)
+
+        self.commit()
+        print(f"[store_detail_page_enrichment] Successfully stored enrichment for {source}:{source_id}")
 
     def init_database(self, reset: bool = False):
         """Initialize the database by creating all tables."""

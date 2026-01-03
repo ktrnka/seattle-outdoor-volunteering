@@ -479,14 +479,136 @@ def enrich_source_events(max_events: int):
 
 
 @dev.command()
-def create_enrichment_table():
-    """Create the enriched_source_events table for LLM categorization."""
-    from .database import EnrichedSourceEvent
+@click.option("--max", "max_events", type=int, default=1, help="Maximum events to process (default: 1)")
+def enrich_detail_pages(max_events: int):
+    """Fetch and parse SPF detail pages to get additional event data."""
+    from .etl.spf import SPFDetailExtractor
+    
+    extractor_class = SPFDetailExtractor
+    source = extractor_class.source
     
     with database.Database() as db:
-        # Create just the enrichment table
+        # Get events without detail page enrichment
+        unenriched_events = db.get_unenriched_detail_page_events(source=source, limit=max_events)
+        
+        if not unenriched_events:
+            click.echo(f"No unenriched {source} events found.")
+            return
+        
+        click.echo(f"Found {len(unenriched_events)} unenriched {source} events. Processing up to {max_events}...")
+        
+        success_count = 0
+        error_count = 0
+        
+        for i, event in enumerate(unenriched_events, 1):
+            click.echo(f"\n[{i}/{len(unenriched_events)}] Processing: {event.title}")
+            click.echo(f"  Source: {event.source}:{event.source_id}")
+            click.echo(f"  URL: {event.url}")
+            
+            try:
+                # Fetch and extract detail page
+                detail_extractor = extractor_class.fetch(str(event.url))
+                enrichment = detail_extractor.extract()
+                
+                # Convert Pydantic model to dict for storage
+                enrichment_dict = enrichment.model_dump()
+                
+                # Store the result in the database
+                db.store_detail_page_enrichment(
+                    source=event.source,
+                    source_id=event.source_id,
+                    detail_page_url=str(event.url),
+                    enrichment_data=enrichment_dict,
+                    status="success"
+                )
+                
+                click.echo(f"  ✓ Enriched successfully")
+                # Show key extracted data
+                if hasattr(enrichment, 'website_url') and enrichment.website_url:
+                    click.echo(f"    Website: {enrichment.website_url}")
+                
+                success_count += 1
+                
+            except Exception as e:
+                click.echo(f"  ✗ Error: {str(e)}")
+                
+                # Store error in database
+                try:
+                    db.store_detail_page_enrichment(
+                        source=event.source,
+                        source_id=event.source_id,
+                        detail_page_url=str(event.url),
+                        enrichment_data={},
+                        status="failed",
+                        error_message=str(e)
+                    )
+                except Exception:
+                    pass  # Don't fail if we can't store the error
+                
+                error_count += 1
+                # Continue processing other events
+        
+        click.echo("\nProcessing complete:")
+        click.echo(f"  Successfully enriched: {success_count}")
+        click.echo(f"  Errors: {error_count}")
+
+
+@dev.command()
+@click.option("--source", type=str, default=None, help="Filter by source (e.g., SPF)")
+@click.option("--limit", default=10, help="Maximum number of events to show (default: 10)")
+def show_detail_enriched_events(source: Optional[str] = None, limit: int = 10):
+    """Show events with their detail page enrichment data."""
+    with database.Database() as db:
+        enriched_events = db.get_detail_page_enriched_events(source=source, limit=limit)
+        
+        if not enriched_events:
+            source_msg = f" for source '{source}'" if source else ""
+            click.echo(f"No detail page enriched events found{source_msg}.")
+            return
+            
+        source_msg = f" for source '{source}'" if source else ""
+        click.echo(f"Showing {len(enriched_events)} detail page enriched events{source_msg}:")
+        click.echo("=" * 60)
+        
+        for event, enrichment_data in enriched_events:
+            # Format date/time
+            if event.start.hour == 0 and event.start.minute == 0 and event.start == event.end:
+                time_str = event.start.strftime("%a %-m/%-d/%Y (date only)")
+            else:
+                time_str = event.start.strftime("%a %-m/%-d/%Y from %-I:%M%p")
+                if event.end != event.start:
+                    time_str += event.end.strftime(" - %-I:%M%p")
+
+            click.echo(f"\n• {event.title}")
+            click.echo(f"  {time_str}")
+            if event.venue:
+                click.echo(f"  {event.venue}")
+            click.echo(f"  Source: {event.source}:{event.source_id}")
+            
+            # Show enrichment data
+            if enrichment_data:
+                click.echo(f"  Enrichment data:")
+                for key, value in enrichment_data.items():
+                    if value:
+                        click.echo(f"    {key}: {value}")
+            else:
+                click.echo("  Enrichment data: (empty)")
+                
+            click.echo(f"  Event URL: {event.url}")
+
+
+@dev.command()
+def create_enrichment_table():
+    """Create enrichment tables (LLM categorization and detail pages)."""
+    from .database import DetailPageEnrichment, EnrichedSourceEvent
+    
+    with database.Database() as db:
+        # Create both enrichment tables
         EnrichedSourceEvent.__table__.create(db.engine, checkfirst=True)
-        click.echo("Created enriched_source_events table successfully!")
+        DetailPageEnrichment.__table__.create(db.engine, checkfirst=True)
+        click.echo("Created enrichment tables successfully!")
+        click.echo("  - enriched_source_events (LLM categorization)")
+        click.echo("  - detail_page_enrichments (detail page data)")
 
 
 @dev.command()
