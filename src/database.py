@@ -258,7 +258,7 @@ class Database:
 
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, _exc_tb):
         """Exit the context manager: close session and recompress DB if changed."""
         print("Database.__exit__")
         if self.session:
@@ -288,12 +288,6 @@ class Database:
         version = self.session.execute(text("PRAGMA user_version")).scalar()
         assert version is not None and isinstance(version, int)
         return version
-
-    def get_source_events_count(self) -> int:
-        """Get the total count of events in the database."""
-        if not self.session:
-            raise NoSessionError()
-        return self.session.query(Event).count()
 
     def get_source_events(self) -> List[PydanticEvent]:
         """Retrieve all events from the database sorted by start date."""
@@ -332,29 +326,6 @@ class Database:
             
         event, enrichment = result
         return event.to_pydantic(enrichment)
-
-    def get_enriched_source_events(self, limit: int = 20) -> List[PydanticEvent]:
-        """
-        Retrieve source events with their enrichment data populated.
-        
-        Returns:
-            List of Events with llm_categorization field populated
-        """
-        if not self.session:
-            raise NoSessionError()
-            
-        # Join source events with enrichment data
-        results = (
-            self.session.query(Event, EnrichedSourceEvent)
-            .join(EnrichedSourceEvent, 
-                  (Event.source == EnrichedSourceEvent.source) & 
-                  (Event.source_id == EnrichedSourceEvent.source_id))
-            .order_by(Event.start)
-            .limit(limit)
-            .all()
-        )
-        
-        return [event.to_pydantic(enrichment) for event, enrichment in results]
 
     def get_uncategorized_source_events(self, limit: int = 20) -> List[PydanticEvent]:
         """
@@ -503,44 +474,6 @@ class Database:
         self.commit()
         print(f"[store_detail_page_enrichment] Successfully stored enrichment for {source}:{source_id}")
 
-    def get_detail_page_enriched_events(self, source: Optional[str] = None, limit: int = 20) -> List[tuple[PydanticEvent, dict]]:
-        """
-        Get source events that have detail page enrichment data.
-        
-        Args:
-            source: Optional source to filter by (e.g., "SPF")
-            limit: Maximum number of events to return
-            
-        Returns:
-            List of tuples: (Event, enrichment_data_dict)
-        """
-        if not self.session:
-            raise NoSessionError()
-            
-        # Join events with detail page enrichments
-        query = (
-            self.session.query(Event, DetailPageEnrichment)
-            .join(DetailPageEnrichment,
-                  (Event.source == DetailPageEnrichment.source) &
-                  (Event.source_id == DetailPageEnrichment.source_id))
-            .filter(DetailPageEnrichment.processing_status == "success")
-            .order_by(Event.start.desc())
-        )
-        
-        if source:
-            query = query.filter(Event.source == source)
-            
-        results = query.limit(limit).all()
-        
-        # Convert to list of (Event, enrichment_dict) tuples
-        output = []
-        for event, enrichment in results:
-            enrichment_dict = json.loads(enrichment.enrichment_data)
-            # Pass detail_page_enrichment to populate same_as field
-            output.append((event.to_pydantic(detail_page_enrichment=enrichment), enrichment_dict))
-        
-        return output
-
     def init_database(self, reset: bool = False):
         """Initialize the database by creating all tables."""
         Base.metadata.create_all(bind=self.engine)
@@ -587,18 +520,6 @@ class Database:
 
         self.commit()
 
-    def get_upcoming_source_events(self, days_ahead: int = 30) -> List[PydanticEvent]:
-        """Retrieve upcoming events within the specified number of days."""
-        if not self.session:
-            raise NoSessionError()
-
-        # TODO: Consider merging this in with get_source_events
-        now = datetime.now()
-        future_limit = now + timedelta(days=days_ahead)
-
-        events = self.session.query(Event).filter(Event.start >= now, Event.start <= future_limit).order_by(Event.start).all()
-        return [event.to_pydantic() for event in events]
-
     def get_canonical_events(self) -> List[PydanticCanonicalEvent]:
         """Retrieve all canonical events from the database."""
         if not self.session:
@@ -616,16 +537,6 @@ class Database:
         now = datetime.now(timezone.utc)
         events = self.session.query(CanonicalEvent).filter(CanonicalEvent.end >= now).order_by(CanonicalEvent.start).all()
         return [event.to_pydantic() for event in events]
-
-    def find_canonical_event_with_sources(self, title: str) -> Optional[Tuple[PydanticCanonicalEvent, List[PydanticEvent]]]:
-        """Find a canonical event by title."""
-        if not self.session:
-            raise NoSessionError()
-
-        event = self.session.query(CanonicalEvent).filter(CanonicalEvent.title.ilike(f"%{title}%")).first()
-        if event:
-            return event.to_pydantic(), self.get_source_events_by_canonical_id(event.canonical_id)
-        return None
 
     def get_source_events_by_canonical_id(self, canonical_id: str) -> List[PydanticEvent]:
         """Get all source events that belong to a specific canonical event."""

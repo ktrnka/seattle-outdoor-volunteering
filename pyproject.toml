@@ -39,6 +39,7 @@ dev = [
     "pytest",
     "pytest-cov",
     "ruff",
+    "vulture",
 ]
 
 [project.scripts]
