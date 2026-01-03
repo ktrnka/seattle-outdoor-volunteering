@@ -241,7 +241,7 @@ def pipeline():
         cat_result = _fetch_categorizations_impl(db, max_events=50)
         click.echo(f"✓ Categorized {cat_result.success} events ({cat_result.error} errors)")
     
-    # Stage 4: Deduplication
+    # Stage 4: Deduplication (TODO: Check if we need to reopen DB connection; it may be needed because the Splink pipeline opens it internally)
     click.echo("\n[4/5] Running deduplication...")
     canonical_events = run_splink_deduplication(show_examples=False)
     with database.Database() as db:

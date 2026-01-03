@@ -4,6 +4,8 @@ import time
 from typing import Dict
 from urllib.parse import urlparse
 
+import requests
+
 
 class RequestThrottle:
     """Per-domain request throttling. Assumes single-threaded usage."""
@@ -12,7 +14,7 @@ class RequestThrottle:
         self._last_request_time: Dict[str, float] = {}
 
     def wait_if_needed(self, url: str, delay_seconds: float = 2.0) -> None:
-        """Sleep if needed to respect per-domain rate limits (throttling)."""
+        """Sleep if needed to respect per-domain rate limits ."""
         domain = self._extract_domain(url)
         
         now = time.time()
@@ -37,9 +39,7 @@ class RequestThrottle:
 _throttle = RequestThrottle()
 
 
-def throttled_get(url: str, delay_seconds: float = 2.0, **kwargs) -> any:
-    """Drop-in replacement for requests.get() with per-domain rate limiting."""
-    import requests
-    
+def throttled_get(url: str, delay_seconds: float = 2.0, **kwargs) -> requests.Response:
+    """Drop-in replacement for requests.get() with per-domain rate limiting."""    
     _throttle.wait_if_needed(url, delay_seconds)
     return requests.get(url, **kwargs)
