@@ -1,5 +1,5 @@
 import traceback
-from collections import Counter
+from collections import Counter, namedtuple
 from pathlib import Path
 from typing import Optional
 
@@ -37,23 +37,19 @@ def init_db(reset: bool = False):
         db.init_database(reset=reset)
 
 
-def _fetch_detail_pages_impl(db, source: str = "SPF", max_events: int = 5) -> tuple[int, int]:
-    """
-    Helper function to fetch detail pages for events.
-    
-    This is the "detail page enrichment" process that scrapes additional data from event detail pages
-    (e.g., SPF detail pages contain GSP URLs that enable better deduplication).
-    
-    Returns (success_count, error_count).
-    """
+FetchResult = namedtuple("FetchResult", ["success", "error"])
+
+
+def _fetch_spf_detail_pages(db, max_events: int = 5) -> FetchResult:
+    """Fetch detail pages for SPF events to get additional data like GSP URLs."""
     from .etl.spf import SPFDetailExtractor
 
-    unenriched = db.get_unenriched_detail_page_events(source=source, limit=max_events)
+    unenriched = db.get_unenriched_detail_page_events(source="SPF", limit=max_events)
     if not unenriched:
-        click.echo(f"No unenriched {source} events found")
-        return 0, 0
+        click.echo("No unenriched SPF events found")
+        return FetchResult(0, 0)
 
-    click.echo(f"Found {len(unenriched)} unenriched {source} events. Processing up to {max_events}...")
+    click.echo(f"Found {len(unenriched)} unenriched SPF events. Processing up to {max_events}...")
     success_count = 0
     error_count = 0
 
@@ -83,15 +79,11 @@ def _fetch_detail_pages_impl(db, source: str = "SPF", max_events: int = 5) -> tu
             error_count += 1
             click.echo(f"  ✗ Failed: {event.title} - {str(e)}")
 
-    return success_count, error_count
+    return FetchResult(success_count, error_count)
 
 
-def _fetch_listings_impl(db, only_run: Optional[str] = None) -> int:
-    """
-    Fetch event listings from all sources (or a specific source).
-    
-    Returns the total number of events extracted.
-    """
+def _fetch_listings_impl(db, source: Optional[str] = None) -> int:
+    """Fetch event listings from all sources or a specific source."""
     # Map extractor names to classes
     extractor_map = {
         "GSP": GSPCalendarExtractor,
@@ -105,12 +97,12 @@ def _fetch_listings_impl(db, only_run: Optional[str] = None) -> int:
     }
 
     # Determine which extractors to run
-    if only_run:
-        if only_run not in extractor_map:
-            click.echo(f"Error: Unknown extractor '{only_run}'. Available: {', '.join(extractor_map.keys())}")
+    if source:
+        if source not in extractor_map:
+            click.echo(f"Error: Unknown source '{source}'. Available: {', '.join(extractor_map.keys())}")
             return 0
-        extractors_to_run = [extractor_map[only_run]]
-        click.echo(f"Running only {only_run} extractor...")
+        extractors_to_run = [extractor_map[source]]
+        click.echo(f"Running only {source} extractor...")
     else:
         extractors_to_run = list(extractor_map.values())
         click.echo("Running all extractors...")
@@ -147,15 +139,8 @@ def _fetch_listings_impl(db, only_run: Optional[str] = None) -> int:
     return len(source_events)
 
 
-def _fetch_categorizations_impl(db, max_events: int = 50) -> tuple[int, int]:
-    """
-    Categorize uncategorized events using LLM.
-    
-    This is the "LLM enrichment" process that uses AI to categorize events
-    (e.g., volunteer work, cleanup, education, etc.).
-    
-    Returns (success_count, error_count).
-    """
+def _fetch_categorizations_impl(db, max_events: int = 50) -> FetchResult:
+    """Categorize uncategorized events using LLM."""
     from .llm.event_categorization import categorize_event as llm_categorize
 
     # Get uncategorized events
@@ -163,7 +148,7 @@ def _fetch_categorizations_impl(db, max_events: int = 50) -> tuple[int, int]:
 
     if not uncategorized_events:
         click.echo("No uncategorized events found.")
-        return 0, 0
+        return FetchResult(0, 0)
 
     click.echo(f"Found {len(uncategorized_events)} uncategorized events. Processing up to {max_events}...")
 
@@ -193,48 +178,27 @@ def _fetch_categorizations_impl(db, max_events: int = 50) -> tuple[int, int]:
             error_count += 1
             # Continue processing other events
 
-    return success_count, error_count
+    return FetchResult(success_count, error_count)
 
 
 @cli.command()
-@click.option("--only-run", type=str, help="Run only the specified extractor (e.g., SPU, GSP, SPR, SPF, DNDA, EarthCorps)")
-def etl(only_run: Optional[str] = None):
-    """Run all extractors and detail page fetching (legacy command - prefer 'pipeline' for full workflow)."""
-    with database.Database() as db:
-        # Fetch event listings
-        total_events = _fetch_listings_impl(db, only_run)
-        
-        # Fetch SPF detail pages (5 per day)
-        click.echo("\nFetching SPF detail pages...")
-        try:
-            success_count, error_count = _fetch_detail_pages_impl(db, source="SPF", max_events=5)
-            click.echo(f"Detail page fetch complete: {success_count} successful, {error_count} errors")
-        except Exception as e:
-            click.echo(f"Error during detail page fetch: {str(e)}")
-            traceback.print_exception(e)
-
-        click.echo("\nETL complete!")
-
-
-@cli.command()
-@click.option("--only-run", type=str, help="Run only the specified extractor (e.g., SPU, GSP, SPR, SPF, DNDA, EarthCorps)")
-def fetch_listings(only_run: Optional[str] = None):
+@click.option("--source", type=str, help="Run only the specified source (e.g., SPU, GSP, SPR, SPF, DNDA, EarthCorps)")
+def fetch_listings(source: Optional[str] = None):
     """Fetch event listings from all sources - makes network requests."""
     with database.Database() as db:
-        total_events = _fetch_listings_impl(db, only_run)
+        total_events = _fetch_listings_impl(db, source)
         click.echo(f"\nFetched {total_events} total events")
 
 
 @cli.command()
-@click.option("--source", type=str, default="SPF", help="Source to fetch details for (e.g., SPF)")
 @click.option("--max-events", type=int, default=5, help="Maximum events to process (default: 5)")
-def fetch_details(source: str = "SPF", max_events: int = 5):
-    """Fetch detail pages for events - makes network requests."""
+def fetch_details(max_events: int = 5):
+    """Fetch SPF detail pages - makes network requests."""
     with database.Database() as db:
-        success_count, error_count = _fetch_detail_pages_impl(db, source=source, max_events=max_events)
+        result = _fetch_spf_detail_pages(db, max_events=max_events)
         click.echo(f"\nProcessing complete:")
-        click.echo(f"  Successfully fetched: {success_count}")
-        click.echo(f"  Errors: {error_count}")
+        click.echo(f"  Successfully fetched: {result.success}")
+        click.echo(f"  Errors: {result.error}")
 
 
 @cli.command()
@@ -242,15 +206,14 @@ def fetch_details(source: str = "SPF", max_events: int = 5):
 def fetch_categorizations(max_events: int = 50):
     """Categorize uncategorized events using LLM - makes network requests and uses LLM budget."""
     with database.Database() as db:
-        success_count, error_count = _fetch_categorizations_impl(db, max_events)
+        result = _fetch_categorizations_impl(db, max_events)
         click.echo("\nProcessing complete:")
-        click.echo(f"  Successfully categorized: {success_count}")
-        click.echo(f"  Errors: {error_count}")
+        click.echo(f"  Successfully categorized: {result.success}")
+        click.echo(f"  Errors: {result.error}")
 
 
 @cli.command()
-@click.option("--skip-llm", is_flag=True, help="Skip LLM categorization (faster, uses less budget)")
-def pipeline(skip_llm: bool = False):
+def pipeline():
     """Run complete ETL pipeline: fetch listings → fetch details → categorize → dedupe → build site."""
     click.echo("=" * 60)
     click.echo("Running ETL Pipeline")
@@ -259,21 +222,18 @@ def pipeline(skip_llm: bool = False):
     with database.Database() as db:
         # Stage 1: Fetch event listings
         click.echo("\n[1/5] Fetching event listings...")
-        total_events = _fetch_listings_impl(db, only_run=None)
+        total_events = _fetch_listings_impl(db, source=None)
         click.echo(f"✓ Fetched {total_events} events from all sources")
         
         # Stage 2: Fetch detail pages
-        click.echo("\n[2/5] Fetching detail pages...")
-        detail_success, detail_error = _fetch_detail_pages_impl(db, source="SPF", max_events=5)
-        click.echo(f"✓ Fetched {detail_success} detail pages ({detail_error} errors)")
+        click.echo("\n[2/5] Fetching SPF detail pages...")
+        detail_result = _fetch_spf_detail_pages(db, max_events=5)
+        click.echo(f"✓ Fetched {detail_result.success} detail pages ({detail_result.error} errors)")
         
-        # Stage 3: LLM categorization (optional)
-        if not skip_llm:
-            click.echo("\n[3/5] Categorizing events with LLM...")
-            cat_success, cat_error = _fetch_categorizations_impl(db, max_events=50)
-            click.echo(f"✓ Categorized {cat_success} events ({cat_error} errors)")
-        else:
-            click.echo("\n[3/5] Skipping LLM categorization (--skip-llm)")
+        # Stage 3: LLM categorization
+        click.echo("\n[3/5] Categorizing events with LLM...")
+        cat_result = _fetch_categorizations_impl(db, max_events=50)
+        click.echo(f"✓ Categorized {cat_result.success} events ({cat_result.error} errors)")
     
     # Stage 4: Deduplication
     click.echo("\n[4/5] Running deduplication...")
@@ -594,10 +554,10 @@ def _display_llm_categorization(categorization, status_note: str = "") -> None:
 def enrich_source_events(max_events: int):
     """Categorize uncategorized source events with LLM (deprecated - use 'fetch-categorizations' instead)."""
     with database.Database() as db:
-        success_count, error_count = _fetch_categorizations_impl(db, max_events)
+        result = _fetch_categorizations_impl(db, max_events)
         click.echo("\nProcessing complete:")
-        click.echo(f"  Successfully categorized: {success_count}")
-        click.echo(f"  Errors: {error_count}")
+        click.echo(f"  Successfully categorized: {result.success}")
+        click.echo(f"  Errors: {result.error}")
 
 
 @dev.command()
@@ -605,11 +565,11 @@ def enrich_source_events(max_events: int):
 def enrich_detail_pages(max_events: int):
     """Fetch and parse detail pages (deprecated - use 'fetch-details' instead)."""
     with database.Database() as db:
-        success_count, error_count = _fetch_detail_pages_impl(db, source="SPF", max_events=max_events)
+        result = _fetch_spf_detail_pages(db, max_events=max_events)
 
         click.echo("\nProcessing complete:")
-        click.echo(f"  Successfully enriched: {success_count}")
-        click.echo(f"  Errors: {error_count}")
+        click.echo(f"  Successfully enriched: {result.success}")
+        click.echo(f"  Errors: {result.error}")
 
 
 # Add the dev group to the main CLI

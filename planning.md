@@ -307,27 +307,34 @@ Add clear docstrings distinguishing:
 ## Implementation Order
 
 ### ✅ Phase 1 - COMPLETED
+
+**Changes made:**
 1. **Extracted stage functions** into reusable implementations:
    - `_fetch_listings_impl()` - Fetch event listings from sources
-   - `_fetch_detail_pages_impl()` - Fetch detail pages (e.g., SPF)
+   - `_fetch_spf_detail_pages()` - Fetch SPF detail pages specifically
    - `_fetch_categorizations_impl()` - LLM categorization
 
-2. **Created new top-level CLI commands**:
-   - `fetch-listings` - Fetch event listings (replaces partial ETL)
-   - `fetch-details` - Fetch detail pages (new public command)
-   - `fetch-categorizations` - LLM categorization (replaces `dev enrich-source-events`)
+2. **Added FetchResult named tuple** for clearer return values (success, error counts)
+
+3. **Created new top-level CLI commands**:
+   - `fetch-listings --source <SOURCE>` - Fetch event listings (optional source filter)
+   - `fetch-details` - Fetch SPF detail pages (5 per day)
+   - `fetch-categorizations` - LLM categorization (50 per day)
    - `pipeline` - Unified command that runs all stages
 
-3. **Updated existing commands**:
-   - `etl` - Now calls `_fetch_listings_impl()` and `_fetch_detail_pages_impl()` (5 per day)
-   - `dev enrich-source-events` - Marked deprecated, calls `_fetch_categorizations_impl()`
-   - `dev enrich-detail-pages` - Marked deprecated, calls `_fetch_detail_pages_impl()`
+4. **Removed legacy/redundant commands**:
+   - Removed `etl` command (replaced by fetch-listings + fetch-details + pipeline)
+   - Kept deprecated `dev enrich-*` commands for backward compatibility
 
-4. **Changed defaults**:
-   - SPF detail page fetch rate: 2 → 5 per day
-   - LLM categorization: still 50 per day (unchanged)
+5. **Consistency improvements**:
+   - All commands use `--source` parameter (not `--only-run`)
+   - Removed fake genericity (detail pages are SPF-specific, not generic)
+   - Removed verbose docstrings that added little value
+   - Removed `--skip-llm` from pipeline (use individual commands instead)
 
-5. **Verified**:
+6. **Net result**: 580 lines (down from 657) - 77 fewer lines while adding new functionality
+
+7. **Verified**:
    - All 69 tests pass ✅
    - CLI help shows all commands correctly ✅
    - Backward compatibility maintained ✅
