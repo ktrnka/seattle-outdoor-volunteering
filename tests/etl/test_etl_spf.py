@@ -222,3 +222,22 @@ def test_extract_spf_source_event_directly():
     assert spf_event.name == "Pigeon Point Park Restoration Event"
     assert spf_event.url == "https://www.seattleparksfoundation.org/event/pigeon-point-park-restoration-event-41/"
     assert spf_event.start_date == "2025-07-29T10:00:00-07:00"
+
+
+def test_detail_page_extractor():
+    """Test extraction of enrichment data from SPF detail page using CSS selectors"""
+    from src.etl.spf import SPFDetailExtractor, SPFDetailEnrichment
+    
+    html = (data_path / "spf_detail_page.html").read_text()
+    detail_url = "https://www.seattleparksfoundation.org/event/scotch-broom-patrol-4"
+    
+    extractor = SPFDetailExtractor(detail_url, html)
+    enrichment_data = extractor.extract()
+    
+    # Should return SPFDetailEnrichment model
+    assert isinstance(enrichment_data, SPFDetailEnrichment)
+    
+    # Should extract the website URL from span.tribe-events-event-url > a
+    assert enrichment_data.website_url is not None
+    # URL should be normalized (http->https, trailing slash removed)
+    assert enrichment_data.website_url == "https://seattle.greencitypartnerships.org/event/42741"

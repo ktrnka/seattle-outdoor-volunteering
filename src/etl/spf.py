@@ -8,7 +8,7 @@ from dateutil import parser
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from ..models import Event
-from .base import BaseListExtractor
+from .base import BaseDetailExtractor, BaseListExtractor
 from .url_utils import normalize_url
 
 SPF_EVENTS_URL = "https://www.seattleparksfoundation.org/events/"
@@ -69,6 +69,14 @@ class SPFSourceEvent(BaseModel):
     location: Optional[SPFLocation] = None
     organizer: Optional[SPFOrganizer] = None
     performer: Optional[str] = None
+
+
+class SPFDetailEnrichment(BaseModel):
+    """Enrichment data extracted from SPF detail page."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    website_url: Optional[str] = None  # External website link (e.g., GSP event page)
 
 
 class SPFExtractor(BaseListExtractor):
@@ -249,3 +257,37 @@ class SPFExtractor(BaseListExtractor):
 
         except (ValueError, TypeError, KeyError):
             return None
+
+
+class SPFDetailExtractor(BaseDetailExtractor):
+    """Extractor for SPF event detail pages to get enrichment data."""
+
+    source = "SPF"
+
+    @classmethod
+    def fetch(cls, url: str) -> "SPFDetailExtractor":
+        """Fetch raw HTML from the detail page URL."""
+        # TODO: Handle requests like the other ones
+        html = requests.get(url, timeout=30).text
+        return cls(url, html)
+
+    def extract(self) -> SPFDetailEnrichment:
+        """Extract enrichment data from the detail page using CSS selectors.
+        
+        Returns:
+            SPFDetailEnrichment with:
+            - website_url: The external website link (e.g., GSP event page)
+        """
+        soup = BeautifulSoup(self.raw_data, "html.parser")
+        
+        website_url = None
+        # Extract website URL from span.tribe-events-event-url > a
+        website_elem = soup.select_one("span.tribe-events-event-url > a")
+        if website_elem:
+            href = website_elem.get("href")
+            if href:
+                # normalize_url removes trailing slashes and converts http->https
+                website_url = normalize_url(str(href))
+
+        return SPFDetailEnrichment(website_url=website_url)
+
