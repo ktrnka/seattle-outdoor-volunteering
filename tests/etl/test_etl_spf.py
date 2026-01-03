@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 from pydantic import HttpUrl
+
 from src.etl.spf import SPFExtractor, SPFSourceEvent
 from src.models import SEATTLE_TZ
 
@@ -21,8 +22,7 @@ def test_parse_fixture():
     # Check that we can parse the first event from the JSON-LD data
     first_event = events[0]
     assert first_event.title == "Pigeon Point Park Restoration Event"
-    assert first_event.url == HttpUrl(
-        "https://www.seattleparksfoundation.org/event/pigeon-point-park-restoration-event-41")
+    assert first_event.url == HttpUrl("https://www.seattleparksfoundation.org/event/pigeon-point-park-restoration-event-41")
 
     # "startDate":"2025-07-29T10:00:00-07:00","endDate":"2025-07-29T13:00:00-07:00"
 
@@ -37,12 +37,10 @@ def test_parse_fixture():
 
     # Check that venue and address extraction works for events that have it
     events_with_venue = [e for e in events if e.venue]
-    assert len(
-        events_with_venue) > 0, "Should have some events with venue information"
+    assert len(events_with_venue) > 0, "Should have some events with venue information"
 
     events_with_address = [e for e in events if e.address]
-    assert len(
-        events_with_address) > 0, "Should have some events with address information"
+    assert len(events_with_address) > 0, "Should have some events with address information"
 
 
 def test_source_dict_structure():
@@ -105,20 +103,14 @@ def test_source_dict_event_with_location():
     if location_event.location.address:
         # Should be an SPFAddress object with proper attributes
         address = location_event.location.address
-        assert hasattr(address, 'street_address')
-        assert hasattr(address, 'address_locality')
-        assert hasattr(address, 'address_region')
-        assert hasattr(address, 'postal_code')
+        assert hasattr(address, "street_address")
+        assert hasattr(address, "address_locality")
+        assert hasattr(address, "address_region")
+        assert hasattr(address, "postal_code")
 
         # Check that at least some address fields are populated
-        address_fields = [
-            address.street_address,
-            address.address_locality,
-            address.address_region,
-            address.postal_code
-        ]
-        assert any(
-            field for field in address_fields), "At least one address field should be populated"
+        address_fields = [address.street_address, address.address_locality, address.address_region, address.postal_code]
+        assert any(field for field in address_fields), "At least one address field should be populated"
 
 
 def test_address_parsing_specific_event():
@@ -184,8 +176,9 @@ def test_source_dict_all_events_have_structure():
 def test_extract_spf_source_event_directly():
     """Test that we can extract SPFSourceEvent directly from JSON-LD data"""
     html = (data_path / "spf_events.html").read_text()
-    from bs4 import BeautifulSoup
     import json
+
+    from bs4 import BeautifulSoup
 
     extractor = SPFExtractor(html)
     soup = BeautifulSoup(html, "html.parser")
@@ -222,3 +215,22 @@ def test_extract_spf_source_event_directly():
     assert spf_event.name == "Pigeon Point Park Restoration Event"
     assert spf_event.url == "https://www.seattleparksfoundation.org/event/pigeon-point-park-restoration-event-41/"
     assert spf_event.start_date == "2025-07-29T10:00:00-07:00"
+
+
+def test_detail_page_extractor():
+    """Test extraction of enrichment data from SPF detail page using CSS selectors"""
+    from src.etl.spf import SPFDetailEnrichment, SPFDetailExtractor
+
+    html = (data_path / "spf_detail_page.html").read_text()
+    detail_url = "https://www.seattleparksfoundation.org/event/scotch-broom-patrol-4"
+
+    extractor = SPFDetailExtractor(detail_url, html)
+    enrichment_data = extractor.extract()
+
+    # Should return SPFDetailEnrichment model
+    assert isinstance(enrichment_data, SPFDetailEnrichment)
+
+    # Should extract the website URL from span.tribe-events-event-url > a
+    assert enrichment_data.website_url is not None
+    # URL should be normalized (http->https, trailing slash removed)
+    assert enrichment_data.website_url == "https://seattle.greencitypartnerships.org/event/42741"

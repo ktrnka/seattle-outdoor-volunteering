@@ -6,20 +6,20 @@ from .llm import get_client
 
 def build_categorization_context(event: Event) -> str:
     context_parts = [f"Title: {event.title}"]
-    
+
     if event.venue:
         context_parts.append(f"Venue: {event.venue}")
-        
+
     context_parts.append(f"URL: {event.url}")
-    
+
     return "\n".join(context_parts)
 
 
 def categorize_event(event: Event) -> LLMEventCategorization:
     client = get_client()
-    
+
     context = build_categorization_context(event)
-    
+
     system_prompt = """You are an expert at categorizing outdoor volunteer events and community activities in Seattle.
 
 Your task is to categorize events into one of these categories:
@@ -43,16 +43,13 @@ Focus on the primary purpose of the event. If an event combines multiple activit
 
     response = client.chat.completions.parse(
         model="openai/gpt-4.1-mini",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
+        messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
         response_format=LLMEventCategorization,
         temperature=0.1,  # Low temperature for consistent categorization
     )
-    
+
     response_content = response.choices[0].message.parsed
     if not response_content:
         raise ValueError("Empty response from LLM")
-        
+
     return response_content

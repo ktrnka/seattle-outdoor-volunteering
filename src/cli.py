@@ -37,6 +37,48 @@ def init_db(reset: bool = False):
         db.init_database(reset=reset)
 
 
+def _enrich_spf_detail_pages(db, max_events: int = 2) -> tuple[int, int]:
+    """Helper function to enrich SPF detail pages. Returns (success_count, error_count)."""
+    from .etl.spf import SPFDetailExtractor
+
+    unenriched = db.get_unenriched_detail_page_events(source="SPF", limit=max_events)
+    if not unenriched:
+        click.echo("No unenriched SPF events found")
+        return 0, 0
+
+    click.echo(f"Found {len(unenriched)} unenriched SPF events. Processing up to {max_events}...")
+    success_count = 0
+    error_count = 0
+
+    for event in unenriched:
+        try:
+            detail_extractor = SPFDetailExtractor.fetch(event.url)
+            enrichment = detail_extractor.extract()
+
+            db.store_detail_page_enrichment(
+                source=event.source,
+                source_id=event.source_id,
+                detail_page_url=event.url,
+                enrichment_data=enrichment.model_dump(exclude_none=True),
+                status="success",
+            )
+            success_count += 1
+            click.echo(f"  ✓ Enriched: {event.title}")
+        except Exception as e:
+            db.store_detail_page_enrichment(
+                source=event.source,
+                source_id=event.source_id,
+                detail_page_url=event.url,
+                enrichment_data={},
+                status="failed",
+                error_message=str(e),
+            )
+            error_count += 1
+            click.echo(f"  ✗ Failed: {event.title} - {str(e)}")
+
+    return success_count, error_count
+
+
 @cli.command()
 @click.option("--only-run", type=str, help="Run only the specified extractor (e.g., SPU, GSP, SPR, SPF, DNDA, EarthCorps)")
 def etl(only_run: Optional[str] = None):
@@ -94,7 +136,16 @@ def etl(only_run: Optional[str] = None):
         click.echo("Saving new events to database...")
         db.upsert_source_events(source_events)
 
-        click.echo("ETL complete!")
+        # Enrich SPF detail pages (up to 2 per day)
+        click.echo("\nEnriching SPF detail pages...")
+        try:
+            success_count, error_count = _enrich_spf_detail_pages(db, max_events=2)
+            click.echo(f"Detail page enrichment complete: {success_count} successful, {error_count} errors")
+        except Exception as e:
+            click.echo(f"Error during detail page enrichment: {str(e)}")
+            traceback.print_exception(e)
+
+        click.echo("\nETL complete!")
 
 
 @cli.command()
@@ -296,25 +347,41 @@ def event_type_stats():
 
 
 @dev.command()
-@click.argument("source", required=True)
+@click.option("--source", type=str, default=None, help="Filter by source (e.g., GSP, SPR, SPF)")
 @click.option("--canonical", is_flag=True, help="Show canonical events instead of source events")
 @click.option("--limit", default=20, help="Maximum number of events to show (default: 20)")
-def show_events(source: str, canonical: bool = False, limit: int = 20):
-    """Show events from a specific source (e.g., GSP, SPR, FRE)."""
+@click.option("--future", is_flag=True, help="Only show upcoming events")
+def show_events(source: Optional[str] = None, canonical: bool = False, limit: int = 20, future: bool = False):
+    """Show events from a specific source or all sources."""
+    from datetime import datetime, timezone
+
     with database.Database() as db:
         if canonical:
             events = db.get_canonical_events()
-            # Filter canonical events that have the specified source
-            filtered_events = [e for e in events if any(source in unique_id for unique_id in e.source_events)]
+            # Filter canonical events by source if specified
+            if source:
+                filtered_events = [e for e in events if any(source in unique_id for unique_id in e.source_events)]
+            else:
+                filtered_events = events
             event_type = "canonical events"
         else:
             events = db.get_source_events()
-            # Filter source events by source
-            filtered_events = [e for e in events if e.source == source]
+            # Filter source events by source if specified
+            if source:
+                filtered_events = [e for e in events if e.source == source]
+            else:
+                filtered_events = events
             event_type = "source events"
 
+        # Filter for future events if requested
+        if future:
+            now = datetime.now(timezone.utc)
+            filtered_events = [e for e in filtered_events if e.start >= now]
+            event_type = f"upcoming {event_type}"
+
         if not filtered_events:
-            click.echo(f"No {event_type} found for source '{source}'")
+            source_msg = f" for source '{source}'" if source else ""
+            click.echo(f"No {event_type} found{source_msg}")
             return
 
         # Sort by start date
@@ -323,7 +390,8 @@ def show_events(source: str, canonical: bool = False, limit: int = 20):
         # Limit results
         display_events = filtered_events[:limit]
 
-        click.echo(f"Showing {len(display_events)} of {len(filtered_events)} {event_type} for source '{source}':")
+        source_msg = f" for source '{source}'" if source else ""
+        click.echo(f"Showing {len(display_events)} of {len(filtered_events)} {event_type}{source_msg}:")
         click.echo("=" * 60)
 
         for event in display_events:
@@ -355,18 +423,6 @@ def build_site():
     click.echo("Site built → docs/index.html")
 
 
-@dev.command()
-@click.argument("event_title")
-def test_llm_canonicalization(event_title: str):
-    """Test LLM-based canonicalization."""
-    from .llm.llm_canonicalization import run_llm_canonicalization
-
-    with database.Database() as db:
-        data = db.find_canonical_event_with_sources(event_title)
-        assert data, f"No canonical event found with title '{event_title}'"
-        run_llm_canonicalization(*data)
-
-
 def _display_event_info(event) -> None:
     """Helper to display basic event information."""
     click.echo(f"Source: {event.source}")
@@ -390,143 +446,62 @@ def _display_llm_categorization(categorization, status_note: str = "") -> None:
 
 
 @dev.command()
-@click.argument("source", required=True)
-@click.argument("source_id", required=True)
-def categorize_event(source: str, source_id: str):
-    """Categorize a source event with LLM and store the result."""
-    from .llm.event_categorization import categorize_event as llm_categorize
-    
-    with database.Database() as db:
-        # Find the source event (will include enrichment if it exists)
-        target_event = db.get_source_event(source, source_id)
-
-        if not target_event:
-            click.echo(f"Error: No source event found with source='{source}' and source_id='{source_id}'")
-            return
-            
-        # Display event info
-        click.echo("Event to categorize:")
-        click.echo("=" * 50)
-        _display_event_info(target_event)
-        
-        # Check if already categorized
-        if target_event.llm_categorization:
-            click.echo("\nExisting LLM Categorization:")
-            _display_llm_categorization(target_event.llm_categorization, "Already categorized - showing existing result")
-        else:
-            click.echo("\nCategorizing with LLM...")
-            
-            try:
-                categorization = llm_categorize(target_event)
-                
-                # Store the result in the database
-                db.store_event_enrichment(target_event.source, target_event.source_id, categorization)
-                
-                click.echo("\nLLM Categorization Result:")
-                _display_llm_categorization(categorization, "Stored in database")
-                    
-            except Exception as e:
-                click.echo(f"\nError during categorization: {e}")
-                import traceback
-                traceback.print_exc()
-
-
-@dev.command()
 @click.argument("max_events", type=int, required=True)
 def enrich_source_events(max_events: int):
     """Categorize uncategorized source events with LLM, up to max_events."""
     from .llm.event_categorization import categorize_event as llm_categorize
-    
+
     with database.Database() as db:
         # Get uncategorized events
         uncategorized_events = db.get_uncategorized_source_events(limit=max_events)
-        
+
         if not uncategorized_events:
             click.echo("No uncategorized events found.")
             return
-            
+
         click.echo(f"Found {len(uncategorized_events)} uncategorized events. Processing up to {max_events}...")
-        
+
         success_count = 0
         error_count = 0
-        
+
         for i, event in enumerate(uncategorized_events, 1):
             click.echo(f"\n[{i}/{len(uncategorized_events)}] Processing: {event.title}")
             click.echo(f"  Source: {event.source}:{event.source_id}")
-            
+
             try:
                 categorization = llm_categorize(event)
-                
+
                 # Store the result in the database
                 db.store_event_enrichment(event.source, event.source_id, categorization)
-                
+
                 click.echo(f"  ✓ Categorized as: {categorization.category.value}")
                 if categorization.reasoning:
                     # Truncate reasoning for display
                     reasoning_preview = categorization.reasoning[:60] + "..." if len(categorization.reasoning) > 60 else categorization.reasoning
                     click.echo(f"  Reasoning: {reasoning_preview}")
-                
+
                 success_count += 1
-                
+
             except Exception as e:
                 click.echo(f"  ✗ Error: {str(e)}")
                 error_count += 1
                 # Continue processing other events
-                
+
         click.echo("\nProcessing complete:")
         click.echo(f"  Successfully categorized: {success_count}")
         click.echo(f"  Errors: {error_count}")
 
 
 @dev.command()
-def create_enrichment_table():
-    """Create the enriched_source_events table for LLM categorization."""
-    from .database import EnrichedSourceEvent
-    
+@click.option("--max", "max_events", type=int, default=1, help="Maximum events to process (default: 1)")
+def enrich_detail_pages(max_events: int):
+    """Fetch and parse SPF detail pages to get additional event data."""
     with database.Database() as db:
-        # Create just the enrichment table
-        EnrichedSourceEvent.__table__.create(db.engine, checkfirst=True)
-        click.echo("Created enriched_source_events table successfully!")
+        success_count, error_count = _enrich_spf_detail_pages(db, max_events=max_events)
 
-
-@dev.command()
-@click.option("--limit", default=10, help="Maximum number of enriched events to show (default: 10)")
-def show_enriched_events(limit: int = 10):
-    """Show source events with their LLM enrichment data."""
-    with database.Database() as db:
-        enriched_events = db.get_enriched_source_events(limit=limit)
-        
-        if not enriched_events:
-            click.echo("No enriched events found in database.")
-            return
-            
-        click.echo(f"Showing {len(enriched_events)} enriched events:")
-        click.echo("=" * 60)
-        
-        for event in enriched_events:
-            # Format date/time
-            if event.start.hour == 0 and event.start.minute == 0 and event.start == event.end:
-                time_str = event.start.strftime("%a %-m/%-d/%Y (date only)")
-            else:
-                time_str = event.start.strftime("%a %-m/%-d/%Y from %-I:%M%p")
-                if event.end != event.start:
-                    time_str += event.end.strftime(" - %-I:%M%p")
-
-            click.echo(f"\n• {event.title}")
-            click.echo(f"  {time_str}")
-            if event.venue:
-                click.echo(f"  {event.venue}")
-            click.echo(f"  Source: {event.source}:{event.source_id}")
-            
-            # Show LLM categorization
-            if event.llm_categorization:
-                click.echo(f"  LLM Category: {event.llm_categorization.category.value}")
-                if event.llm_categorization.reasoning:
-                    click.echo(f"  LLM Reasoning: {event.llm_categorization.reasoning}")
-            else:
-                click.echo("  LLM Category: Not available")
-                
-            click.echo(f"  {event.url}")
+        click.echo("\nProcessing complete:")
+        click.echo(f"  Successfully enriched: {success_count}")
+        click.echo(f"  Errors: {error_count}")
 
 
 # Add the dev group to the main CLI

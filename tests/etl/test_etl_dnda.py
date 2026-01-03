@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+
 from pydantic import HttpUrl
 
 from src.etl.dnda import DNDAExtractor, DNDASourceEvent
@@ -22,8 +23,7 @@ def test_parse_volunteer_events_basic():
     first_event = events[0]
     assert first_event.title == "Volunteer Wetland Restoration"
     assert first_event.source_id == "3400"
-    assert first_event.url == HttpUrl(
-        "https://dnda.org/calendar/volunteer-wetland-restoration")
+    assert first_event.url == HttpUrl("https://dnda.org/calendar/volunteer-wetland-restoration")
     assert first_event.address == "5601 23rd Ave SW, Seattle, WA 98106"
 
     # Check that times are properly converted to UTC
@@ -117,7 +117,7 @@ def test_extract_dnda_source_event_directly():
         "start_time": "10:00 am",
         "end_date": "August 9, 2025",
         "end_time": "1:00 pm",
-        "startDay": "Saturday"
+        "startDay": "Saturday",
     }
 
     # Empty data, we're testing the method directly
@@ -142,7 +142,7 @@ def test_volunteer_event_filtering():
             "start": "2025-07-29T10:00:00-07:00",
             "end": "2025-07-29T13:00:00-07:00",
             "url": "https://dnda.org/calendar/volunteer-wetland-restoration/",
-            "location": "Some Park"
+            "location": "Some Park",
         },
         {
             "id": 2,
@@ -150,7 +150,7 @@ def test_volunteer_event_filtering():
             "start": "2025-07-29T18:00:00-07:00",
             "end": "2025-07-29T19:00:00-07:00",
             "url": "https://dnda.org/calendar/dance-fitness/",
-            "location": "Studio"
+            "location": "Studio",
         },
         {
             "id": 3,
@@ -158,8 +158,8 @@ def test_volunteer_event_filtering():
             "start": "2025-08-05T10:00:00-07:00",
             "end": "2025-08-05T13:00:00-07:00",
             "url": "https://dnda.org/calendar/forest-restoration/",
-            "location": "Camp Long"
-        }
+            "location": "Camp Long",
+        },
     ]
 
     extractor = DNDAExtractor(json.dumps(test_data))
@@ -184,7 +184,7 @@ def test_venue_extraction():
             "end": "2025-07-29T13:00:00-07:00",
             "url": "https://dnda.org/calendar/cleanup/",
             "location": "5601 23rd Ave SW, Seattle, WA 98106",
-            "description": "<p><strong>Location: </strong><a href=\"https://maps.app.goo.gl/2CTqPGMiUiN1F7uT9\" target=\"_blank\" rel=\"noopener\">Delridge Wetland Park</a></p>"
+            "description": '<p><strong>Location: </strong><a href="https://maps.app.goo.gl/2CTqPGMiUiN1F7uT9" target="_blank" rel="noopener">Delridge Wetland Park</a></p>',
         },
         {
             "id": 2,
@@ -193,8 +193,8 @@ def test_venue_extraction():
             "end": "2025-08-05T13:00:00-07:00",
             "url": "https://dnda.org/calendar/restoration/",
             "location": "1901 SW Genesee St, Seattle, WA, 98122",
-            "description": "<p>Work at Pigeon Point Park</p>"
-        }
+            "description": "<p>Work at Pigeon Point Park</p>",
+        },
     ]
 
     extractor = DNDAExtractor(json.dumps(test_data))

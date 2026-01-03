@@ -1,16 +1,16 @@
 import json
 import re
-from datetime import timezone, datetime, timedelta
-
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
+
 import requests
 from bs4 import BeautifulSoup
 from dateutil import parser
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
+from ..models import Event
 from .base import BaseListExtractor
 from .url_utils import normalize_url
-from ..models import Event
 
 # DNDA API endpoint for events
 # Base URL with dynamic date range - we'll build this in fetch()

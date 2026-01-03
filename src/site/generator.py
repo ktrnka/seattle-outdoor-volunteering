@@ -1,8 +1,9 @@
-from pathlib import Path
-from datetime import timezone
-from urllib.parse import quote_plus
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 from itertools import groupby
+from pathlib import Path
+from urllib.parse import quote_plus
+
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
 from ..database import Database
 from ..models import SEATTLE_TZ
 
@@ -30,29 +31,31 @@ def build(output_dir: Path):
             source_events_detail = db.get_source_events_by_canonical_id(event.canonical_id)
             debug_source_events = []
             for se in source_events_detail:
-                debug_source_events.append({
-                    "source": se.source,
-                    "source_id": se.source_id,
-                    "title": se.title,
-                    # Convert to Pacific and serialize
-                    "start": se.start.astimezone(SEATTLE_TZ).isoformat(),
-                    # Convert to Pacific and serialize
-                    "end": se.end.astimezone(SEATTLE_TZ).isoformat(),
-                    "venue": se.venue,
-                    "address": se.address,
-                    "url": str(se.url),
-                    "tags": se.tags,
-                    "same_as": str(se.same_as) if se.same_as else None,
-                    "source_dict": se.source_dict
-                })
+                debug_source_events.append(
+                    {
+                        "source": se.source,
+                        "source_id": se.source_id,
+                        "title": se.title,
+                        # Convert to Pacific and serialize
+                        "start": se.start.astimezone(SEATTLE_TZ).isoformat(),
+                        # Convert to Pacific and serialize
+                        "end": se.end.astimezone(SEATTLE_TZ).isoformat(),
+                        "venue": se.venue,
+                        "address": se.address,
+                        "url": str(se.url),
+                        "tags": se.tags,
+                        "same_as": str(se.same_as) if se.same_as else None,
+                        "source_dict": se.source_dict,
+                    }
+                )
 
             event_dict = {
                 "canonical_id": event.canonical_id,
                 "title": event.title,
                 "start": start_pacific,  # Display time in Pacific timezone
-                "end": end_pacific,      # Display time in Pacific timezone
+                "end": end_pacific,  # Display time in Pacific timezone
                 "start_utc": start_utc,  # UTC time for Google Calendar
-                "end_utc": end_utc,      # UTC time for Google Calendar
+                "end_utc": end_utc,  # UTC time for Google Calendar
                 "venue": event.venue,
                 "address": event.address,
                 "url": str(event.url),
@@ -67,30 +70,26 @@ def build(output_dir: Path):
                 # Detailed source event data for debug
                 "debug_source_events": debug_source_events,
                 # Add Google Maps URL for addresses
-                "maps_url": f"https://www.google.com/maps/search/{quote_plus(event.address)}" if event.address and event.address.lower() != 'none' else None,
+                "maps_url": f"https://www.google.com/maps/search/{quote_plus(event.address)}"
+                if event.address and event.address.lower() != "none"
+                else None,
                 # Event type for emoji display
-                "event_type": event.get_event_type()
+                "event_type": event.get_event_type(),
             }
             event_dicts.append(event_dict)
 
         # Sort events by start time, then by title for events with the same start time
-        event_dicts.sort(key=lambda e: (e['start'], e['title']))
+        event_dicts.sort(key=lambda e: (e["start"], e["title"]))
 
         # Prepare debug data dictionary
         debug_data = {}
         for event_dict in event_dicts:
-            debug_data[event_dict['canonical_id']] = {
-                'title': event_dict['title'],
-                'source_events': event_dict['debug_source_events']
-            }
+            debug_data[event_dict["canonical_id"]] = {"title": event_dict["title"], "source_events": event_dict["debug_source_events"]}
 
         # Group events by date
         events_by_date = []
-        for date, events in groupby(event_dicts, key=lambda e: e['start'].date()):
-            events_by_date.append({
-                'date': date,
-                'events': list(events)
-            })
+        for date, events in groupby(event_dicts, key=lambda e: e["start"].date()):
+            events_by_date.append({"date": date, "events": list(events)})
 
         # Get source update statistics
         source_stats = db.get_source_updated_stats()
@@ -103,30 +102,24 @@ def build(output_dir: Path):
 
         # Get data freshness grid for the last 5 days
         freshness_grid = db.get_data_freshness_grid(days=5)
-        
+
         # Generate date headers for the grid (last 5 days)
         from datetime import date, timedelta
+
         today = date.today()
         freshness_dates = []
         for i in range(4, -1, -1):  # 4, 3, 2, 1, 0 (most recent last)
             date_obj = today - timedelta(days=i)
-            freshness_dates.append({
-                'date': date_obj,
-                'date_str': date_obj.strftime('%Y-%m-%d'),
-                'display': date_obj.strftime('%-m/%-d')
-            })
+            freshness_dates.append({"date": date_obj, "date_str": date_obj.strftime("%Y-%m-%d"), "display": date_obj.strftime("%-m/%-d")})
 
-        env = Environment(
-            loader=FileSystemLoader(Path(__file__).parent / "templates"),
-            autoescape=select_autoescape()
-        )
+        env = Environment(loader=FileSystemLoader(Path(__file__).parent / "templates"), autoescape=select_autoescape())
         tmpl = env.get_template("index.html.j2")
         html = tmpl.render(
             events_by_date=events_by_date,
             source_stats=source_stats_pacific,
             freshness_grid=freshness_grid,
             freshness_dates=freshness_dates,
-            debug_data=debug_data
+            debug_data=debug_data,
         )
         output_dir.mkdir(parents=True, exist_ok=True)
         (output_dir / "index.html").write_text(html, encoding="utf-8")

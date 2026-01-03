@@ -1,13 +1,14 @@
 # tests/test_etl_gsp.py
-from datetime import datetime, time
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 from time import tzset
 
 from pydantic import HttpUrl
-from src.etl.date_utils import parse_range_single_string, parse_range
-from src.etl.gsp import GSPDetailEvent, GSPDetailPageExtractor, GSPCalendarExtractor, GSPAPIExtractor
+
+from src.etl.date_utils import parse_range, parse_range_single_string
+from src.etl.gsp import GSPAPIExtractor, GSPCalendarExtractor, GSPDetailEvent, GSPDetailPageExtractor
 from src.models import SEATTLE_TZ
 
 data_path = Path(__file__).parent / "data"
@@ -27,8 +28,7 @@ def test_basic_ranges():
     assert start.year == datetime.now().year
 
     # The year should be the same as after's year in this example
-    start, end = parse_range_single_string(
-        "July 28, 9am-12:30pm", SEATTLE_TZ, after=datetime(2030, 7, 1))
+    start, end = parse_range_single_string("July 28, 9am-12:30pm", SEATTLE_TZ, after=datetime(2030, 7, 1))
     assert start.year == 2030
     assert end.year == 2030
 
@@ -37,16 +37,14 @@ def test_basic_ranges():
     parse_range_single_string("July 31, 10am-1pm", SEATTLE_TZ)
 
     # SPR test
-    start, end = parse_range_single_string(
-        "Sunday, August 3, 2025, 8 - 11am", SEATTLE_TZ)
+    start, end = parse_range_single_string("Sunday, August 3, 2025, 8 - 11am", SEATTLE_TZ)
     assert start.hour == 8
     assert start.minute == 0
     assert end.hour == 11
     assert end.minute == 0
 
     # Tougher time test for SPR
-    start, end = parse_range_single_string(
-        "Sunday, August 3, 2025, 5 - 6pm", SEATTLE_TZ)
+    start, end = parse_range_single_string("Sunday, August 3, 2025, 5 - 6pm", SEATTLE_TZ)
     assert start.hour == 17
     assert start.minute == 0
     assert end.hour == 18
@@ -76,12 +74,11 @@ def test_parse_calendar_fixture():
     # Basic checks on the first event
     first_event = events[0]
     assert first_event.title == "Weeding south of 70th St. again"
-    assert first_event.url == HttpUrl(
-        "https://seattle.greencitypartnerships.org/event/42093")
+    assert first_event.url == HttpUrl("https://seattle.greencitypartnerships.org/event/42093")
 
     # July 28, 9am-12:30pm @ Burke-Gilman Trail in local time
     local_start = first_event.start.astimezone(SEATTLE_TZ)
-    assert local_start.year == 2025
+    assert local_start.year == 2026
     assert local_start.month == 7
     assert local_start.day == 28
     assert local_start.hour == 9  # 9am local time
@@ -93,7 +90,7 @@ def test_parse_calendar_fixture():
 
     assert first_event.source_dict
     raw_source = json.loads(first_event.source_dict)
-    assert raw_source['description'] == "Let's finish this area off as we are close to the end."
+    assert raw_source["description"] == "Let's finish this area off as we are close to the end."
 
 
 def test_environment_tz_utc():
@@ -117,12 +114,11 @@ def test_environment_tz_utc():
     # Basic checks on the first event
     first_event = events[0]
     assert first_event.title == "Weeding south of 70th St. again"
-    assert first_event.url == HttpUrl(
-        "https://seattle.greencitypartnerships.org/event/42093")
+    assert first_event.url == HttpUrl("https://seattle.greencitypartnerships.org/event/42093")
 
     # July 28, 9am-12:30pm @ Burke-Gilman Trail in local time
     local_start = first_event.start.astimezone(SEATTLE_TZ)
-    assert local_start.year == 2025
+    assert local_start.year == 2026
     assert local_start.month == 7
     assert local_start.day == 28
     assert local_start.hour == 9  # 9am local time
@@ -147,8 +143,7 @@ def test_parse_api_fixture():
     assert first_event.start.month == 7
     assert first_event.start.day == 28
     assert first_event.source_id == "42093"
-    assert first_event.url == HttpUrl(
-        "https://seattle.greencitypartnerships.org/event/42093")
+    assert first_event.url == HttpUrl("https://seattle.greencitypartnerships.org/event/42093")
 
 
 def test_detail_extractor():
@@ -165,8 +160,8 @@ def test_detail_extractor():
         source_id="42093",
         datetimes="August 1, 2025 9:30am - 11:30am",
         description="This is a newly adopted forest steward parcel, just down the trail from the Stevens St. trailhead along the Adams Highway section of the park. This will be our third visit since adopting the parcel. So far we've removed ivy, blackberry, and other invasives and continue to remove legacy trash that we uncover. This trip we'll dig into an area that is overgrown with Himalayan blackberry and make piles to decompose on site.",
-        contact_name='Erik Bell',
-        contact_email='erik.belltribe@gmail.com'
+        contact_name="Erik Bell",
+        contact_email="erik.belltribe@gmail.com",
     )
 
     event = detailed_event.to_source_event()
@@ -199,5 +194,4 @@ def test_gsp_api_invalid_date_should_drop_event():
 
     # Events with unparseable dates should be dropped, not assigned today's date
     # This test exposes the bug where datetime.now() fallback creates hallucinated events
-    assert len(
-        events) == 0, f"Expected 0 events but got {len(events)}. Events with invalid dates should be dropped, not assigned current date."
+    assert len(events) == 0, f"Expected 0 events but got {len(events)}. Events with invalid dates should be dropped, not assigned current date."

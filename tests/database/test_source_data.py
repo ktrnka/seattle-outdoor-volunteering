@@ -5,8 +5,8 @@ from src.database import Database
 def test_database_has_events():
     """Basic test to verify we can connect to the database and it has events."""
     with Database(compress_on_exit=False) as db:
-        count = db.get_source_events_count()
-        assert count > 0, f"Expected database to have events, but found {count}"
+        events = db.get_source_events()
+        assert len(events) > 0, f"Expected database to have events, but found {len(events)}"
 
 
 def test_can_list_events():

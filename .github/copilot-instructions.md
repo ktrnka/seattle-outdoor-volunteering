@@ -13,12 +13,13 @@ An ETL pipeline that scrapes Seattle-area outdoor volunteer events into a SQLite
 
 ## Architecture & Data Flow
 ```
-Sources (GSP/SPR/SPF) → BaseExtractor → Event models → LLM Enrichment → Deduplication → SQLite → Site Generator → HTML
+Sources (GSP/SPR/SPF) → BaseExtractor → Event models → LLM Enrichment → Detail Page Enrichment → Deduplication → SQLite → Site Generator → HTML
 ```
 
 - **ETL Sources**: Each has a dedicated extractor inheriting from `BaseExtractor` in `src/etl/`
 - **LLM Enrichment**: Event categorization stored in `enriched_source_events` table, integrated via `llm_categorization` field
-- **Deduplication**: Smart precedence-based matching in `src/etl/deduplication.py` - GSP events are canonical
+- **Detail Page Enrichment**: Additional data extracted from detail pages stored in `detail_page_enrichments` table (e.g., SPF → GSP URLs for deduplication)
+- **Deduplication**: Splink-based probabilistic matching using title similarity, date/time, address, and URL array intersection
 - **Database**: SQLAlchemy with both Pydantic models (`src/models.py`) and SQLAlchemy models (`src/database.py`)
 - **Site Generation**: Jinja2 templates in `src/site/templates/` with timezone-aware datetime handling
 
@@ -38,6 +39,13 @@ New data sources should:
 - Create a base extractor class with shared utility methods (following DRY principle)
 - Create separate specialized extractors for each data format (API, HTML, RSS, etc.)
 
+**Detail Page Enrichment Pattern:**
+- Separate `BaseDetailExtractor` class for fetching additional data from event detail pages
+- Enrichment data stored in `detail_page_enrichments` table (separate from daily ETL upserts)
+- `Event.to_pydantic()` accepts optional `detail_page_enrichment` parameter to populate fields like `same_as`
+- Incremental enrichment: Process small batches during each ETL run (e.g., 2 pages/day)
+- Use case: SPF detail pages contain GSP URLs that enable URL-based deduplication matching
+
 ### Database Strategy
 - Compressed SQLite checked into git at `data/events.sqlite.gz`
 - Auto-extracted to `data/events.sqlite` when missing via `config.ensure_database_exists()`
@@ -45,7 +53,14 @@ New data sources should:
 - Upsert operations handle both new and updated events
 
 ### Deduplication Logic
-Events are deduplicated based on date and title, then a canonical version is created from the data.
+Events are deduplicated using Splink (probabilistic record linkage) with multiple comparison layers:
+- Title similarity using Jaro-Winkler distance (threshold ≥0.7)
+- Exact date and time matching
+- Address matching with fuzzy Jaro distance (threshold ≥0.75)
+- URL array intersection (includes `url`, `same_as`, and `website_url` from detail page enrichment)
+- Splink trained on blocking rules: exact title match and exact date match
+
+Enrichment data (detail pages, LLM categorization) improves matching accuracy by providing additional URLs and standardized fields.
 
 ## Development Guidelines
 

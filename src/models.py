@@ -1,7 +1,7 @@
 from datetime import datetime
+from enum import Enum
 from typing import Generator, List, Optional
 from zoneinfo import ZoneInfo
-from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
@@ -24,7 +24,7 @@ class RecurringPattern(str, Enum):
 
 class EventCategory(str, Enum):
     """Supported event categories for LLM classification."""
-    
+
     VOLUNTEER_PARKS = "volunteer/parks"
     VOLUNTEER_LITTER = "volunteer/litter"
     SOCIAL_EVENT = "social_event"
@@ -34,9 +34,9 @@ class EventCategory(str, Enum):
 
 class LLMEventCategorization(BaseModel):
     """Result of LLM-based event categorization."""
-    
+
     model_config = ConfigDict(from_attributes=True)
-    
+
     category: EventCategory
     reasoning: Optional[str] = None  # Optional explanation of the categorization
 
@@ -131,7 +131,7 @@ class CanonicalEvent(BaseModel):
     def get_event_type(self) -> str:
         """
         Determine the event type based on LLM categorization (via tags), URL, and title.
-        
+
         Priority order:
         1. LLM categorization (from tags with llm: prefix) - returned directly
         2. Hardcoded rules mapped to LLM categories for consistency
@@ -144,7 +144,7 @@ class CanonicalEvent(BaseModel):
             for tag in self.tags:
                 if tag.startswith("llm:"):
                     return tag[4:]  # Remove "llm:" prefix and return the LLM category directly
-        
+
         # Fall back to existing hardcoded rules, mapped to LLM categories
         # Check URL first for Green Seattle Partnership
         if self.url and "seattle.greencitypartnerships.org" in str(self.url):

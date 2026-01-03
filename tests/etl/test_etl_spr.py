@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 from pydantic import HttpUrl
+
 from src.etl.spr import SPRExtractor, SPRSourceData
 from src.models import SEATTLE_TZ
 
@@ -30,8 +31,7 @@ def test_parse_fixture():
     # Verify the first event matches our RSS fixture
     assert first_event.title == "Preparing for Fall Planting"
     assert first_event.address == "5921 Aurora Ave N, Seattle, WA 98103"
-    assert first_event.same_as == HttpUrl(
-        "https://seattle.greencitypartnerships.org/event/42030")
+    assert first_event.same_as == HttpUrl("https://seattle.greencitypartnerships.org/event/42030")
 
     # Sunday, July 27, 2025, 8&amp;nbsp;&amp;ndash;&amp;nbsp;11am
     local_start = first_event.start.astimezone(SEATTLE_TZ)
@@ -51,8 +51,7 @@ def test_parse_fixture():
 
     # Check tags/categories
     assert first_event.tags is not None
-    assert any("Volunteer" in tag for tag in first_event.tags) or any(
-        "Work Party" in tag for tag in first_event.tags)
+    assert any("Volunteer" in tag for tag in first_event.tags) or any("Work Party" in tag for tag in first_event.tags)
     assert "Green Seattle Partnership" in first_event.tags
 
     # Verify venue extraction
@@ -77,8 +76,7 @@ def test_parse_multiple_events():
     assert len(source_ids) == len(set(source_ids))
 
     # Check a different event (Green Lake Litter Patrol)
-    green_lake_event = next(
-        (e for e in events if "Green Lake Litter Patrol" in e.title), None)
+    green_lake_event = next((e for e in events if "Green Lake Litter Patrol" in e.title), None)
     assert green_lake_event is not None
     assert green_lake_event.venue == "Green Lake Park"
     assert green_lake_event.address is not None
@@ -104,8 +102,7 @@ def test_datetime_parsing():
 
 def test_empty_rss():
     """Test handling of empty RSS content"""
-    extractor = SPRExtractor(
-        "<?xml version='1.0'?><rss><channel></channel></rss>")
+    extractor = SPRExtractor("<?xml version='1.0'?><rss><channel></channel></rss>")
     events = extractor.extract()
     assert events == []
 
@@ -157,8 +154,7 @@ def test_source_dict_green_lake_event():
     events = extractor.extract()
 
     # Find the Green Lake event
-    green_lake_event = next(
-        (e for e in events if "Green Lake Litter Patrol" in e.title), None)
+    green_lake_event = next((e for e in events if "Green Lake Litter Patrol" in e.title), None)
     assert green_lake_event is not None
     assert green_lake_event.source_dict is not None
 
@@ -231,15 +227,13 @@ def test_address_parsing_different_formats():
     # Find events with different address formats
 
     # Format 1: Single line address (standard format)
-    standard_format_event = next(
-        (e for e in events if "Preparing for Fall Planting" in e.title), None)
+    standard_format_event = next((e for e in events if "Preparing for Fall Planting" in e.title), None)
     assert standard_format_event is not None
     assert standard_format_event.address == "5921 Aurora Ave N, Seattle, WA 98103"
 
     # Format 2: Multi-line address format
     # Look for the "Volunteer Work Party" event which has the multi-line format
-    multiline_format_event = next(
-        (e for e in events if "Volunteer Work Party" in e.title and "Ballard" in str(e.venue or "")), None)
+    multiline_format_event = next((e for e in events if "Volunteer Work Party" in e.title and "Ballard" in str(e.venue or "")), None)
     assert multiline_format_event is not None
     assert multiline_format_event.address is not None
     # Should combine the park name, street address, and city/state into one address
@@ -249,6 +243,7 @@ def test_address_parsing_different_formats():
 
     # Verify that both events have valid dates/times (not defaulted values)
     from src.models import SEATTLE_TZ
+
     standard_local = standard_format_event.start.astimezone(SEATTLE_TZ)
     multiline_local = multiline_format_event.start.astimezone(SEATTLE_TZ)
 
@@ -261,14 +256,12 @@ def test_clean_html():
     """Test the _clean_html static method directly"""
     # Test HTML tag removal
     assert SPRExtractor._clean_html("<b>Bold text</b>") == "Bold text"
-    assert SPRExtractor._clean_html(
-        '<a href="mailto:test@example.com">Email</a>') == "Email"
+    assert SPRExtractor._clean_html('<a href="mailto:test@example.com">Email</a>') == "Email"
 
     # Test HTML entity decoding
     assert SPRExtractor._clean_html("&amp;") == "&"
     assert SPRExtractor._clean_html("&lt;script&gt;") == "<script>"
-    assert SPRExtractor._clean_html(
-        "Hello&nbsp;World") == "Hello World"  # Test nbsp in context
+    assert SPRExtractor._clean_html("Hello&nbsp;World") == "Hello World"  # Test nbsp in context
     assert SPRExtractor._clean_html("&ndash;") == "–"
 
     # Test complex example (similar to RSS content)
@@ -283,11 +276,7 @@ def test_clean_html():
 def test_find_datetime_line():
     """Test the _find_datetime_line static method directly"""
     # Test standard datetime format
-    lines = [
-        "5921 Aurora Ave N, Seattle, WA 98103",
-        "Sunday, July 27, 2025, 8 – 11am",
-        "Join us for a restoration work party..."
-    ]
+    lines = ["5921 Aurora Ave N, Seattle, WA 98103", "Sunday, July 27, 2025, 8 – 11am", "Join us for a restoration work party..."]
     result = SPRExtractor._find_datetime_line(lines)
     assert result is not None
     datetime_line, index = result
@@ -301,7 +290,7 @@ def test_find_datetime_line():
         "1702 NW 62nd St",
         "Seattle, WA 98107",
         "Saturday, August 2, 2025, 10am – 2pm",
-        "We'll be weeding, grooming plants..."
+        "We'll be weeding, grooming plants...",
     ]
     result = SPRExtractor._find_datetime_line(lines)
     assert result is not None
@@ -311,19 +300,11 @@ def test_find_datetime_line():
     assert "10am" in datetime_line
 
     # Test no datetime line found
-    lines = [
-        "Some address",
-        "Just description text",
-        "No date or time here"
-    ]
+    lines = ["Some address", "Just description text", "No date or time here"]
     result = SPRExtractor._find_datetime_line(lines)
     assert result is None
 
     # Test line with time but no year (should not match)
-    lines = [
-        "Some address",
-        "Meeting at 9am",
-        "More description"
-    ]
+    lines = ["Some address", "Meeting at 9am", "More description"]
     result = SPRExtractor._find_datetime_line(lines)
     assert result is None

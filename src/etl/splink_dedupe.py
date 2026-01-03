@@ -1,5 +1,6 @@
 from datetime import timezone
 from typing import Any, List, Optional
+
 import pandas as pd
 import splink.comparison_library as cl
 from splink import DuckDBAPI, Linker, SettingsCreator, block_on
@@ -7,8 +8,8 @@ from splink import DuckDBAPI, Linker, SettingsCreator, block_on
 from src.etl.deduplication import normalize_title
 
 from ..database import get_regular_connection
-from .url_utils import normalize_url
 from ..models import CanonicalEvent
+from .url_utils import normalize_url
 
 
 def create_url_list(*urls: Optional[str]) -> list[str]:
@@ -35,12 +36,14 @@ def load_source_events() -> pd.DataFrame:
         DataFrame containing source events
     """
     sqlite_connection = get_regular_connection()
-    # Join with enrichment table to get LLM categorization
+    # Join with enrichment tables to get LLM categorization and detail page data
     query = """
     SELECT e.*, 
-           json_extract(ese.llm_categorization, '$.category') as llm_category
+           json_extract(ese.llm_categorization, '$.category') as llm_category,
+           json_extract(dpe.enrichment_data, '$.website_url') as website_url
     FROM events e
     LEFT JOIN enriched_source_events ese ON e.source = ese.source AND e.source_id = ese.source_id
+    LEFT JOIN detail_page_enrichments dpe ON e.source = dpe.source AND e.source_id = dpe.source_id
     """
     df = pd.read_sql_query(query, sqlite_connection, parse_dates=["start", "end"])
     df["normalized_title"] = df["title"].apply(normalize_title)
@@ -52,8 +55,8 @@ def load_source_events() -> pd.DataFrame:
     # Null out start_time if start and end are the same, so that it's ignored in exact matching in Splink
     df.loc[df["start"] == df["end"], "start_time"] = None
 
-    # Create a URL list col of URL and same_as
-    df["urls"] = df.apply(lambda row: create_url_list(row["url"], row["same_as"]), axis=1)
+    # Create a URL list col of URL, same_as, and website_url from detail page enrichment
+    df["urls"] = df.apply(lambda row: create_url_list(row["url"], row["same_as"], row["website_url"]), axis=1)
 
     # Special fields used by Splink
     df["source_dataset"] = df["source"]
@@ -121,23 +124,23 @@ def mode(series: pd.Series) -> Optional[Any]:
 def aggregate_llm_categories(event_group: pd.DataFrame) -> List[str]:
     """
     Aggregate LLM categories from a group of events using majority vote.
-    
+
     Args:
         event_group: DataFrame containing events in the group
-        
+
     Returns:
         List of tags to include in canonical event
     """
     # Get non-null LLM categories
     llm_categories = event_group["llm_category"].dropna()
-    
+
     if llm_categories.empty:
         return []
-    
+
     # Count categories and get the most common one
     category_counts = llm_categories.value_counts()
     most_common_category = category_counts.index[0]
-    
+
     # Return as a list with the llm: prefix for clarity
     return [f"llm:{most_common_category}"]
 

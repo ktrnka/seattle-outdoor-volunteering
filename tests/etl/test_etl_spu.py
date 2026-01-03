@@ -2,16 +2,14 @@ import json
 from datetime import timezone
 from pathlib import Path
 
-from src.etl.spu import SPUExtractor
-from src.etl.spu import SPUSourceEvent
+from src.etl.spu import SPUExtractor, SPUSourceEvent
 
 
 def test_spu_extractor():
     """Test SPU extractor with real HTML data."""
     # Load the test fixture
-    fixture_path = Path(__file__).parent / "data" / \
-        "seattle_utilities_cleanup.html"
-    with open(fixture_path, 'r', encoding='utf-8') as f:
+    fixture_path = Path(__file__).parent / "data" / "seattle_utilities_cleanup.html"
+    with open(fixture_path, "r", encoding="utf-8") as f:
         html_content = f.read()
 
     # Create extractor with the fixture data
@@ -23,16 +21,14 @@ def test_spu_extractor():
 
     # Check specific event we know exists (Saturday, August 9 - Othello)
     othello_events = [e for e in events if "othello" in e.source_id.lower()]
-    assert len(
-        othello_events) == 1, f"Should find exactly one Othello event, found {len(othello_events)}"
+    assert len(othello_events) == 1, f"Should find exactly one Othello event, found {len(othello_events)}"
 
     othello_event = othello_events[0]
     assert othello_event.source == "SPU"
     assert "Othello" in othello_event.title
     assert "All Hands Neighborhood Cleanup" in othello_event.title
     assert othello_event.venue == "Othello Park"
-    assert str(
-        othello_event.url) == "https://www.seattle.gov/utilities/volunteer/all-hands-neighborhood-cleanup"
+    assert str(othello_event.url) == "https://www.seattle.gov/utilities/volunteer/all-hands-neighborhood-cleanup"
 
     # Check that start and end times are parsed correctly
     assert othello_event.start < othello_event.end, "Start should be before end"
@@ -52,15 +48,13 @@ def test_spu_extractor():
 
     print(f"Successfully extracted {len(events)} events")
     for event in events:
-        print(
-            f"  - {event.title} at {event.venue} on {event.start.strftime('%Y-%m-%d %H:%M')}")
+        print(f"  - {event.title} at {event.venue} on {event.start.strftime('%Y-%m-%d %H:%M')}")
 
 
 def test_source_dict_structure():
     """Test that source_dict contains properly structured SPU data"""
-    fixture_path = Path(__file__).parent / "data" / \
-        "seattle_utilities_cleanup.html"
-    with open(fixture_path, 'r', encoding='utf-8') as f:
+    fixture_path = Path(__file__).parent / "data" / "seattle_utilities_cleanup.html"
+    with open(fixture_path, "r", encoding="utf-8") as f:
         html_content = f.read()
 
     extractor = SPUExtractor(html_content)
@@ -93,9 +87,8 @@ def test_source_dict_structure():
 
 def test_source_dict_event_with_address():
     """Test source_dict for an event that has address information"""
-    fixture_path = Path(__file__).parent / "data" / \
-        "seattle_utilities_cleanup.html"
-    with open(fixture_path, 'r', encoding='utf-8') as f:
+    fixture_path = Path(__file__).parent / "data" / "seattle_utilities_cleanup.html"
+    with open(fixture_path, "r", encoding="utf-8") as f:
         html_content = f.read()
 
     extractor = SPUExtractor(html_content)
@@ -129,9 +122,8 @@ def test_source_dict_event_with_address():
 
 def test_extract_spu_source_event_directly():
     """Test the _extract_spu_source_event method directly"""
-    fixture_path = Path(__file__).parent / "data" / \
-        "seattle_utilities_cleanup.html"
-    with open(fixture_path, 'r', encoding='utf-8') as f:
+    fixture_path = Path(__file__).parent / "data" / "seattle_utilities_cleanup.html"
+    with open(fixture_path, "r", encoding="utf-8") as f:
         html_content = f.read()
 
     extractor = SPUExtractor(html_content)

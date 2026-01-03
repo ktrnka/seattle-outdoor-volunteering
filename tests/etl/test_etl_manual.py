@@ -60,22 +60,19 @@ recurring_events:
 
         # Test specific month calculations
         # August 2025: 1st is Friday, so first Saturday is Aug 2
-        first_sat = extractor._get_nth_weekday_of_month(
-            2025, 8, RecurringPattern.FIRST_SATURDAY)
+        first_sat = extractor._get_nth_weekday_of_month(2025, 8, RecurringPattern.FIRST_SATURDAY)
         assert first_sat is not None
         assert first_sat.day == 2
         assert first_sat.weekday() == 5  # Saturday
 
         # August 2025: second Sunday is Aug 10
-        second_sun = extractor._get_nth_weekday_of_month(
-            2025, 8, RecurringPattern.SECOND_SUNDAY)
+        second_sun = extractor._get_nth_weekday_of_month(2025, 8, RecurringPattern.SECOND_SUNDAY)
         assert second_sun is not None
         assert second_sun.day == 10
         assert second_sun.weekday() == 6  # Sunday
 
         # August 2025: third Sunday is Aug 17
-        third_sun = extractor._get_nth_weekday_of_month(
-            2025, 8, RecurringPattern.THIRD_SUNDAY)
+        third_sun = extractor._get_nth_weekday_of_month(2025, 8, RecurringPattern.THIRD_SUNDAY)
         assert third_sun is not None
         assert third_sun.day == 17
         assert third_sun.weekday() == 6  # Sunday
@@ -108,8 +105,7 @@ recurring_events:
         assert len(events) > 0
 
         # Check first event properties
-        first_event = next(
-            (e for e in events if e.title == "Test Event"), None)
+        first_event = next((e for e in events if e.title == "Test Event"), None)
         assert isinstance(first_event, Event)
         assert first_event.source == "MAN"
         assert first_event.title == "Test Event"
@@ -132,8 +128,7 @@ recurring_events:
         # Check that start time is in UTC
         assert first_event.start.tzinfo == timezone.utc
 
-        second_event = next(
-            (e for e in events if e.title == "Bare Minimum Test Event"), None)
+        second_event = next((e for e in events if e.title == "Bare Minimum Test Event"), None)
 
         assert second_event is not None
         assert second_event.title == "Bare Minimum Test Event"
@@ -212,8 +207,7 @@ recurring_events: []
 
         # Test that we handle months where the nth occurrence doesn't exist
         # For example, there's no 5th Sunday in most months
-        result = extractor._get_nth_weekday_of_month(
-            2025, 2, RecurringPattern.FOURTH_SUNDAY)
+        result = extractor._get_nth_weekday_of_month(2025, 2, RecurringPattern.FOURTH_SUNDAY)
         # February 2025 only has 4 Sundays, so 4th should exist
         assert result is not None
 

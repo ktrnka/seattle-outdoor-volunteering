@@ -1,6 +1,6 @@
 import re
-from typing import List, Optional
 from datetime import timezone
+from typing import List, Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -8,8 +8,8 @@ from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from src.etl.date_utils import parse_range
 
+from ..models import SEATTLE_TZ, Event
 from .base import BaseListExtractor
-from ..models import Event, SEATTLE_TZ
 
 SPU_CLEANUP_URL = "https://www.seattle.gov/utilities/volunteer/all-hands-neighborhood-cleanup"
 

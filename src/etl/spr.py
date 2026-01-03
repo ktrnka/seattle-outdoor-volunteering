@@ -1,16 +1,17 @@
+import json
 import re
 import xml.etree.ElementTree as ET
-import json
 from datetime import timezone
 from typing import List, Optional, Tuple
+
 import requests
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from src.etl.date_utils import parse_range_single_string
 
+from ..models import SEATTLE_TZ, Event
 from .base import BaseListExtractor
 from .url_utils import normalize_url
-from ..models import Event, SEATTLE_TZ
 
 RSS_URL = "https://www.trumba.com/calendars/volunteer-1.rss"
 
