@@ -296,25 +296,41 @@ def event_type_stats():
 
 
 @dev.command()
-@click.argument("source", required=True)
+@click.option("--source", type=str, default=None, help="Filter by source (e.g., GSP, SPR, SPF)")
 @click.option("--canonical", is_flag=True, help="Show canonical events instead of source events")
 @click.option("--limit", default=20, help="Maximum number of events to show (default: 20)")
-def show_events(source: str, canonical: bool = False, limit: int = 20):
-    """Show events from a specific source (e.g., GSP, SPR, FRE)."""
+@click.option("--future", is_flag=True, help="Only show upcoming events")
+def show_events(source: Optional[str] = None, canonical: bool = False, limit: int = 20, future: bool = False):
+    """Show events from a specific source or all sources."""
+    from datetime import datetime, timezone
+    
     with database.Database() as db:
         if canonical:
             events = db.get_canonical_events()
-            # Filter canonical events that have the specified source
-            filtered_events = [e for e in events if any(source in unique_id for unique_id in e.source_events)]
+            # Filter canonical events by source if specified
+            if source:
+                filtered_events = [e for e in events if any(source in unique_id for unique_id in e.source_events)]
+            else:
+                filtered_events = events
             event_type = "canonical events"
         else:
             events = db.get_source_events()
-            # Filter source events by source
-            filtered_events = [e for e in events if e.source == source]
+            # Filter source events by source if specified
+            if source:
+                filtered_events = [e for e in events if e.source == source]
+            else:
+                filtered_events = events
             event_type = "source events"
 
+        # Filter for future events if requested
+        if future:
+            now = datetime.now(timezone.utc)
+            filtered_events = [e for e in filtered_events if e.start >= now]
+            event_type = f"upcoming {event_type}"
+
         if not filtered_events:
-            click.echo(f"No {event_type} found for source '{source}'")
+            source_msg = f" for source '{source}'" if source else ""
+            click.echo(f"No {event_type} found{source_msg}")
             return
 
         # Sort by start date
@@ -323,7 +339,8 @@ def show_events(source: str, canonical: bool = False, limit: int = 20):
         # Limit results
         display_events = filtered_events[:limit]
 
-        click.echo(f"Showing {len(display_events)} of {len(filtered_events)} {event_type} for source '{source}':")
+        source_msg = f" for source '{source}'" if source else ""
+        click.echo(f"Showing {len(display_events)} of {len(filtered_events)} {event_type}{source_msg}:")
         click.echo("=" * 60)
 
         for event in display_events:
