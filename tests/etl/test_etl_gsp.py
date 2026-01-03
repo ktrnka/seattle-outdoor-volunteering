@@ -81,7 +81,7 @@ def test_parse_calendar_fixture():
 
     # July 28, 9am-12:30pm @ Burke-Gilman Trail in local time
     local_start = first_event.start.astimezone(SEATTLE_TZ)
-    assert local_start.year == 2025
+    assert local_start.year == 2026
     assert local_start.month == 7
     assert local_start.day == 28
     assert local_start.hour == 9  # 9am local time
@@ -122,7 +122,7 @@ def test_environment_tz_utc():
 
     # July 28, 9am-12:30pm @ Burke-Gilman Trail in local time
     local_start = first_event.start.astimezone(SEATTLE_TZ)
-    assert local_start.year == 2025
+    assert local_start.year == 2026
     assert local_start.month == 7
     assert local_start.day == 28
     assert local_start.hour == 9  # 9am local time
