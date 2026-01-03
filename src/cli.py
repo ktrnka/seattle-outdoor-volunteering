@@ -79,6 +79,10 @@ def _fetch_spf_detail_pages(db, max_events: int = 5) -> FetchResult:
             error_count += 1
             click.echo(f"  ✗ Failed: {event.title} - {str(e)}")
 
+    # Record ETL run for observability
+    status = "success" if error_count == 0 else "failure"
+    db.record_etl_run(source="SPF_DETAILS", status=status, num_rows=success_count)
+    
     return FetchResult(success_count, error_count)
 
 
@@ -178,6 +182,10 @@ def _fetch_categorizations_impl(db, max_events: int = 50) -> FetchResult:
             error_count += 1
             # Continue processing other events
 
+    # Record ETL run for observability
+    status = "success" if error_count == 0 else "failure"
+    db.record_etl_run(source="LLM_CATEGORIZATION", status=status, num_rows=success_count)
+    
     return FetchResult(success_count, error_count)
 
 

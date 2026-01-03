@@ -4,6 +4,10 @@
 
 ### Completed
 - ✅ **SPF detail page enrichment**: Implemented incremental crawling of SPF detail pages to extract GSP URLs, enabling improved deduplication (2 pages enriched per day during ETL)
+- ✅ **Pipeline health tracking**: Added ETL run tracking for detail pages and LLM categorization as pseudo-sources (SPF_DETAILS, LLM_CATEGORIZATION) for frontend observability
+
+### Observability
+- **Commit SHA tracking**: Record git commit SHA in ETL runs to correlate failures with code changes vs data source changes
 
 ### 8/8
 - There are a number of dedupe issues remaining in cases where the duplicate events have different titles

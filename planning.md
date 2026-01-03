@@ -368,7 +368,34 @@ Add clear docstrings distinguishing:
    - Existing SPF and GSP detail extractors work with throttling ✅
    - Ready for future sources to use the same pattern ✅
 
-### 🔲 Phase 3 - TODO (Observability)
+### ✅ Phase 3 - COMPLETED
+
+**Changes made:**
+1. **Added ETL run tracking for enrichment stages**:
+   - `SPF_DETAILS` pseudo-source tracks detail page fetching success/failure
+   - `LLM_CATEGORIZATION` pseudo-source tracks LLM categorization success/failure
+   - Uses existing `etl_runs` table and infrastructure
+
+2. **Automatic frontend integration**:
+   - Pseudo-sources automatically appear in the 5-day freshness grid
+   - No frontend code changes needed
+   - Shows pipeline health at a glance
+
+3. **Benefits**:
+   - Can quickly identify when enrichment stages started failing
+   - Reuses existing observability infrastructure
+   - Stage-level granularity (listings, details, LLM, etc.)
+   - 5-day history for trend analysis
+
+4. **Future improvement noted in TODO**:
+   - Track git commit SHA to correlate failures with code vs data changes
+
+5. **Verified**:
+   - All 71 tests pass ✅
+   - Pipeline stages now record success/failure ✅
+   - Ready for production deployment ✅
+
+### 🔲 Phase 4 - TODO (Naming Improvements)
 
 ---
 
