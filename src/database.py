@@ -6,7 +6,7 @@ import shutil
 import sqlite3
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from sqlalchemy import DateTime, Float, Integer, PrimaryKeyConstraint, String, Text, create_engine, text
 from sqlalchemy.dialects.sqlite import insert
@@ -63,7 +63,9 @@ class Event(Base):
 
     __table_args__ = (PrimaryKeyConstraint("source", "source_id"),)
 
-    def to_pydantic(self, enrichment: Optional['EnrichedSourceEvent'] = None, detail_page_enrichment: Optional['DetailPageEnrichment'] = None) -> PydanticEvent:
+    def to_pydantic(
+        self, enrichment: Optional["EnrichedSourceEvent"] = None, detail_page_enrichment: Optional["DetailPageEnrichment"] = None
+    ) -> PydanticEvent:
         """Convert SQLAlchemy model to Pydantic model, optionally with enrichment data."""
         tags = [tag.strip() for tag in self.tags.split(",")] if self.tags else []
 
@@ -71,7 +73,7 @@ class Event(Base):
         llm_categorization = None
         if enrichment:
             from .models import LLMEventCategorization
-            
+
             llm_categorization_dict = json.loads(enrichment.llm_categorization)
             llm_categorization = LLMEventCategorization(**llm_categorization_dict)
 
@@ -79,7 +81,7 @@ class Event(Base):
         same_as = self.same_as
         if not same_as and detail_page_enrichment:
             detail_data = json.loads(detail_page_enrichment.enrichment_data)
-            website_url = detail_data.get('website_url')
+            website_url = detail_data.get("website_url")
             if website_url:
                 same_as = website_url
 
@@ -184,11 +186,11 @@ class EnrichedSourceEvent(Base):
     # Reference to source event (no formal FK for now)
     source: Mapped[str] = mapped_column(String, nullable=False)
     source_id: Mapped[str] = mapped_column(String, nullable=False)
-    
+
     # LLM results and metadata stored as JSON
     llm_categorization: Mapped[str] = mapped_column(Text, nullable=False)  # JSON string
     llm_request_metadata: Mapped[str] = mapped_column(Text, nullable=False)  # JSON string
-    
+
     # Processing metadata
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     processing_status: Mapped[str] = mapped_column(String, nullable=False)  # "success", "failed", "pending"
@@ -205,11 +207,11 @@ class DetailPageEnrichment(Base):
     # Reference to source event (no formal FK for now)
     source: Mapped[str] = mapped_column(String, nullable=False)
     source_id: Mapped[str] = mapped_column(String, nullable=False)
-    
+
     # Detail page crawl results stored as JSON
     detail_page_url: Mapped[str] = mapped_column(Text, nullable=False)  # URL that was crawled
     enrichment_data: Mapped[str] = mapped_column(Text, nullable=False)  # JSON string of extracted data
-    
+
     # Processing metadata
     fetched_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     processing_status: Mapped[str] = mapped_column(String, nullable=False)  # "success", "failed", "pending"
@@ -293,75 +295,69 @@ class Database:
         """Retrieve all events from the database sorted by start date."""
         if not self.session:
             raise NoSessionError()
-        
+
         # Join with detail page enrichments to get website URLs
         results = (
             self.session.query(Event, DetailPageEnrichment)
-            .outerjoin(DetailPageEnrichment,
-                      (Event.source == DetailPageEnrichment.source) &
-                      (Event.source_id == DetailPageEnrichment.source_id))
+            .outerjoin(DetailPageEnrichment, (Event.source == DetailPageEnrichment.source) & (Event.source_id == DetailPageEnrichment.source_id))
             .order_by(Event.start)
             .all()
         )
-        
+
         return [event.to_pydantic(detail_page_enrichment=detail_enrichment) for event, detail_enrichment in results]
-    
+
     def get_source_event(self, source: str, source_id: str) -> Optional[PydanticEvent]:
         """Retrieve a single event by source and source_id, with optional enrichment data."""
         if not self.session:
             raise NoSessionError()
-            
+
         # Try to get event with enrichment data first
         result = (
             self.session.query(Event, EnrichedSourceEvent)
-            .outerjoin(EnrichedSourceEvent, 
-                      (Event.source == EnrichedSourceEvent.source) & 
-                      (Event.source_id == EnrichedSourceEvent.source_id))
+            .outerjoin(EnrichedSourceEvent, (Event.source == EnrichedSourceEvent.source) & (Event.source_id == EnrichedSourceEvent.source_id))
             .filter(Event.source == source, Event.source_id == source_id)
             .first()
         )
-        
+
         if not result:
             return None
-            
+
         event, enrichment = result
         return event.to_pydantic(enrichment)
 
     def get_uncategorized_source_events(self, limit: int = 20) -> List[PydanticEvent]:
         """
         Retrieve source events that don't have enrichment data yet.
-        
+
         Returns:
             List of Events without llm_categorization
         """
         if not self.session:
             raise NoSessionError()
-            
+
         # Use left anti join to find events without enrichment
         results = (
             self.session.query(Event)
-            .outerjoin(EnrichedSourceEvent, 
-                      (Event.source == EnrichedSourceEvent.source) & 
-                      (Event.source_id == EnrichedSourceEvent.source_id))
+            .outerjoin(EnrichedSourceEvent, (Event.source == EnrichedSourceEvent.source) & (Event.source_id == EnrichedSourceEvent.source_id))
             .filter(EnrichedSourceEvent.source.is_(None))  # Anti join condition
             .order_by(Event.start)
             .limit(limit)
             .all()
         )
-        
+
         return [event.to_pydantic() for event in results]
 
     def store_event_enrichment(self, source: str, source_id: str, llm_categorization: LLMEventCategorization) -> None:
         """Store LLM enrichment data for a source event."""
         if not self.session:
             raise NoSessionError()
-        
+
         # Convert Pydantic model to JSON
         categorization_json = llm_categorization.model_dump_json()
-        
+
         # For now, use empty metadata
         metadata_json = json.dumps({})
-        
+
         # Create enrichment record
         enrichment_data = {
             "source": source,
@@ -372,13 +368,10 @@ class Database:
             "processing_status": "success",
             "error_message": None,
         }
-        
+
         # Use upsert to handle potential duplicates
         stmt = insert(EnrichedSourceEvent).values(**enrichment_data)
-        stmt = stmt.on_conflict_do_update(
-            index_elements=["source", "source_id"], 
-            set_=enrichment_data
-        )
+        stmt = stmt.on_conflict_do_update(index_elements=["source", "source_id"], set_=enrichment_data)
         self.session.execute(stmt)
 
         self.commit()
@@ -386,26 +379,24 @@ class Database:
     def get_unenriched_detail_page_events(self, source: str, limit: int = 20) -> List[PydanticEvent]:
         """
         Get upcoming source events that don't have detail page enrichment yet.
-        
+
         Args:
             source: Source to filter by (e.g., "SPF")
             limit: Maximum number of events to return
-            
+
         Returns:
             List of upcoming events without detail page enrichment, sorted by start date (soonest first)
         """
         if not self.session:
             raise NoSessionError()
-        
+
         now = datetime.now(timezone.utc)
-            
+
         # Left join with detail_page_enrichments and filter for nulls (anti-join)
         # Only include upcoming events, sorted by start date ascending
         results = (
             self.session.query(Event)
-            .outerjoin(DetailPageEnrichment,
-                      (Event.source == DetailPageEnrichment.source) &
-                      (Event.source_id == DetailPageEnrichment.source_id))
+            .outerjoin(DetailPageEnrichment, (Event.source == DetailPageEnrichment.source) & (Event.source_id == DetailPageEnrichment.source_id))
             .filter(Event.source == source)
             .filter(Event.start >= now)  # Only upcoming events
             .filter(DetailPageEnrichment.source.is_(None))  # Anti join condition
@@ -413,21 +404,15 @@ class Database:
             .limit(limit)
             .all()
         )
-        
+
         return [event.to_pydantic() for event in results]
 
     def store_detail_page_enrichment(
-        self, 
-        source: str, 
-        source_id: str, 
-        detail_page_url: str,
-        enrichment_data: dict,
-        status: str = "success",
-        error_message: Optional[str] = None
+        self, source: str, source_id: str, detail_page_url: str, enrichment_data: dict, status: str = "success", error_message: Optional[str] = None
     ) -> None:
         """
         Store detail page enrichment data for a source event.
-        
+
         Args:
             source: Event source (e.g., "SPF")
             source_id: Event source ID
@@ -438,10 +423,10 @@ class Database:
         """
         if not self.session:
             raise NoSessionError()
-        
+
         # Convert enrichment data dict to JSON
         enrichment_json = json.dumps(enrichment_data)
-        
+
         # Log what we're storing
         print(f"[store_detail_page_enrichment] Storing enrichment for {source}:{source_id}")
         print(f"  URL: {detail_page_url}")
@@ -451,7 +436,7 @@ class Database:
             print(f"  Data preview: {str(enrichment_data)[:200]}...")
         if error_message:
             print(f"  Error: {error_message}")
-        
+
         # Create enrichment record
         enrichment_record = {
             "source": source,
@@ -462,13 +447,10 @@ class Database:
             "processing_status": status,
             "error_message": error_message,
         }
-        
+
         # Use upsert to handle potential duplicates
         stmt = insert(DetailPageEnrichment).values(**enrichment_record)
-        stmt = stmt.on_conflict_do_update(
-            index_elements=["source", "source_id"], 
-            set_=enrichment_record
-        )
+        stmt = stmt.on_conflict_do_update(index_elements=["source", "source_id"], set_=enrichment_record)
         self.session.execute(stmt)
 
         self.commit()
@@ -604,7 +586,7 @@ class Database:
 
     def get_data_freshness_grid(self, days: int = 5) -> Dict[str, Dict[str, bool]]:
         """Get data freshness grid showing success/failure for each source by date.
-        
+
         Returns:
             Dict mapping source -> Dict mapping date string (YYYY-MM-DD) -> bool (success status)
         """
@@ -618,7 +600,7 @@ class Database:
         # Get all ETL runs in the date range
         start_datetime = datetime.combine(start_date, datetime.min.time(), timezone.utc)
         end_datetime = datetime.combine(end_date, datetime.max.time(), timezone.utc)
-        
+
         runs = (
             self.session.query(ETLRun)
             .filter(ETLRun.run_datetime >= start_datetime)
@@ -630,24 +612,24 @@ class Database:
         # Initialize grid with all dates and sources
         grid = {}
         all_sources = set()
-        
+
         # First pass: collect all sources
         for run in runs:
             all_sources.add(run.source)
-        
+
         # Initialize grid with False (no successful run) for all source/date combinations
         for source in all_sources:
             grid[source] = {}
             current_date = start_date
             while current_date <= end_date:
-                grid[source][current_date.strftime('%Y-%m-%d')] = False
+                grid[source][current_date.strftime("%Y-%m-%d")] = False
                 current_date += timedelta(days=1)
 
         # Second pass: mark successful runs
         for run in runs:
             if run.status == "success":
                 run_date = read_utc(run.run_datetime).date()
-                date_str = run_date.strftime('%Y-%m-%d')
+                date_str = run_date.strftime("%Y-%m-%d")
                 if run.source in grid and date_str in grid[run.source]:
                     grid[run.source][date_str] = True
 
@@ -715,6 +697,7 @@ class Database:
         except Exception:
             self.session.rollback()
             raise
+
 
 #### SEE IF I CAN DELETE THESE!
 

@@ -15,7 +15,7 @@ class TestEarthCorpsExtractor:
     def test_extract_events_from_august_2025(self):
         """Test extraction from August 2025 calendar HTML."""
         # Load fixture data
-        with open('tests/etl/data/earthcorps_calendar_2025_08.html', 'r') as f:
+        with open("tests/etl/data/earthcorps_calendar_2025_08.html", "r") as f:
             html_content = f.read()
 
         # Create extractor and extract events
@@ -31,8 +31,7 @@ class TestEarthCorpsExtractor:
         assert first_event.source_id == "a0EUh000002w9hhMAA"
         assert first_event.title == "Seattle: Kubota Garden"
         assert first_event.venue == "South Seattle"
-        assert str(
-            first_event.url) == "https://www.earthcorps.org/volunteer/event/a0EUh000002w9hhMAA"
+        assert str(first_event.url) == "https://www.earthcorps.org/volunteer/event/a0EUh000002w9hhMAA"
 
         # Check datetime (should be 10am Pacific converted to UTC)
         assert first_event.start.year == 2025
@@ -69,11 +68,12 @@ class TestEarthCorpsExtractor:
 
     def test_extract_year_month_from_navigation(self):
         """Test extracting year and month from navigation links."""
-        with open('tests/etl/data/earthcorps_calendar_2025_08.html', 'r') as f:
+        with open("tests/etl/data/earthcorps_calendar_2025_08.html", "r") as f:
             html_content = f.read()
 
         from bs4 import BeautifulSoup
-        soup = BeautifulSoup(html_content, 'html.parser')
+
+        soup = BeautifulSoup(html_content, "html.parser")
 
         extractor = EarthCorpsCalendarExtractor(html_content)
         year, month = extractor._extract_year_month(soup)
@@ -92,14 +92,13 @@ class TestEarthCorpsExtractor:
         assert venue1 == "Unknown"
 
         # Happy path
-        event_data4 = {"Name": "", "Region": "North Sound",
-                       "SubRegion": "Everett"}
+        event_data4 = {"Name": "", "Region": "North Sound", "SubRegion": "Everett"}
         venue4 = extractor._extract_venue(event_data4)
         assert venue4 == "Everett"
 
     def test_events_have_required_fields(self):
         """Test that all extracted events have required fields."""
-        with open('tests/etl/data/earthcorps_calendar_2025_08.html', 'r') as f:
+        with open("tests/etl/data/earthcorps_calendar_2025_08.html", "r") as f:
             html_content = f.read()
 
         extractor = EarthCorpsCalendarExtractor(html_content)
@@ -131,17 +130,15 @@ class TestEarthCorpsExtractor:
     def test_content_validation_with_real_calendar_page(self):
         """Test content validation against real EarthCorps calendar HTML."""
         # Load the real calendar fixture
-        with open('tests/etl/data/earthcorps_calendar_2025_08.html', 'r') as f:
+        with open("tests/etl/data/earthcorps_calendar_2025_08.html", "r") as f:
             html_content = f.read()
 
         # Create mock response
-        mock_response = MockResponse(
-            html_content, "https://www.earthcorps.org/volunteer/calendar/2025/8/")
+        mock_response = MockResponse(html_content, "https://www.earthcorps.org/volunteer/calendar/2025/8/")
 
         # Should not raise any exceptions
         try:
-            EarthCorpsCalendarExtractor.raise_for_missing_content(
-                mock_response)
+            EarthCorpsCalendarExtractor.raise_for_missing_content(mock_response)
         except Exception as e:
             assert False, f"Content validation failed on real calendar page: {e}"
 
@@ -158,12 +155,10 @@ class TestEarthCorpsExtractor:
         </html>
         """
 
-        mock_response = MockResponse(
-            cloudflare_html, "https://www.earthcorps.org/volunteer/calendar/2025/8/")
+        mock_response = MockResponse(cloudflare_html, "https://www.earthcorps.org/volunteer/calendar/2025/8/")
 
         try:
-            EarthCorpsCalendarExtractor.raise_for_missing_content(
-                mock_response)
+            EarthCorpsCalendarExtractor.raise_for_missing_content(mock_response)
             assert False, "Should have detected CloudFlare protection"
         except Exception as e:
             assert "Cloudflare protection detected" in str(e)
@@ -180,12 +175,10 @@ class TestEarthCorpsExtractor:
         </html>
         """
 
-        mock_response = MockResponse(
-            invalid_html, "https://www.earthcorps.org/volunteer/calendar/2025/8/")
+        mock_response = MockResponse(invalid_html, "https://www.earthcorps.org/volunteer/calendar/2025/8/")
 
         try:
-            EarthCorpsCalendarExtractor.raise_for_missing_content(
-                mock_response)
+            EarthCorpsCalendarExtractor.raise_for_missing_content(mock_response)
             assert False, "Should have detected missing events data"
         except Exception as e:
             assert "missing events data" in str(e)

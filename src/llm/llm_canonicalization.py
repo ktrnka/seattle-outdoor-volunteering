@@ -3,10 +3,8 @@ from typing import List, Literal
 
 from pydantic import BaseModel
 
-from .llm import get_client
-
 from ..models import CanonicalEvent, Event
-
+from .llm import get_client
 
 _SYSTEM = """
 You're an expert at canonicalizing events from multiple data sources, with some expertise in user experience and copy editing for clarity.

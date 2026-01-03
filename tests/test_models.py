@@ -1,6 +1,8 @@
 # tests/test_models.py
 from datetime import datetime, timezone
+
 from pydantic import HttpUrl
+
 from src.models import Event
 
 
@@ -8,9 +10,7 @@ def test_event_roundtrip():
     start = datetime(2025, 1, 1, 9, 0, 0, tzinfo=timezone.utc)
     end = datetime(2025, 1, 1, 11, 0, 0, tzinfo=timezone.utc)
 
-    e = Event(source="T", source_id="1", title="Test",
-              start=start, end=end,
-              url=HttpUrl("https://example.com"))
+    e = Event(source="T", source_id="1", title="Test", start=start, end=end, url=HttpUrl("https://example.com"))
     assert e.title == "Test"
 
 
@@ -20,13 +20,7 @@ def test_event_has_time_info():
     end = datetime(2024, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
 
     event = Event(
-        source="GSP",
-        source_id="test-123",
-        title="Test Event",
-        start=start,
-        end=end,
-        venue="Test Park",
-        url=HttpUrl("https://example.com/event/123")
+        source="GSP", source_id="test-123", title="Test Event", start=start, end=end, venue="Test Park", url=HttpUrl("https://example.com/event/123")
     )
 
     assert event.has_time_info() is True
@@ -38,6 +32,7 @@ def test_event_date_only():
     # Create a date-only event at midnight Seattle time, then convert to UTC
     # This matches how extractors now create date-only events
     from src.models import SEATTLE_TZ
+
     start_seattle = datetime(2024, 6, 15, 0, 0, 0, tzinfo=SEATTLE_TZ)
     start_utc = start_seattle.astimezone(timezone.utc)
     end_utc = start_utc
@@ -49,7 +44,7 @@ def test_event_date_only():
         start=start_utc,
         end=end_utc,
         venue="Test Park",
-        url=HttpUrl("https://example.com/event/123")
+        url=HttpUrl("https://example.com/event/123"),
     )
 
     assert event.has_time_info() is False

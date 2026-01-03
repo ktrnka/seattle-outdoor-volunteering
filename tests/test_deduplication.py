@@ -1,49 +1,45 @@
 """Tests for the new deduplication system."""
 
-from datetime import datetime, date
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 import pytest
 from pydantic import HttpUrl
 
-from src.models import Event
 from src.etl.deduplication import (
-    normalize_title,
-    group_events_by_title_and_date,
-    mode,
-    select_event_with_time_info,
-    is_gsp_url,
-    select_preferred_url,
-    generate_canonical_id,
     create_canonical_event,
     deduplicate_events,
+    generate_canonical_id,
+    group_events_by_title_and_date,
+    is_gsp_url,
+    mode,
+    normalize_title,
+    select_event_with_time_info,
+    select_preferred_url,
 )
+from src.models import Event
 
 # Test timezone
-SEATTLE_TZ = ZoneInfo('America/Los_Angeles')
-UTC = ZoneInfo('UTC')
+SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
+UTC = ZoneInfo("UTC")
 
 
 def test_normalize_title():
     """Test title normalization."""
     # Basic normalization
-    assert normalize_title(
-        "Volunteer Event at Green Lake") == "volunteer event at green lake"
+    assert normalize_title("Volunteer Event at Green Lake") == "volunteer event at green lake"
 
     # Remove punctuation
-    assert normalize_title(
-        "Work-Party: Restoration!") == "work party restoration"
+    assert normalize_title("Work-Party: Restoration!") == "work party restoration"
 
     # Multiple spaces
-    assert normalize_title(
-        "Event   with    extra   spaces") == "event with extra spaces"
+    assert normalize_title("Event   with    extra   spaces") == "event with extra spaces"
 
     # Strip whitespace
     assert normalize_title("  Event with padding  ") == "event with padding"
 
     # Mixed case and punctuation
-    assert normalize_title(
-        "Lincoln Park: Tree-Planting & Invasive Removal") == "lincoln park tree planting invasive removal"
+    assert normalize_title("Lincoln Park: Tree-Planting & Invasive Removal") == "lincoln park tree planting invasive removal"
 
 
 def test_smart_quotes_normalization():
@@ -51,9 +47,9 @@ def test_smart_quotes_normalization():
 
     # All these variations should normalize to the same string
     titles = [
-        "Heron s Nest Event",           # No quotes - baseline
-        "Heron's Nest Event",         # Regular apostrophe
-        "Heron's Nest Event",         # Smart quote/curly apostrophe (U+2019)
+        "Heron s Nest Event",  # No quotes - baseline
+        "Heron's Nest Event",  # Regular apostrophe
+        "Heron's Nest Event",  # Smart quote/curly apostrophe (U+2019)
         # HTML entity for smart quote - this is the problematic one from SPF
         "Heron&#8217;s Nest Event",
     ]
@@ -70,8 +66,7 @@ def test_smart_quotes_normalization():
         assert normalized == expected, f"Title {i} ({titles[i]!r}) normalized to {normalized!r}, expected {expected!r}"
 
     # All should be the same
-    assert len(set(normalized_titles)
-               ) == 1, f"All titles should normalize the same, got: {set(normalized_titles)}"
+    assert len(set(normalized_titles)) == 1, f"All titles should normalize the same, got: {set(normalized_titles)}"
 
 
 def test_group_events_by_title_and_date():
@@ -83,7 +78,7 @@ def test_group_events_by_title_and_date():
             title="Lincoln Park Work Party",
             start=datetime(2025, 7, 28, 10, 0, tzinfo=UTC),
             end=datetime(2025, 7, 28, 12, 0, tzinfo=UTC),
-            url=HttpUrl("https://spr.example.com/1")
+            url=HttpUrl("https://spr.example.com/1"),
         ),
         Event(
             source="GSP",
@@ -92,7 +87,7 @@ def test_group_events_by_title_and_date():
             # Same date, different time
             start=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
             end=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
-            url=HttpUrl("https://gsp.example.com/2")
+            url=HttpUrl("https://gsp.example.com/2"),
         ),
         Event(
             source="SPR",
@@ -100,7 +95,7 @@ def test_group_events_by_title_and_date():
             title="Green Lake Restoration",
             start=datetime(2025, 7, 29, 9, 0, tzinfo=UTC),  # Different date
             end=datetime(2025, 7, 29, 11, 0, tzinfo=UTC),
-            url=HttpUrl("https://spr.example.com/3")
+            url=HttpUrl("https://spr.example.com/3"),
         ),
     ]
 
@@ -144,7 +139,7 @@ def test_select_event_with_time_info():
         title="Test Event",
         start=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
         end=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
-        url=HttpUrl("https://example.com/1")
+        url=HttpUrl("https://example.com/1"),
     )
 
     # Event with time info
@@ -154,7 +149,7 @@ def test_select_event_with_time_info():
         title="Test Event",
         start=datetime(2025, 7, 28, 10, 0, tzinfo=UTC),
         end=datetime(2025, 7, 28, 12, 0, tzinfo=UTC),
-        url=HttpUrl("https://example.com/2")
+        url=HttpUrl("https://example.com/2"),
     )
 
     events = [date_only_event, timed_event]
@@ -185,7 +180,7 @@ def test_select_preferred_url():
             title="Test Event",
             start=datetime(2025, 7, 28, 10, 0, tzinfo=UTC),
             end=datetime(2025, 7, 28, 12, 0, tzinfo=UTC),
-            url=HttpUrl("https://seattle.gov/parks/event/1")
+            url=HttpUrl("https://seattle.gov/parks/event/1"),
         ),
         Event(
             source="GSP",
@@ -193,7 +188,7 @@ def test_select_preferred_url():
             title="Test Event",
             start=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
             end=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
-            url=HttpUrl("https://greenseattle.org/event/2")  # GSP URL
+            url=HttpUrl("https://greenseattle.org/event/2"),  # GSP URL
         ),
         Event(
             source="SPF",
@@ -201,7 +196,7 @@ def test_select_preferred_url():
             title="Test Event",
             start=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
             end=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
-            url=HttpUrl("https://seattle.gov/parks/event/1")  # Same as first
+            url=HttpUrl("https://seattle.gov/parks/event/1"),  # Same as first
         ),
     ]
 
@@ -244,7 +239,7 @@ def test_create_canonical_event():
             end=datetime(2025, 7, 28, 12, 0, tzinfo=UTC),
             url=HttpUrl("https://seattle.gov/parks/event/1"),
             venue="Lincoln Park",
-            cost="Free"
+            cost="Free",
         ),
         Event(
             source="GSP",
@@ -253,7 +248,7 @@ def test_create_canonical_event():
             start=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),  # Date-only
             end=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
             url=HttpUrl("https://greenseattle.org/event/2"),
-            venue="Lincoln Park"
+            venue="Lincoln Park",
         ),
     ]
 
@@ -291,7 +286,7 @@ def test_deduplicate_events():
             start=datetime(2025, 7, 28, 10, 0, tzinfo=UTC),
             end=datetime(2025, 7, 28, 12, 0, tzinfo=UTC),
             url=HttpUrl("https://seattle.gov/parks/event/1"),
-            venue="Lincoln Park"
+            venue="Lincoln Park",
         ),
         Event(
             source="GSP",
@@ -300,7 +295,7 @@ def test_deduplicate_events():
             start=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
             end=datetime(2025, 7, 28, 0, 0, tzinfo=UTC),
             url=HttpUrl("https://greenseattle.org/event/2"),
-            venue="Lincoln Park"
+            venue="Lincoln Park",
         ),
         Event(
             source="SPR",
@@ -309,7 +304,7 @@ def test_deduplicate_events():
             start=datetime(2025, 7, 29, 9, 0, tzinfo=UTC),
             end=datetime(2025, 7, 29, 11, 0, tzinfo=UTC),
             url=HttpUrl("https://seattle.gov/parks/event/3"),
-            venue="Green Lake Park"
+            venue="Green Lake Park",
         ),
     ]
 

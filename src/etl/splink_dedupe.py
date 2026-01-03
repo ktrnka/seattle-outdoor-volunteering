@@ -1,5 +1,6 @@
 from datetime import timezone
 from typing import Any, List, Optional
+
 import pandas as pd
 import splink.comparison_library as cl
 from splink import DuckDBAPI, Linker, SettingsCreator, block_on
@@ -7,8 +8,8 @@ from splink import DuckDBAPI, Linker, SettingsCreator, block_on
 from src.etl.deduplication import normalize_title
 
 from ..database import get_regular_connection
-from .url_utils import normalize_url
 from ..models import CanonicalEvent
+from .url_utils import normalize_url
 
 
 def create_url_list(*urls: Optional[str]) -> list[str]:
@@ -123,23 +124,23 @@ def mode(series: pd.Series) -> Optional[Any]:
 def aggregate_llm_categories(event_group: pd.DataFrame) -> List[str]:
     """
     Aggregate LLM categories from a group of events using majority vote.
-    
+
     Args:
         event_group: DataFrame containing events in the group
-        
+
     Returns:
         List of tags to include in canonical event
     """
     # Get non-null LLM categories
     llm_categories = event_group["llm_category"].dropna()
-    
+
     if llm_categories.empty:
         return []
-    
+
     # Count categories and get the most common one
     category_counts = llm_categories.value_counts()
     most_common_category = category_counts.index[0]
-    
+
     # Return as a list with the llm: prefix for clarity
     return [f"llm:{most_common_category}"]
 

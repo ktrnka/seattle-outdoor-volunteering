@@ -1,8 +1,6 @@
-import json
 import os
-import re
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta, date
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from time import tzset
 
@@ -55,7 +53,7 @@ def test_fremont_neighbor_parse_rss_structure():
     assert article is not None
     assert article.link
     assert article.pub_date
-    
+
     # Check if the first article is about the A.B. Ernst Park Cleanup
     assert "A.B. Ernst Park Cleanup" in article.title
     assert "Volunteering" in article.categories
@@ -208,4 +206,3 @@ def test_fremont_neighbor_llm_extraction_utc_environment():
     # Pacific Daylight Time is UTC-7 (negative 7 hours)
     expected_offset = timedelta(hours=-7)
     assert timezone_offset == expected_offset
-

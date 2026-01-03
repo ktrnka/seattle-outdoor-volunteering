@@ -1,15 +1,16 @@
 """New deduplication system using canonical events and grouping by normalized title/date."""
 
-import re
 import hashlib
 import html
+import re
 from collections import Counter, defaultdict
 from datetime import date
-from typing import Iterable, List, Dict, Optional, Tuple, TypeVar
+from typing import Dict, Iterable, List, Optional, Tuple, TypeVar
 from urllib.parse import urlparse
+
 from pydantic import HttpUrl
 
-from ..models import Event, CanonicalEvent
+from ..models import CanonicalEvent, Event
 
 
 def normalize_title(title: str) -> str:

@@ -1,6 +1,7 @@
 """URL normalization utilities for event deduplication."""
 
 from urllib.parse import urlparse, urlunparse
+
 from pydantic import HttpUrl
 
 

@@ -8,11 +8,11 @@ Event instances for upcoming occurrences of recurring events.
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional
+
 import yaml
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
-
-from ..models import Event, RecurringPattern, SEATTLE_TZ
+from ..models import SEATTLE_TZ, Event, RecurringPattern
 from .base import BaseListExtractor
 from .url_utils import normalize_url
 

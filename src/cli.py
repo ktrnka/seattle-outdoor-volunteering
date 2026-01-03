@@ -40,21 +40,21 @@ def init_db(reset: bool = False):
 def _enrich_spf_detail_pages(db, max_events: int = 2) -> tuple[int, int]:
     """Helper function to enrich SPF detail pages. Returns (success_count, error_count)."""
     from .etl.spf import SPFDetailExtractor
-    
+
     unenriched = db.get_unenriched_detail_page_events(source="SPF", limit=max_events)
     if not unenriched:
         click.echo("No unenriched SPF events found")
         return 0, 0
-    
+
     click.echo(f"Found {len(unenriched)} unenriched SPF events. Processing up to {max_events}...")
     success_count = 0
     error_count = 0
-    
+
     for event in unenriched:
         try:
             detail_extractor = SPFDetailExtractor.fetch(event.url)
             enrichment = detail_extractor.extract()
-            
+
             db.store_detail_page_enrichment(
                 source=event.source,
                 source_id=event.source_id,
@@ -75,7 +75,7 @@ def _enrich_spf_detail_pages(db, max_events: int = 2) -> tuple[int, int]:
             )
             error_count += 1
             click.echo(f"  ✗ Failed: {event.title} - {str(e)}")
-    
+
     return success_count, error_count
 
 
@@ -354,7 +354,7 @@ def event_type_stats():
 def show_events(source: Optional[str] = None, canonical: bool = False, limit: int = 20, future: bool = False):
     """Show events from a specific source or all sources."""
     from datetime import datetime, timezone
-    
+
     with database.Database() as db:
         if canonical:
             events = db.get_canonical_events()
@@ -450,43 +450,43 @@ def _display_llm_categorization(categorization, status_note: str = "") -> None:
 def enrich_source_events(max_events: int):
     """Categorize uncategorized source events with LLM, up to max_events."""
     from .llm.event_categorization import categorize_event as llm_categorize
-    
+
     with database.Database() as db:
         # Get uncategorized events
         uncategorized_events = db.get_uncategorized_source_events(limit=max_events)
-        
+
         if not uncategorized_events:
             click.echo("No uncategorized events found.")
             return
-            
+
         click.echo(f"Found {len(uncategorized_events)} uncategorized events. Processing up to {max_events}...")
-        
+
         success_count = 0
         error_count = 0
-        
+
         for i, event in enumerate(uncategorized_events, 1):
             click.echo(f"\n[{i}/{len(uncategorized_events)}] Processing: {event.title}")
             click.echo(f"  Source: {event.source}:{event.source_id}")
-            
+
             try:
                 categorization = llm_categorize(event)
-                
+
                 # Store the result in the database
                 db.store_event_enrichment(event.source, event.source_id, categorization)
-                
+
                 click.echo(f"  ✓ Categorized as: {categorization.category.value}")
                 if categorization.reasoning:
                     # Truncate reasoning for display
                     reasoning_preview = categorization.reasoning[:60] + "..." if len(categorization.reasoning) > 60 else categorization.reasoning
                     click.echo(f"  Reasoning: {reasoning_preview}")
-                
+
                 success_count += 1
-                
+
             except Exception as e:
                 click.echo(f"  ✗ Error: {str(e)}")
                 error_count += 1
                 # Continue processing other events
-                
+
         click.echo("\nProcessing complete:")
         click.echo(f"  Successfully categorized: {success_count}")
         click.echo(f"  Errors: {error_count}")
@@ -498,7 +498,7 @@ def enrich_detail_pages(max_events: int):
     """Fetch and parse SPF detail pages to get additional event data."""
     with database.Database() as db:
         success_count, error_count = _enrich_spf_detail_pages(db, max_events=max_events)
-        
+
         click.echo("\nProcessing complete:")
         click.echo(f"  Successfully enriched: {success_count}")
         click.echo(f"  Errors: {error_count}")

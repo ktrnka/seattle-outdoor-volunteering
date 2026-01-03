@@ -1,15 +1,16 @@
 import json
 import re
-from datetime import timezone, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
+
 import requests
 from bs4 import BeautifulSoup, Tag
 from dateutil import parser
 from pydantic import HttpUrl
 
+from ..models import SEATTLE_TZ, Event
 from .base import BaseListExtractor
 from .url_utils import normalize_url
-from ..models import Event, SEATTLE_TZ
 
 
 class EarthCorpsCalendarExtractor(BaseListExtractor):

@@ -273,13 +273,13 @@ class SPFDetailExtractor(BaseDetailExtractor):
 
     def extract(self) -> SPFDetailEnrichment:
         """Extract enrichment data from the detail page using CSS selectors.
-        
+
         Returns:
             SPFDetailEnrichment with:
             - website_url: The external website link (e.g., GSP event page)
         """
         soup = BeautifulSoup(self.raw_data, "html.parser")
-        
+
         website_url = None
         # Extract website URL from span.tribe-events-event-url > a
         website_elem = soup.select_one("span.tribe-events-event-url > a")
@@ -290,4 +290,3 @@ class SPFDetailExtractor(BaseDetailExtractor):
                 website_url = normalize_url(str(href))
 
         return SPFDetailEnrichment(website_url=website_url)
-
