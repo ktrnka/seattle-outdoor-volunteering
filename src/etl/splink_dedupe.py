@@ -35,12 +35,14 @@ def load_source_events() -> pd.DataFrame:
         DataFrame containing source events
     """
     sqlite_connection = get_regular_connection()
-    # Join with enrichment table to get LLM categorization
+    # Join with enrichment tables to get LLM categorization and detail page data
     query = """
     SELECT e.*, 
-           json_extract(ese.llm_categorization, '$.category') as llm_category
+           json_extract(ese.llm_categorization, '$.category') as llm_category,
+           json_extract(dpe.enrichment_data, '$.website_url') as website_url
     FROM events e
     LEFT JOIN enriched_source_events ese ON e.source = ese.source AND e.source_id = ese.source_id
+    LEFT JOIN detail_page_enrichments dpe ON e.source = dpe.source AND e.source_id = dpe.source_id
     """
     df = pd.read_sql_query(query, sqlite_connection, parse_dates=["start", "end"])
     df["normalized_title"] = df["title"].apply(normalize_title)
@@ -52,8 +54,8 @@ def load_source_events() -> pd.DataFrame:
     # Null out start_time if start and end are the same, so that it's ignored in exact matching in Splink
     df.loc[df["start"] == df["end"], "start_time"] = None
 
-    # Create a URL list col of URL and same_as
-    df["urls"] = df.apply(lambda row: create_url_list(row["url"], row["same_as"]), axis=1)
+    # Create a URL list col of URL, same_as, and website_url from detail page enrichment
+    df["urls"] = df.apply(lambda row: create_url_list(row["url"], row["same_as"], row["website_url"]), axis=1)
 
     # Special fields used by Splink
     df["source_dataset"] = df["source"]

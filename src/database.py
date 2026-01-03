@@ -63,7 +63,7 @@ class Event(Base):
 
     __table_args__ = (PrimaryKeyConstraint("source", "source_id"),)
 
-    def to_pydantic(self, enrichment: Optional['EnrichedSourceEvent'] = None) -> PydanticEvent:
+    def to_pydantic(self, enrichment: Optional['EnrichedSourceEvent'] = None, detail_page_enrichment: Optional['DetailPageEnrichment'] = None) -> PydanticEvent:
         """Convert SQLAlchemy model to Pydantic model, optionally with enrichment data."""
         tags = [tag.strip() for tag in self.tags.split(",")] if self.tags else []
 
@@ -74,6 +74,14 @@ class Event(Base):
             
             llm_categorization_dict = json.loads(enrichment.llm_categorization)
             llm_categorization = LLMEventCategorization(**llm_categorization_dict)
+
+        # Use same_as from Event, or fall back to website_url from detail page enrichment
+        same_as = self.same_as
+        if not same_as and detail_page_enrichment:
+            detail_data = json.loads(detail_page_enrichment.enrichment_data)
+            website_url = detail_data.get('website_url')
+            if website_url:
+                same_as = website_url
 
         return PydanticEvent(
             source=self.source,
@@ -88,7 +96,7 @@ class Event(Base):
             latitude=self.latitude,
             longitude=self.longitude,
             tags=tags,
-            same_as=self.same_as,  # type: ignore
+            same_as=same_as,  # type: ignore
             source_dict=self.source_dict,
             llm_categorization=llm_categorization,
         )
@@ -291,8 +299,18 @@ class Database:
         """Retrieve all events from the database sorted by start date."""
         if not self.session:
             raise NoSessionError()
-        events = self.session.query(Event).order_by(Event.start).all()
-        return [event.to_pydantic() for event in events]
+        
+        # Join with detail page enrichments to get website URLs
+        results = (
+            self.session.query(Event, DetailPageEnrichment)
+            .outerjoin(DetailPageEnrichment,
+                      (Event.source == DetailPageEnrichment.source) &
+                      (Event.source_id == DetailPageEnrichment.source_id))
+            .order_by(Event.start)
+            .all()
+        )
+        
+        return [event.to_pydantic(detail_page_enrichment=detail_enrichment) for event, detail_enrichment in results]
     
     def get_source_event(self, source: str, source_id: str) -> Optional[PydanticEvent]:
         """Retrieve a single event by source and source_id, with optional enrichment data."""
@@ -484,6 +502,44 @@ class Database:
 
         self.commit()
         print(f"[store_detail_page_enrichment] Successfully stored enrichment for {source}:{source_id}")
+
+    def get_detail_page_enriched_events(self, source: Optional[str] = None, limit: int = 20) -> List[tuple[PydanticEvent, dict]]:
+        """
+        Get source events that have detail page enrichment data.
+        
+        Args:
+            source: Optional source to filter by (e.g., "SPF")
+            limit: Maximum number of events to return
+            
+        Returns:
+            List of tuples: (Event, enrichment_data_dict)
+        """
+        if not self.session:
+            raise NoSessionError()
+            
+        # Join events with detail page enrichments
+        query = (
+            self.session.query(Event, DetailPageEnrichment)
+            .join(DetailPageEnrichment,
+                  (Event.source == DetailPageEnrichment.source) &
+                  (Event.source_id == DetailPageEnrichment.source_id))
+            .filter(DetailPageEnrichment.processing_status == "success")
+            .order_by(Event.start.desc())
+        )
+        
+        if source:
+            query = query.filter(Event.source == source)
+            
+        results = query.limit(limit).all()
+        
+        # Convert to list of (Event, enrichment_dict) tuples
+        output = []
+        for event, enrichment in results:
+            enrichment_dict = json.loads(enrichment.enrichment_data)
+            # Pass detail_page_enrichment to populate same_as field
+            output.append((event.to_pydantic(detail_page_enrichment=enrichment), enrichment_dict))
+        
+        return output
 
     def init_database(self, reset: bool = False):
         """Initialize the database by creating all tables."""

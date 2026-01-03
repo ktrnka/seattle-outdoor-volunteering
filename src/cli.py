@@ -585,6 +585,10 @@ def show_detail_enriched_events(source: Optional[str] = None, limit: int = 10):
                 click.echo(f"  {event.venue}")
             click.echo(f"  Source: {event.source}:{event.source_id}")
             
+            # Show same_as if populated (from detail page enrichment or original data)
+            if event.same_as:
+                click.echo(f"  same_as: {event.same_as}")
+            
             # Show enrichment data
             if enrichment_data:
                 click.echo(f"  Enrichment data:")
