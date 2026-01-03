@@ -37,6 +37,48 @@ def init_db(reset: bool = False):
         db.init_database(reset=reset)
 
 
+def _enrich_spf_detail_pages(db, max_events: int = 2) -> tuple[int, int]:
+    """Helper function to enrich SPF detail pages. Returns (success_count, error_count)."""
+    from .etl.spf import SPFDetailExtractor
+    
+    unenriched = db.get_unenriched_detail_page_events(source="SPF", limit=max_events)
+    if not unenriched:
+        click.echo("No unenriched SPF events found")
+        return 0, 0
+    
+    click.echo(f"Found {len(unenriched)} unenriched SPF events. Processing up to {max_events}...")
+    success_count = 0
+    error_count = 0
+    
+    for event in unenriched:
+        try:
+            detail_extractor = SPFDetailExtractor.fetch(event.url)
+            enrichment = detail_extractor.extract()
+            
+            db.store_detail_page_enrichment(
+                source=event.source,
+                source_id=event.source_id,
+                detail_page_url=event.url,
+                enrichment_data=enrichment.model_dump(exclude_none=True),
+                status="success",
+            )
+            success_count += 1
+            click.echo(f"  ✓ Enriched: {event.title}")
+        except Exception as e:
+            db.store_detail_page_enrichment(
+                source=event.source,
+                source_id=event.source_id,
+                detail_page_url=event.url,
+                enrichment_data={},
+                status="failed",
+                error_message=str(e),
+            )
+            error_count += 1
+            click.echo(f"  ✗ Failed: {event.title} - {str(e)}")
+    
+    return success_count, error_count
+
+
 @cli.command()
 @click.option("--only-run", type=str, help="Run only the specified extractor (e.g., SPU, GSP, SPR, SPF, DNDA, EarthCorps)")
 def etl(only_run: Optional[str] = None):
@@ -94,7 +136,16 @@ def etl(only_run: Optional[str] = None):
         click.echo("Saving new events to database...")
         db.upsert_source_events(source_events)
 
-        click.echo("ETL complete!")
+        # Enrich SPF detail pages (up to 2 per day)
+        click.echo("\nEnriching SPF detail pages...")
+        try:
+            success_count, error_count = _enrich_spf_detail_pages(db, max_events=2)
+            click.echo(f"Detail page enrichment complete: {success_count} successful, {error_count} errors")
+        except Exception as e:
+            click.echo(f"Error during detail page enrichment: {str(e)}")
+            traceback.print_exception(e)
+
+        click.echo("\nETL complete!")
 
 
 @cli.command()
@@ -499,71 +550,8 @@ def enrich_source_events(max_events: int):
 @click.option("--max", "max_events", type=int, default=1, help="Maximum events to process (default: 1)")
 def enrich_detail_pages(max_events: int):
     """Fetch and parse SPF detail pages to get additional event data."""
-    from .etl.spf import SPFDetailExtractor
-    
-    extractor_class = SPFDetailExtractor
-    source = extractor_class.source
-    
     with database.Database() as db:
-        # Get events without detail page enrichment
-        unenriched_events = db.get_unenriched_detail_page_events(source=source, limit=max_events)
-        
-        if not unenriched_events:
-            click.echo(f"No unenriched {source} events found.")
-            return
-        
-        click.echo(f"Found {len(unenriched_events)} unenriched {source} events. Processing up to {max_events}...")
-        
-        success_count = 0
-        error_count = 0
-        
-        for i, event in enumerate(unenriched_events, 1):
-            click.echo(f"\n[{i}/{len(unenriched_events)}] Processing: {event.title}")
-            click.echo(f"  Source: {event.source}:{event.source_id}")
-            click.echo(f"  URL: {event.url}")
-            
-            try:
-                # Fetch and extract detail page
-                detail_extractor = extractor_class.fetch(str(event.url))
-                enrichment = detail_extractor.extract()
-                
-                # Convert Pydantic model to dict for storage
-                enrichment_dict = enrichment.model_dump()
-                
-                # Store the result in the database
-                db.store_detail_page_enrichment(
-                    source=event.source,
-                    source_id=event.source_id,
-                    detail_page_url=str(event.url),
-                    enrichment_data=enrichment_dict,
-                    status="success"
-                )
-                
-                click.echo(f"  ✓ Enriched successfully")
-                # Show key extracted data
-                if hasattr(enrichment, 'website_url') and enrichment.website_url:
-                    click.echo(f"    Website: {enrichment.website_url}")
-                
-                success_count += 1
-                
-            except Exception as e:
-                click.echo(f"  ✗ Error: {str(e)}")
-                
-                # Store error in database
-                try:
-                    db.store_detail_page_enrichment(
-                        source=event.source,
-                        source_id=event.source_id,
-                        detail_page_url=str(event.url),
-                        enrichment_data={},
-                        status="failed",
-                        error_message=str(e)
-                    )
-                except Exception:
-                    pass  # Don't fail if we can't store the error
-                
-                error_count += 1
-                # Continue processing other events
+        success_count, error_count = _enrich_spf_detail_pages(db, max_events=max_events)
         
         click.echo("\nProcessing complete:")
         click.echo(f"  Successfully enriched: {success_count}")
