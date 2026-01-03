@@ -344,8 +344,9 @@ class GSPDetailPageExtractor(BaseDetailExtractor):
 
     @classmethod
     def fetch(cls, url: str) -> "GSPDetailPageExtractor":
-        """Fetch raw HTML from the detail page URL."""
-
-        response = requests.get(url, timeout=30)
+        """Fetch raw HTML from the detail page URL with automatic throttling."""
+        from .request_throttle import throttled_get
+        
+        response = throttled_get(url, delay_seconds=2.0, timeout=30)
         response.raise_for_status()
         return cls(url, response.text)

@@ -339,7 +339,36 @@ Add clear docstrings distinguishing:
    - CLI help shows all commands correctly ✅
    - Backward compatibility maintained ✅
 
-### 🔲 Phase 2 - TODO (Request Throttling)
+### ✅ Phase 2 - COMPLETED
+
+**Changes made:**
+1. **Created `request_throttle.py` module** with reusable throttling infrastructure:
+   - `RequestThrottle` class: Thread-safe singleton that tracks last request time per domain
+   - `throttled_get()` function: Drop-in replacement for `requests.get()` with automatic throttling
+   - Default 2-second delay between requests to the same domain
+
+2. **Integrated throttling into detail page extractors**:
+   - `SPFDetailExtractor.fetch()` - Now uses `throttled_get()` with 2-second delay
+   - `GSPDetailExtractor.fetch()` - Now uses `throttled_get()` with 2-second delay
+
+3. **Added comprehensive tests** (`test_request_throttle.py`):
+   - Test that delay is enforced between requests to same domain
+   - Test that different domains don't interfere with each other
+   - Test that same domain with different paths are throttled together
+   - Test domain extraction from URLs
+
+4. **Benefits**:
+   - Automatically respects rate limits (2 seconds between requests per domain)
+   - Reusable for any future detail page extractors
+   - Thread-safe for potential concurrent requests
+   - Zero changes needed in CLI code - throttling is encapsulated in extractors
+
+5. **Verified**:
+   - All 73 tests pass (including 4 new throttle tests) ✅
+   - Existing SPF and GSP detail extractors work with throttling ✅
+   - Ready for future sources to use the same pattern ✅
+
+### 🔲 Phase 3 - TODO (Observability)
 
 ---
 
