@@ -552,6 +552,8 @@ class Database:
                 session.query(CanonicalEvent).delete()
                 session.query(EventGroupMembership).delete()
                 session.query(ETLRun).delete()
+                session.query(EnrichedSourceEvent).delete()
+                session.query(DetailPageEnrichment).delete()
                 session.commit()
 
     def upsert_source_events(self, events: List[PydanticEvent]):

@@ -2,6 +2,9 @@
 
 ## Short-Term
 
+### Completed
+- ✅ **SPF detail page enrichment**: Implemented incremental crawling of SPF detail pages to extract GSP URLs, enabling improved deduplication (2 pages enriched per day during ETL)
+
 ### 8/8
 - There are a number of dedupe issues remaining in cases where the duplicate events have different titles
 
@@ -37,7 +40,7 @@
 - **Facebook Groups**:
   - Sparkling Wallingford: https://www.facebook.com/groups/1192189949067573/events
   - We Heart Seattle cleanups: https://www.facebook.com/groups/weheartseattle/events
-- **Incremental crawling of detail pages**: Fill in missing details for events, enriching the data, and unlocking a click-to-expand feature for more information
+- **Incremental crawling of detail pages for other sources**: Expand detail page enrichment pattern to GSP, SPR, etc.
 - Other
   - https://www.seattlegreenways.org/get-involved/upcoming-events/
 
