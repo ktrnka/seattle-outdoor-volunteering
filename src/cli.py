@@ -87,7 +87,6 @@ def _fetch_spf_detail_pages(db, max_events: int = 5) -> FetchResult:
 
 
 def _fetch_listings_impl(db, source: Optional[str] = None) -> int:
-    """Fetch event listings from all sources or a specific source."""
     # Map extractor names to classes
     extractor_map = {
         "GSP": GSPCalendarExtractor,
@@ -144,7 +143,6 @@ def _fetch_listings_impl(db, source: Optional[str] = None) -> int:
 
 
 def _fetch_categorizations_impl(db, max_events: int = 50) -> FetchResult:
-    """Categorize uncategorized events using LLM."""
     from .llm.event_categorization import categorize_event as llm_categorize
 
     # Get uncategorized events

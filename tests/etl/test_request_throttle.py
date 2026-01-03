@@ -8,7 +8,6 @@ from src.etl.request_throttle import RequestThrottle
 
 
 def test_throttle_enforces_delay():
-    """Test that throttle enforces minimum delay between requests."""
     throttle = RequestThrottle()
     
     url = "https://example.com/page1"
@@ -33,7 +32,6 @@ def test_throttle_enforces_delay():
 
 
 def test_throttle_invalid_url():
-    """Test that invalid URLs raise an error."""
     throttle = RequestThrottle()
     
     with pytest.raises(ValueError, match="Cannot extract domain"):

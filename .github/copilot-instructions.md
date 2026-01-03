@@ -105,6 +105,34 @@ Enrichment data (detail pages, LLM categorization) improves matching accuracy by
 - Use static methods for utility functions that don't need instance state
 - Add tests for at least one success and one failure case for each new feature
 
+### Documentation & Clarity
+**Philosophy**: Code should be self-documenting through clear naming and typing. Documentation is code that must be maintained—keep it minimal and valuable.
+
+**When to add documentation:**
+- **Discoverability**: When common search terms differ from the chosen names (e.g., "rate limit" vs "throttle")
+- **Non-obvious intentions**: When the implementation strategy or design choice isn't clear from the code alone
+- **Subtle interactions**: When components interact in ways that aren't obvious from reading either in isolation
+- **Complex algorithms**: When the logic requires understanding context not visible in the function
+
+**When to avoid documentation:**
+- Restating what the code clearly shows (e.g., "Increments counter by 1" for `counter += 1`)
+- Describing types already in the signature
+- Documenting obvious parameter meanings
+- Repeating function names in different words
+
+**Example of good documentation:**
+```python
+def wait_if_needed(self, url: str, delay_seconds: float = 2.0) -> None:
+    """Sleep if needed to respect per-domain rate limits."""
+    # Note: "rate limits" helps discoverability for those searching that term
+```
+
+**Example of unnecessary documentation:**
+```python
+def _extract_domain(url: str) -> str:
+    """Extract domain from URL."""  # ← Restates the function name
+```
+
 ## Development Workflows
 
 ### Local Development
