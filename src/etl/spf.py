@@ -266,10 +266,11 @@ class SPFDetailExtractor(BaseDetailExtractor):
 
     @classmethod
     def fetch(cls, url: str) -> "SPFDetailExtractor":
-        """Fetch raw HTML from the detail page URL."""
-        # TODO: Handle requests like the other ones
-        html = requests.get(url, timeout=30).text
-        return cls(url, html)
+        """Fetch raw HTML from the detail page URL with automatic throttling."""
+        from .request_throttle import throttled_get
+        
+        response = throttled_get(url, delay_seconds=2.0, timeout=30)
+        return cls(url, response.text)
 
     def extract(self) -> SPFDetailEnrichment:
         """Extract enrichment data from the detail page using CSS selectors.

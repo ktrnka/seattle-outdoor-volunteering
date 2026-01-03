@@ -4,12 +4,23 @@
 An ETL pipeline that scrapes Seattle-area outdoor volunteer events into a SQLite database and generates a static website with PicoCSS. Events are fetched nightly via GitHub Actions and served through GitHub Pages.
 
 ## Interaction Guidelines
-- When making design decisions that will significantly affect future development, consider how it will fit into the long-term vision and ask for feedback on the approach.
-- If instructions don't seem feasible (e.g., extracting data that doesn't exist in the source, conflicting requirements), stop development and ask for guidance rather than making assumptions. Clear communication prevents wasted effort and ensures the right solution.
-- **For bug reports and data quality issues**: Always start with TDD - create a failing test that reproduces the problem before attempting any fixes
-- **For new features**: Ask whether to use TDD or implement directly, depending on complexity and risk
-- **For complex integrations**: Start with a 5-minute architecture discussion before coding.
-- After completing a major feature or refactor, do a small post-mortem. Reflect on what went well and what could be improved. Then consider some small incremental changes to our development process that might improve our workflow. Then review them with me and collaborate to update the copilot instructions.
+
+**Goal**: Enable smooth, reliable development by catching misunderstandings early and making changes incrementally.
+
+**Clarify before building:**
+- When requirements are ambiguous, ask targeted questions to understand intent before implementing
+- Ask questions **one at a time** - this catches misconceptions early rather than after reading 10+ questions
+- If infeasible or conflicting, stop and ask rather than making assumptions
+
+**Work incrementally:**
+- Make changes in small, logical steps that can be independently accepted/reverted
+- Test after each significant change to maintain confidence
+- For bug fixes: Start with TDD (failing test first)
+- For new features: Ask whether to use TDD based on complexity
+
+**Learn and improve:**
+- After major features/refactors: Reflect on what worked, propose small process improvements
+- Update these instructions collaboratively to reduce repeated guidance across sessions
 
 ## Architecture & Data Flow
 ```
@@ -105,6 +116,34 @@ Enrichment data (detail pages, LLM categorization) improves matching accuracy by
 - Use static methods for utility functions that don't need instance state
 - Add tests for at least one success and one failure case for each new feature
 
+### Documentation & Clarity
+**Philosophy**: Code should be self-documenting through clear naming and typing. Documentation is code that must be maintained—keep it minimal and valuable.
+
+**When to add documentation:**
+- **Discoverability**: When common search terms differ from the chosen names (e.g., "rate limit" vs "throttle")
+- **Non-obvious intentions**: When the implementation strategy or design choice isn't clear from the code alone
+- **Subtle interactions**: When components interact in ways that aren't obvious from reading either in isolation
+- **Complex algorithms**: When the logic requires understanding context not visible in the function
+
+**When to avoid documentation:**
+- Restating what the code clearly shows (e.g., "Increments counter by 1" for `counter += 1`)
+- Describing types already in the signature
+- Documenting obvious parameter meanings
+- Repeating function names in different words
+
+**Example of good documentation:**
+```python
+def wait_if_needed(self, url: str, delay_seconds: float = 2.0) -> None:
+    """Sleep if needed to respect per-domain rate limits."""
+    # Note: "rate limits" helps discoverability for those searching that term
+```
+
+**Example of unnecessary documentation:**
+```python
+def _extract_domain(url: str) -> str:
+    """Extract domain from URL."""  # ← Restates the function name
+```
+
 ## Development Workflows
 
 ### Local Development
@@ -117,7 +156,7 @@ uv sync --all-extras
 uv run seattle-volunteering init-db
 
 # Run full ETL pipeline
-uv run seattle-volunteering etl
+uv run seattle-volunteering pipeline
 
 # Generate site only
 uv run seattle-volunteering build-site
@@ -126,39 +165,24 @@ uv run seattle-volunteering build-site
 ### Testing
 Tests use data in `tests/etl/data/` with real HTML/XML samples. Run with `uv run pytest`.
 
-**Test-Driven Development Workflow:**
-- **Bug fixes**: Start by creating a test that reproduces the bug, then fix it
-- **Feature development**: Write tests with mock/fixture data before implementing network calls
-- **Use realistic test data**: Save actual API responses, HTML pages, etc. to `tests/etl/data/`
-- **Test both success and failure**: Include malformed data to test error handling
-
-**Integration Testing:**
-- Use `uv run seattle-volunteering etl` to test the full pipeline with live data
-- This verifies all extractors work together and shows actual event counts
-- Compare output before/after changes to ensure improvements work as expected
-
 **Test Data Management:**
 - Save real examples: `curl` actual API responses/HTML pages to `tests/etl/data/`
 - Create edge case fixtures: Invalid dates, malformed HTML, empty responses
 - Use descriptive filenames: `gsp_api_invalid_date.json`, `spr_rss_missing_datetime.xml`
 
-### Adding New Data Sources
-1. **Download example data**: If possible, download an example file (HTML, XML, JSON) with curl to `tests/etl/data/` for LLM inspection and unit testing
-2. Create extractor in `src/etl/new_source.py` inheriting from `BaseExtractor`
-3. **Test-driven development**: Write and iterate on tests using the fixture data until extraction rules work correctly - this avoids slow/flaky network requests and changing data
-4. After the extraction is working, then implement the actual network request in the extractor based on any CURL examples or API documentation
-5. Add to extractor list in `src/cli.py:etl()`
-6. Test by running the ETL with `uv run seattle-volunteering etl --only-run new_source`
-7. Update `DATA_SOURCES.md` status table
+**Integration Testing:**
+- Use `uv run seattle-volunteering pipeline` to test the full pipeline with live data
+- Use `uv run seattle-volunteering fetch-listings --source X` to test a single source
+- Compare output before/after changes to ensure improvements work as expected
 
-### Bug Fixing Protocol
-**Always start with a failing test when fixing bugs:**
-1. **Reproduce first**: Create test data that reproduces the reported issue
-2. **Verify the bug**: Write a test that fails in the expected way
-3. **Understand the root cause**: Use the test to understand why it's failing
-4. **Fix minimally**: Make the smallest change possible to make the test pass
-5. **Verify comprehensively**: Run all tests to ensure no regressions
-6. **Log appropriately**: Add clear error messages for dropped/invalid data
+### Adding New Data Sources
+1. Download example data with curl to `tests/etl/data/` for inspection and unit testing
+2. Create extractor in `src/etl/new_source.py` inheriting from `BaseExtractor`
+3. Write tests using fixture data until extraction works correctly
+4. Implement network request in extractor
+5. Add to `extractor_map` in `src/cli.py:_fetch_listings_impl()`
+6. Test with `uv run seattle-volunteering fetch-listings --source new_source`
+7. Update `DATA_SOURCES.md` status table
 
 ## File Structure Notes
 - CLI entry point: `src/cli.py` with Click commands

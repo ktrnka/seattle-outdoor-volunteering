@@ -25,22 +25,10 @@ jobs:
     - name: Install the project
       run: uv sync --locked
     
-    - name: Ingest new data
-      run: uv run seattle-volunteering etl
+    - name: Run ETL pipeline
+      run: uv run seattle-volunteering pipeline
       env:
         GITHUB_TOKEN: ${{ github.token }}
-
-    - name: Enrich events with LLM categorization
-      run: uv run seattle-volunteering dev enrich-source-events 50
-      continue-on-error: true
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-
-    - name: Merge duplicate events
-      run: uv run seattle-volunteering deduplicate
-    
-    - name: Generate site
-      run: uv run seattle-volunteering build-site
     
     - name: Commit DB and site
       uses: EndBug/add-and-commit@v9
