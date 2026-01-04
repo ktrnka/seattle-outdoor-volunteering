@@ -6,8 +6,10 @@ import shutil
 import sqlite3
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional
+from pathlib import Path
+from typing import Dict, List, Optional, Union
 
+from pydantic import HttpUrl
 from sqlalchemy import DateTime, Float, Integer, PrimaryKeyConstraint, String, Text, create_engine, text
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Mapped, Session, declarative_base, mapped_column, object_session, sessionmaker
@@ -237,20 +239,25 @@ def ensure_database_exists() -> None:
 class Database:
     """Context manager for database operations that handles compression/decompression."""
 
-    def __init__(self, compress_on_exit: bool = True):
+    def __init__(self, compress_on_exit: bool = True, db_path: Optional[Path] = DB_PATH, db_gz_path: Optional[Path] = DB_GZ):
         self.session: Optional[Session] = None
         self.engine = None
         self.compress_on_exit = compress_on_exit
         self.initial_data_version = None
+        self.db_path = db_path
+        self.db_gz_path = db_gz_path
 
     def __enter__(self):
         """Enter the context manager: decompress DB, create engine and session."""
         # Ensure database exists (decompresses if needed)
-        # TODO: Use a mkstemp file
-        ensure_database_exists()
+        if not self.db_path.exists() and self.db_gz_path.exists():
+            print(f"Extracting {self.db_gz_path} to {self.db_path}")
+            with gzip.open(self.db_gz_path, "rb") as f_in:
+                with open(self.db_path, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
 
         # Create engine and session
-        self.engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
+        self.engine = create_engine(f"sqlite:///{self.db_path}", echo=False)
         SessionLocal = sessionmaker(bind=self.engine)
         self.session = SessionLocal()
 
@@ -280,8 +287,8 @@ class Database:
 
             # Only recompress if database changed and compression is enabled
             if self.compress_on_exit and self._save_needed:
-                print(f"Recompressing database to {DB_GZ}")
-                with open(DB_PATH, "rb") as src, gzip.open(DB_GZ, "wb") as dst:
+                print(f"Recompressing database to {self.db_gz_path}")
+                with open(self.db_path, "rb") as src, gzip.open(self.db_gz_path, "wb") as dst:
                     shutil.copyfileobj(src, dst)
 
     def get_data_version(self) -> int:
@@ -408,7 +415,7 @@ class Database:
         return [event.to_pydantic() for event in results]
 
     def store_detail_page_enrichment(
-        self, source: str, source_id: str, detail_page_url: str, enrichment_data: dict, status: str = "success", error_message: Optional[str] = None
+        self, source: str, source_id: str, detail_page_url: Union[str, HttpUrl], enrichment_data: dict, status: str = "success", error_message: Optional[str] = None
     ) -> None:
         """
         Store detail page enrichment data for a source event.
@@ -416,13 +423,17 @@ class Database:
         Args:
             source: Event source (e.g., "SPF")
             source_id: Event source ID
-            detail_page_url: URL that was crawled
+            detail_page_url: URL that was crawled (str or HttpUrl)
             enrichment_data: Dictionary of extracted data
             status: Processing status ("success", "failed", "pending")
             error_message: Error details if failed
         """
         if not self.session:
             raise NoSessionError()
+
+        # Convert HttpUrl to string if needed
+        if isinstance(detail_page_url, HttpUrl):
+            detail_page_url = str(detail_page_url)
 
         # Convert enrichment data dict to JSON
         enrichment_json = json.dumps(enrichment_data)

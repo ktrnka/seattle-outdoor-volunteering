@@ -6,6 +6,7 @@ from typing import Optional
 import click
 
 from . import database
+from .database import Database
 from .etl.deduplication import deduplicate_events
 from .etl.dnda import DNDAExtractor
 from .etl.earthcorps import EarthCorpsCalendarExtractor
@@ -40,7 +41,7 @@ def init_db(reset: bool = False):
 FetchResult = namedtuple("FetchResult", ["success", "error"])
 
 
-def _fetch_spf_detail_pages(db, max_events: int = 5) -> FetchResult:
+def _fetch_spf_detail_pages(db: Database, max_events: int = 5) -> FetchResult:
     """Fetch detail pages for SPF events to get additional data like GSP URLs."""
     from .etl.spf import SPFDetailExtractor
 
@@ -55,7 +56,7 @@ def _fetch_spf_detail_pages(db, max_events: int = 5) -> FetchResult:
 
     for event in unenriched:
         try:
-            detail_extractor = SPFDetailExtractor.fetch(event.url)
+            detail_extractor = SPFDetailExtractor.fetch(str(event.url))
             enrichment = detail_extractor.extract()
 
             db.store_detail_page_enrichment(
