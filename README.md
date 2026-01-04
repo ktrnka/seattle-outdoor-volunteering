@@ -1,6 +1,6 @@
 # Seattle Outdoor Volunteering
 
-Aggregates Seattle-area outdoor volunteer events and publishes them at [seattlevolunteering.com](https://seattlevolunteering.com).
+Aggregates Seattle-area outdoor volunteer events and publishes them at [ktrnka.github.io/seattle-outdoor-volunteering](https://ktrnka.github.io/seattle-outdoor-volunteering/).
 
 ## Quick Start
 
