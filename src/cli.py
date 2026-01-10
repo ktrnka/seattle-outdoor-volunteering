@@ -1,9 +1,11 @@
+from datetime import timedelta
 import traceback
 from collections import Counter, namedtuple
 from pathlib import Path
 from typing import Optional
 
 import click
+from requests import ConnectTimeout
 
 from . import database
 from .database import Database
@@ -577,6 +579,35 @@ def enrich_detail_pages(max_events: int):
         click.echo("\nProcessing complete:")
         click.echo(f"  Successfully enriched: {result.success}")
         click.echo(f"  Errors: {result.error}")
+
+@dev.command()
+def test_gsp_redirect():
+    # URL with a known redirect to DNDA (which is currently down)
+    url = "https://seattle.greencitypartnerships.org/event/42851/"
+
+    # URL without a redirect
+    # https://seattle.greencitypartnerships.org/event/42911
+
+    import requests
+
+    try:
+        response = requests.get(url, allow_redirects=False, timeout=5)
+        click.echo(f"Final URL after redirects: {response.url}")
+        click.echo(f"Status code: {response.status_code}")
+
+        if response.is_redirect:
+            click.echo(f"Redirect header location: {response.headers.get('Location')}")
+            click.echo(f"All headers: {response.headers}")
+            click.echo(f"Response content: {response.text}")
+    except ConnectTimeout as e:
+        click.echo(f"Connection timed out: {str(e)}")
+        click.echo(f"Response field: {e.response}")
+        
+    # What GSP redirects to:
+    # 1. Redirects to add a slash if not present already
+    # 2. Redirects to https://dnda.org/dnda-nature/volunteer/
+
+    # The actual DNDA event page is: https://dnda.org/calendar/volunteer-event-744-312
 
 
 # Add the dev group to the main CLI
