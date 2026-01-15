@@ -46,9 +46,6 @@ def _fetch_spf_detail_pages(db: Database, max_events: int = 5) -> FetchResult:
     from .etl.spf import SPFDetailExtractor
 
     unenriched = db.get_unenriched_detail_page_events(source="SPF", limit=max_events)
-    if not unenriched:
-        click.echo("No unenriched SPF events found")
-        return FetchResult(0, 0)
 
     click.echo(f"Found {len(unenriched)} unenriched SPF events. Processing up to {max_events}...")
     success_count = 0
