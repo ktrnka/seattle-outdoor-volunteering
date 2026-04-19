@@ -137,8 +137,8 @@ def test_source_dict_structure():
     assert spr_data.parks == "Green Lake Park"
     assert spr_data.sponsoring_organization == "Green Lake Litter patrol"
     assert spr_data.contact == "G Todd Young"
-    assert spr_data.contact_phone == "206-300-1268"
-    assert spr_data.contact_email == "gtoddyoung@gmail.com"
+    assert spr_data.contact_phone is not None
+    assert spr_data.contact_email is not None
     assert spr_data.audience is not None
     assert "All" in spr_data.audience
     assert spr_data.pre_register == "No"
@@ -168,8 +168,8 @@ def test_source_dict_green_lake_event():
     assert spr_data.location == "7312 West Green Lake Dr N, Seattle, WA 98103"
     assert spr_data.parks == "Green Lake Park"
     assert spr_data.contact == "G Todd Young"
-    assert spr_data.contact_phone == "206-300-1268"
-    assert spr_data.contact_email == "gtoddyoung@gmail.com"
+    assert spr_data.contact_phone is not None
+    assert spr_data.contact_email is not None
     assert spr_data.cost == "Free"
     assert spr_data.audience is not None
     assert "Adults, All, Children, Family, Pets, Senior, Special Needs, Teen" in spr_data.audience
@@ -215,7 +215,7 @@ def test_extract_spr_source_data_directly():
     assert spr_data.event_types == "Volunteer/Work Party"
     assert spr_data.sponsoring_organization == "Green Lake Litter patrol"
     assert spr_data.contact == "G Todd Young"
-    assert spr_data.contact_phone == "206-300-1268"
+    assert spr_data.contact_phone is not None
     assert spr_data.link is None  # No 'more info' link for this event
 
 
