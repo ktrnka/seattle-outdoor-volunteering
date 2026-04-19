@@ -29,17 +29,17 @@ def test_parse_fixture():
     assert first_event.url
 
     # Verify the first event matches our RSS fixture
-    assert first_event.title == "Preparing for Fall Planting"
-    assert first_event.address == "5921 Aurora Ave N, Seattle, WA 98103"
-    assert first_event.same_as == HttpUrl("https://seattle.greencitypartnerships.org/event/42030")
+    assert first_event.title == "Green Lake Litter Patrol"
+    assert first_event.address == "7312 West Green Lake Dr N, Seattle, WA 98103"
+    assert first_event.same_as is None  # No x-trumba:weblink for this event
 
-    # Sunday, July 27, 2025, 8&amp;nbsp;&amp;ndash;&amp;nbsp;11am
+    # Sunday, April 19, 2026, 8:45–11am
     local_start = first_event.start.astimezone(SEATTLE_TZ)
-    assert local_start.year == 2025
-    assert local_start.month == 7
-    assert local_start.day == 27
+    assert local_start.year == 2026
+    assert local_start.month == 4
+    assert local_start.day == 19
     assert local_start.hour == 8  # 8am local time
-    assert local_start.minute == 0
+    assert local_start.minute == 45
 
     local_end = first_event.end.astimezone(SEATTLE_TZ)
     assert local_end.hour == 11  # 11am local time
@@ -47,16 +47,16 @@ def test_parse_fixture():
 
     # Verify URL format
     assert "trumbaEmbed" in str(first_event.url)
-    assert "187593769" in str(first_event.url)  # source_id should be in URL
+    assert "180079866" in str(first_event.url)  # source_id should be in URL
 
     # Check tags/categories
     assert first_event.tags is not None
     assert any("Volunteer" in tag for tag in first_event.tags) or any("Work Party" in tag for tag in first_event.tags)
-    assert "Green Seattle Partnership" in first_event.tags
+    assert "Green Lake Litter patrol" in first_event.tags
 
     # Verify venue extraction
     assert first_event.venue is not None
-    assert "Woodland Park" in first_event.venue
+    assert "Green Lake Park" in first_event.venue
 
 
 def test_parse_multiple_events():
@@ -131,20 +131,21 @@ def test_source_dict_structure():
     spr_data = SPRSourceData(**source_data)
 
     # Check key fields are populated
-    assert spr_data.title == "Preparing for Fall Planting"
-    assert spr_data.location == "5921 Aurora Ave N, Seattle, WA 98103"
+    assert spr_data.title == "Green Lake Litter Patrol"
+    assert spr_data.location == "7312 West Green Lake Dr N, Seattle, WA 98103"
     assert spr_data.event_types == "Volunteer/Work Party"
-    assert spr_data.neighborhoods == "Greenwood/Phinney Ridge"
-    assert spr_data.sponsoring_organization == "Green Seattle Partnership"
-    assert spr_data.contact == "Greg Netols"
-    assert spr_data.contact_phone == "2243889145"
-    assert spr_data.contact_email == "gregnetols@gmail.com"
-    assert spr_data.audience == "All"
+    assert spr_data.parks == "Green Lake Park"
+    assert spr_data.sponsoring_organization == "Green Lake Litter patrol"
+    assert spr_data.contact == "G Todd Young"
+    assert spr_data.contact_phone == "206-300-1268"
+    assert spr_data.contact_email == "gtoddyoung@gmail.com"
+    assert spr_data.audience is not None
+    assert "All" in spr_data.audience
     assert spr_data.pre_register == "No"
-    assert spr_data.link == "http://seattle.greencitypartnerships.org/event/42030/"
+    assert spr_data.cost == "Free"
 
     # Check that description contains the main event text
-    assert "Join us for a restoration work party at Woodland Park" in spr_data.description
+    assert "Bath House Theater" in spr_data.description
 
 
 def test_source_dict_green_lake_event():
@@ -209,13 +210,13 @@ def test_extract_spr_source_data_directly():
 
     # Verify it's a valid SPRSourceData instance
     assert isinstance(spr_data, SPRSourceData)
-    assert spr_data.title == "Preparing for Fall Planting"
-    assert spr_data.location == "5921 Aurora Ave N, Seattle, WA 98103"
+    assert spr_data.title == "Green Lake Litter Patrol"
+    assert spr_data.location == "7312 West Green Lake Dr N, Seattle, WA 98103"
     assert spr_data.event_types == "Volunteer/Work Party"
-    assert spr_data.neighborhoods == "Greenwood/Phinney Ridge"
-    assert spr_data.sponsoring_organization == "Green Seattle Partnership"
-    assert spr_data.contact == "Greg Netols"
-    assert spr_data.link == "http://seattle.greencitypartnerships.org/event/42030/"
+    assert spr_data.sponsoring_organization == "Green Lake Litter patrol"
+    assert spr_data.contact == "G Todd Young"
+    assert spr_data.contact_phone == "206-300-1268"
+    assert spr_data.link is None  # No 'more info' link for this event
 
 
 def test_address_parsing_different_formats():
@@ -226,30 +227,39 @@ def test_address_parsing_different_formats():
 
     # Find events with different address formats
 
-    # Format 1: Single line address (standard format)
-    standard_format_event = next((e for e in events if "Preparing for Fall Planting" in e.title), None)
+    # Format 1: Single line street address (standard format)
+    standard_format_event = next((e for e in events if "Green Lake Litter Patrol" in e.title), None)
     assert standard_format_event is not None
-    assert standard_format_event.address == "5921 Aurora Ave N, Seattle, WA 98103"
+    assert standard_format_event.address == "7312 West Green Lake Dr N, Seattle, WA 98103"
 
-    # Format 2: Multi-line address format
-    # Look for the "Volunteer Work Party" event which has the multi-line format
-    multiline_format_event = next((e for e in events if "Volunteer Work Party" in e.title and "Ballard" in str(e.venue or "")), None)
-    assert multiline_format_event is not None
-    assert multiline_format_event.address is not None
-    # Should combine the park name, street address, and city/state into one address
-    assert "Ballard Corners Park" in multiline_format_event.address
-    assert "1702 NW 62nd St" in multiline_format_event.address
-    assert "Seattle, WA 98107" in multiline_format_event.address
+    # Format 2: Date-first format (no address in description, date is first line)
+    date_first_event = next((e for e in events if "Sturtevant Ravine" in e.title), None)
+    assert date_first_event is not None
+    assert date_first_event.address is not None
 
-    # Verify that both events have valid dates/times (not defaulted values)
+    # Verify that both events have valid dates/times
     from src.models import SEATTLE_TZ
 
     standard_local = standard_format_event.start.astimezone(SEATTLE_TZ)
-    multiline_local = multiline_format_event.start.astimezone(SEATTLE_TZ)
+    date_first_local = date_first_event.start.astimezone(SEATTLE_TZ)
 
-    # Both should have reasonable start times (not the default 9am fallback)
-    assert standard_local.hour == 8  # 8am
-    assert multiline_local.hour == 10  # 10am
+    assert standard_local.hour == 8  # 8:45am rounds to hour 8
+    assert standard_local.minute == 45
+    assert date_first_local.hour == 9  # 9am
+
+
+def test_skips_events_without_parseable_time():
+    """Test that events with no parseable time (e.g. date-only descriptions) are skipped gracefully."""
+    rss_content = (data_path / "spr_volunteer.rss").read_text()
+    extractor = SPRExtractor(rss_content)
+    events = extractor.extract()
+
+    # Syttende Mai Parade has a date-only line (no time), so it should be skipped
+    syttende_mai = next((e for e in events if "Syttende" in e.title), None)
+    assert syttende_mai is None, "Event with unparseable datetime should be skipped"
+
+    # Other events should still be extracted
+    assert len(events) >= 3
 
 
 def test_clean_html():
