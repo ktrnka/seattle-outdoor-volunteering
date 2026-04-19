@@ -239,7 +239,7 @@ def ensure_database_exists() -> None:
 class Database:
     """Context manager for database operations that handles compression/decompression."""
 
-    def __init__(self, compress_on_exit: bool = True, db_path: Optional[Path] = DB_PATH, db_gz_path: Optional[Path] = DB_GZ):
+    def __init__(self, compress_on_exit: bool = True, db_path: Path = DB_PATH, db_gz_path: Path = DB_GZ):
         self.session: Optional[Session] = None
         self.engine = None
         self.compress_on_exit = compress_on_exit
