@@ -1,0 +1,11 @@
+# Investigate potential database wipe during local development
+
+During local development, the SQLite database (`data/events.sqlite`) appears to be getting wiped or partially wiped. 
+
+**Suspected Causes:**
+1. **Compression/Decompression Logic**: The `Database` context manager in `src/database.py` only extracts `events.sqlite.gz` if the uncompressed file does NOT exist. If an old, partially populated `events.sqlite` is present, it prevents a fresh extraction even if the compressed version is newer.
+2. **Date/Timezone Conflicts**: Suspected differences between local and GitHub Actions (UTC) environments might be affecting deduplication or event filtering.
+
+**Proposed Next Steps:**
+- Update `Database.__enter__` to check if the compressed database is newer than the extracted one.
+- Verify timezone handling in extractors.
