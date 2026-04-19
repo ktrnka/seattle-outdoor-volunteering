@@ -521,7 +521,7 @@ class Database:
         events = self.session.query(CanonicalEvent).order_by(CanonicalEvent.start).all()
         return [event.to_pydantic() for event in events]
 
-    def get_future_canonical_events(self) -> List[PydanticCanonicalEvent]:
+    def get_upcoming_canonical_events(self) -> List[PydanticCanonicalEvent]:
         """Retrieve canonical events starting within the next two months."""
         if not self.session:
             raise NoSessionError()

@@ -11,7 +11,7 @@ from ..models import SEATTLE_TZ
 def build(output_dir: Path):
     # Get future canonical events (already deduplicated)
     with Database() as db:
-        canonical_events = db.get_future_canonical_events()
+        canonical_events = db.get_upcoming_canonical_events()
 
         # Convert events to dict format for template compatibility
         event_dicts = []
