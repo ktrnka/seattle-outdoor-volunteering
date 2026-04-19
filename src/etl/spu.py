@@ -67,6 +67,8 @@ class SPUExtractor(BaseListExtractor):
         try:
             # Extract raw data from cells
             date = cells[0].get_text(strip=True)
+            # Normalize missing comma between day-of-week and month (e.g. "SundayAugust 9" → "Sunday, August 9")
+            date = re.sub(r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)(?=[A-Z])", r"\1, ", date)
             neighborhood = cells[1].get_text(strip=True)
 
             # Extract location information from the location cell

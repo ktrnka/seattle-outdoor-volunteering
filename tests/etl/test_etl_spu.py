@@ -146,8 +146,27 @@ def test_extract_spu_source_event_directly():
         assert spu_data.start_time, "Should have start_time"
 
 
+def test_date_missing_comma_normalized():
+    """Test that dates like 'SundayAugust 9' (missing comma) are normalized and parsed correctly."""
+    html = """
+    <html><body><table><tbody>
+    <tr>
+        <th>SundayAugust 9, 2026</th>
+        <td>Othello</td>
+        <td>Othello Park</td>
+        <td>10 am – 12 pm</td>
+    </tr>
+    </tbody></table></body></html>
+    """
+    extractor = SPUExtractor(html)
+    events = extractor.extract()
+    assert len(events) == 1, "Should parse the event despite missing comma in date"
+    assert "Othello" in events[0].title
+
+
 if __name__ == "__main__":
     test_spu_extractor()
     test_source_dict_structure()
     test_source_dict_event_with_address()
     test_extract_spu_source_event_directly()
+    test_date_missing_comma_normalized()
