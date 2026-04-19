@@ -227,9 +227,14 @@ class NoSessionError(RuntimeError):
         super().__init__(message)
 
 
+def _gz_is_newer(db_path: Path, db_gz_path: Path) -> bool:
+    """Return True if the gz is newer than the uncompressed db (e.g. after a git pull)."""
+    return db_gz_path.stat().st_mtime > db_path.stat().st_mtime
+
+
 def ensure_database_exists() -> None:
     """Ensure the uncompressed database exists by extracting from gzipped version if needed."""
-    if not DB_PATH.exists() and DB_GZ.exists():
+    if DB_GZ.exists() and (not DB_PATH.exists() or _gz_is_newer(DB_PATH, DB_GZ)):
         print(f"Extracting {DB_GZ} to {DB_PATH}")
         with gzip.open(DB_GZ, "rb") as f_in:
             with open(DB_PATH, "wb") as f_out:
@@ -249,8 +254,8 @@ class Database:
 
     def __enter__(self):
         """Enter the context manager: decompress DB, create engine and session."""
-        # Ensure database exists (decompresses if needed)
-        if not self.db_path.exists() and self.db_gz_path.exists():
+        # Ensure database exists (decompresses if needed, or if gz was updated e.g. via git pull)
+        if self.db_gz_path.exists() and (not self.db_path.exists() or _gz_is_newer(self.db_path, self.db_gz_path)):
             print(f"Extracting {self.db_gz_path} to {self.db_path}")
             with gzip.open(self.db_gz_path, "rb") as f_in:
                 with open(self.db_path, "wb") as f_out:
@@ -720,23 +725,18 @@ class Database:
 
 
 def get_engine():
-    """Create and return a SQLAlchemy engine for the SQLite database."""
+    """Used as a raw engine for init database"""
     ensure_database_exists()
     return create_engine(f"sqlite:///{DB_PATH}", echo=False)
 
 
 def get_session() -> Session:
-    """Create and return a SQLAlchemy session."""
+    """Used as a raw session for init database"""
     engine = get_engine()
     SessionLocal = sessionmaker(bind=engine)
     return SessionLocal()
 
 
-def get_connection():
-    """Get a connection to the database."""
-    engine = get_engine()
-    return engine.connect()
-
-
 def get_regular_connection():
+    """Used as a raw connection by Splink dedupe"""
     return sqlite3.connect(DB_PATH)
