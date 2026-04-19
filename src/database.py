@@ -522,13 +522,19 @@ class Database:
         return [event.to_pydantic() for event in events]
 
     def get_future_canonical_events(self) -> List[PydanticCanonicalEvent]:
-        """Retrieve canonical events that haven't ended yet."""
+        """Retrieve canonical events starting within the next two months."""
         if not self.session:
             raise NoSessionError()
 
         # TODO: Merge with get_canonical_events
         now = datetime.now(timezone.utc)
-        events = self.session.query(CanonicalEvent).filter(CanonicalEvent.end >= now).order_by(CanonicalEvent.start).all()
+        two_months_out = now + timedelta(days=62)
+        events = (
+            self.session.query(CanonicalEvent)
+            .filter(CanonicalEvent.end >= now, CanonicalEvent.start <= two_months_out)
+            .order_by(CanonicalEvent.start)
+            .all()
+        )
         return [event.to_pydantic() for event in events]
 
     def get_source_events_by_canonical_id(self, canonical_id: str) -> List[PydanticEvent]:
