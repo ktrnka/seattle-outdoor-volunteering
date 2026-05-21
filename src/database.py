@@ -1,8 +1,6 @@
 """Database module using SQLAlchemy for managing the events database."""
 
-import gzip
 import json
-import shutil
 import sqlite3
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -15,7 +13,7 @@ from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Mapped, Session, declarative_base, mapped_column, object_session, sessionmaker
 from sqlalchemy.sql import func
 
-from .config import DB_GZ, DB_PATH
+from .config import DB_PATH
 from .models import (
     CanonicalEvent as PydanticCanonicalEvent,
 )
@@ -227,74 +225,28 @@ class NoSessionError(RuntimeError):
         super().__init__(message)
 
 
-def _gz_is_newer(db_path: Path, db_gz_path: Path) -> bool:
-    """Return True if the gz is newer than the uncompressed db (e.g. after a git pull)."""
-    return db_gz_path.stat().st_mtime > db_path.stat().st_mtime
-
-
-def ensure_database_exists() -> None:
-    """Ensure the uncompressed database exists by extracting from gzipped version if needed."""
-    if DB_GZ.exists() and (not DB_PATH.exists() or _gz_is_newer(DB_PATH, DB_GZ)):
-        print(f"Extracting {DB_GZ} to {DB_PATH}")
-        with gzip.open(DB_GZ, "rb") as f_in:
-            with open(DB_PATH, "wb") as f_out:
-                shutil.copyfileobj(f_in, f_out)
-
 
 class Database:
-    """Context manager for database operations that handles compression/decompression."""
+    """Context manager for database operations."""
 
-    def __init__(self, compress_on_exit: bool = True, db_path: Path = DB_PATH, db_gz_path: Path = DB_GZ):
+    def __init__(self, db_path: Path = DB_PATH):
         self.session: Optional[Session] = None
         self.engine = None
-        self.compress_on_exit = compress_on_exit
-        self.initial_data_version = None
         self.db_path = db_path
-        self.db_gz_path = db_gz_path
 
     def __enter__(self):
-        """Enter the context manager: decompress DB, create engine and session."""
-        # Ensure database exists (decompresses if needed, or if gz was updated e.g. via git pull)
-        if self.db_gz_path.exists() and (not self.db_path.exists() or _gz_is_newer(self.db_path, self.db_gz_path)):
-            print(f"Extracting {self.db_gz_path} to {self.db_path}")
-            with gzip.open(self.db_gz_path, "rb") as f_in:
-                with open(self.db_path, "wb") as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-
-        # Create engine and session
         self.engine = create_engine(f"sqlite:///{self.db_path}", echo=False)
         SessionLocal = sessionmaker(bind=self.engine)
         self.session = SessionLocal()
-
-        # Get the initial user_version to detect changes later
-        self.initial_data_version = self.get_data_version()
-        self._save_needed = False
-
         return self
 
     def __exit__(self, exc_type, exc_val, _exc_tb):
-        """Exit the context manager: close session and recompress DB if changed."""
-        print("Database.__exit__")
         if self.session:
             if exc_type is not None:
-                # If there was an exception, rollback the session
-                print(f"Rolling back database session due to error: {exc_val}")
                 self.session.rollback()
             else:
-                # If no exception, commit any pending changes
                 self.session.commit()
-
-            db_changed = self.get_data_version() != self.initial_data_version
-            print(f"Database changed? {db_changed}")
-            print(f"self._save_needed: {self._save_needed}")
-
             self.session.close()
-
-            # Only recompress if database changed and compression is enabled
-            if self.compress_on_exit and self._save_needed:
-                print(f"Recompressing database to {self.db_gz_path}")
-                with open(self.db_path, "rb") as src, gzip.open(self.db_gz_path, "wb") as dst:
-                    shutil.copyfileobj(src, dst)
 
     def get_data_version(self) -> int:
         """Get the current data version from the database."""
@@ -709,13 +661,11 @@ class Database:
         self.commit()
 
     def commit(self):
-        """Commit the current session and flag that we need to save changes."""
         if not self.session:
             raise NoSessionError()
 
         try:
             self.session.commit()
-            self._save_needed = True
         except Exception:
             self.session.rollback()
             raise
@@ -726,7 +676,6 @@ class Database:
 
 def get_engine():
     """Used as a raw engine for init database"""
-    ensure_database_exists()
     return create_engine(f"sqlite:///{DB_PATH}", echo=False)
 
 

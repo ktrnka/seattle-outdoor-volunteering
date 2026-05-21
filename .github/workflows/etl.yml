@@ -33,5 +33,5 @@ jobs:
     - name: Commit DB and site
       uses: EndBug/add-and-commit@290ea2c423ad77ca9c62ae0f5b224379612c0321 # v10.0.0
       with:
-        add: 'data/events.sqlite.gz docs/index.html'
+        add: 'data/events.sqlite docs/index.html'
         message: 'chore(data): nightly DB and site update'
