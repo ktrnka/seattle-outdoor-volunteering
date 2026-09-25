@@ -1,0 +1,59 @@
+id_l,id_r,is_duplicate,title_l,title_r,start_l,start_r,note
+GSP:40700,SPF:east-duwamish-work-party-22,yes,East Duwamish Work Party,East Duwamish Work Party,2025-10-18 17:00,2025-10-18 17:00,
+GSP:43230,SPR:194367052,no,Forest Restoration,Forest Restoration - Longfellow Creek at Graham Street,2026-01-24 18:00,2026-01-24 18:00,"SPR is giving an error now, but these are different ones. The former is Woodland Park"
+GSP:43359,SPR:196748154,yes,Sturtevant Ravine Work Party!,Sturtevant Ravine Work Party!,2026-02-14 17:00,2026-02-14 17:00,
+DNDA:9109,GSP:44130,yes,Forest Restoration at EC Hughes,EC Hughes Restoration Event,2026-07-21 16:30,2026-07-21 17:00,
+DNDA:9229,GSP:44508,yes,Forest Restoration at Duwamish Head Greenbelt,Duwamish Head Greenbelt Restoration,2026-09-29 17:00,2026-09-29 17:00,
+DNDA:7961,SPF:pigeon-point-park-restoration-event-44,yes,Forest Restoration at Pigeon Point Park,Pigeon Point Park Restoration Event,2025-08-30 17:00,2025-08-30 17:00,
+SPF:3rd-saturday-forest-restoration-at-jackson-park-trail-21,SPR:179761811,yes,3rd Saturday forest restoration at Jackson Park Trail!,3rd Saturday forest restoration at Jackson Park Trail!,2025-11-15 18:00,2025-11-15 18:00,
+DNDA:8363,GSP:42929,yes,Forest Restoration at Pigeon Point Park,Pigeon Point Park Restoration Event,2026-02-28 18:00,2026-02-28 18:00,
+GSP:44944,SPR:209131480,no,Preparing for Planting,Prepping for planting One.,2026-10-10 16:30,2026-10-10 17:00,These are different. The SPR one has a GSP link underneath and it links to a different event at a different location
+DNDA:9182,SPR:205922408,yes,Forest Restoration at EC Hughes,EC Hughes Restoration Event,2026-08-15 16:30,2026-08-15 16:30,
+DNDA:7956,GSP:42060,yes,Forest Restoration at Pigeon Point Park,Pigeon Point Park Restoration Event,2025-08-09 17:00,2025-08-09 17:00,
+DNDA:9190,SPR:205922410,yes,Forest Restoration at Greg Davis Park,Greg Davis Park Forest Restoration,2026-08-22 17:00,2026-08-22 16:30,
+SPF:carkeek-stars-work-party-18,SPR:188990561,yes,Carkeek STARS Work Party,Carkeek STARS Work Party,2025-10-18 16:00,2025-10-18 16:00,
+DNDA:9112,GSP:44126,yes,Forest Restoration in the West Duwamish Greenbelt — EVENT FULL,West Duwamish Greenbelt Restoration Event,2026-07-09 16:30,2026-07-09 16:30,
+GSP:43218,SPR:198494499,no,Carkeek STARS Work Party,Work Party,2026-03-21 16:00,2026-03-21 17:00,
+DNDA:8368,SPF:holden-forest-restoration-event-5,unsure,Forest Restoration at Webster Pond — EVENT FULL,Holden Forest Restoration Event,2026-02-14 18:00,2026-02-14 18:00,I can't check - SPF expires their old listigns
+GSP:42083,SPF:east-duwamish-work-party-21,no,Carkeek STARS Work Party,East Duwamish Work Party,2025-09-20 16:00,2025-09-20 17:00,
+GSP:42284,SPR:181490095,unsure,Habitat Restoration on Lake Washington Blvd,Join EarthCorps on Lake Washington Blvd!,2025-10-04 16:00,2025-10-04 17:00,I'm really not sure!
+GSP:42493,SPF:community-forest-restoration-event-3,no,Pigeon Point Park Restoration Event,Community Forest Restoration Event,2025-10-11 17:00,2025-10-11 17:00,
+DNDA:8327,GSP:42855,no,Forest Restoration at 29th Ave Pocket Forest — EVENT FULL,Longfellow Creek GS Restoration Event,2026-01-31 18:00,2026-01-31 18:00,
+SPF:east-duwamish-work-party-27,SPR:195966711,no,East Duwamish Work Party,Carkeek STARS Work Party,2026-03-21 17:00,2026-03-21 16:00,
+SPF:pigeon-point-park-restoration-event-58,SPR:195099764,no,Pigeon Point Park Restoration Event,North Genesee Forest Restoration,2026-03-28 17:00,2026-03-28 17:00,
+GSP:42817,SPR:195099763,no,Forest Restoration - Longfellow Creek at Graham Street,North Genesee Forest Restoration,2026-02-28 18:00,2026-02-28 18:00,
+GSP:40699,SPF:carkeek-stars-work-party-17,no,East Duwamish Work Party,Carkeek STARS Work Party,2025-09-20 17:00,2025-09-20 16:00,
+GSP:42014,SPR:187593775,no,Roxhill Restoration,EC Hughes Restoration Event,2025-08-16 17:00,2025-08-16 17:00,
+GSP:43568,SPF:earth-day-community-restoration-event,yes,Pigeon Point Park Restoration Event,Earth Day Community Restoration Event,2026-04-22 17:00,2026-04-22 17:00,Probably the same - GSP redirects to DNDA homepage (not an event page). SPF is a dead page now
+DNDA:7992,SPF:community-forest-restoration-event-2,no,Forest Restoration at Brandon Street Natural Area – CANCELLED,Community Forest Restoration Event,2025-09-27 17:00,2025-09-27 17:00,
+GSP:43029,SPF:pigeon-point-park-restoration-event-58,no,North Genesee Forest Restoration,Pigeon Point Park Restoration Event,2026-03-28 17:00,2026-03-28 17:00,
+GSP:41220,SPR:181490095,yes,Join EarthCorps on Lake Washington Blvd!,Join EarthCorps on Lake Washington Blvd!,2025-10-04 17:00,2025-10-04 17:00,
+GSP:43820,SPF:south-meadow-blackberry-purge-16,yes,South Meadow Blackberry Purge,South Meadow Blackberry Purge,2026-04-18 16:30,2026-04-18 16:30,
+SPF:south-meadow-blackberry-purge-14,SPR:198238803,yes,South Meadow Blackberry Purge,South Meadow Blackberry Purge,2026-03-07 17:30,2026-03-07 17:30,
+DNDA:8325,GSP:42879,yes,Forest Restoration at Thistle Street Greenspace,Thistle Street Greenspace Restoration Event,2026-01-27 18:00,2026-01-27 18:00,
+GSP:44213,SPR:204517127,yes,Leschi-Lake Dell Natural Area,Leschi-Lake Dell Natural Area,2026-07-11 17:00,2026-07-11 17:00,
+GSP:43272,SPR:196748124,yes,Magnuson Reforestation,Magnuson Reforestation,2026-02-01 18:00,2026-02-01 18:00,
+SPF:orchard-street-ravine-work-party-19,SPR:196748115,yes,Orchard Street Ravine Work Party,Orchard Street Ravine Work Party,2026-06-13 17:00,2026-06-13 17:00,
+GSP:43183,SPR:195966700,yes,3rd Saturday forest restoration at Jackson Park Trail!,3rd Saturday forest restoration at Jackson Park Trail!,2026-05-16 17:00,2026-05-16 17:00,
+GSP:43723,SPR:200144803,yes,Second Reunion Bird Walk with Woody Wheeler on the Burke-Gilman Trail,Second Reunion Bird Walk with Woody Wheeler on the Burke-Gilman Trail,2026-04-26 14:00,2026-04-26 14:00,
+GSP:44612,SPR:207247714,yes,Daybreak Community & Land Tending,Daybreak Community & Land Tending,2026-09-25 18:00,2026-09-25 18:00,
+SPF:green-seattle-day-at-harrison-ridge-greenbelt,SPR:190437691,no,Green Seattle Day at Harrison Ridge Greenbelt,Green Seattle Day at Westcrest Park,2025-10-25 17:00,2025-10-25 17:00,
+SPF:green-seattle-day-at-lincoln-park-2,SPR:190437698,no,Green Seattle Day at Lincoln Park,Green Seattle Day at Green Lake,2025-10-25 16:00,2025-10-25 16:00,
+GSP:42323,SPF:green-seattle-day-2025,no,Green Seattle Day on the Burke-Gilman Trail,Green Seattle Day 2025,2025-10-25 16:30,2025-10-25 7:00,
+GSP:42244,SPR:190437691,no,Green Seattle Day at Kubota Gardens Natural Area with Partner in Employment!,Green Seattle Day at Westcrest Park,2025-10-25 17:00,2025-10-25 17:00,
+GSP:42244,SPF:green-seattle-day-2025,no,Green Seattle Day at Kubota Gardens Natural Area with Partner in Employment!,Green Seattle Day 2025,2025-10-25 17:00,2025-10-25 7:00,
+GSP:42374,SPF:green-seattle-day-at-green-lake,no,Green Seattle Day at Daybreak Star: Forest Garden Plant Welcoming & Spooky Stories that will LEAF chills down your spine!,Green Seattle Day at Green Lake,2025-10-25 19:00,2025-10-25 16:00,
+SPR:194367044,SPR:195099695,yes,Scotch Broom Patrol,Scotch Broom Patrol,2026-01-17 17:30,2026-01-17 17:30,Definitely the same
+GSP:43802,GSP:43857,yes,🌲 Tree Tuesdays @ Kubota Forest,🌲 Tree Tuesdays,2026-04-28 17:00,2026-04-28 17:00,Same event but one of the links redirects to trillium.co which is annoying.
+SPU:2026-05-17-centraldistrict,SPU:2026-05-17-lakecity,no,All Hands Neighborhood Cleanup - Central District,All Hands Neighborhood Cleanup - Lake City,2026-05-17 17:00,2026-05-17 20:00,
+SPU:2026-04-26-lakecity,SPU:2026-04-26-lakeunionwestside,no,All Hands Neighborhood Cleanup - Lake City,All Hands Neighborhood Cleanup - Lake Union(Westside),2026-04-26 20:00,2026-04-26 16:00,
+GSP:44873,GSP:44944,no,Preparing for fall planting with Schmitz Park Restore,Preparing for Planting,2026-10-10 17:00,2026-10-10 16:30,"These are different events - the detail page shows the lat/long differently, they're run by different people, etc"
+SPR:194367043,SPR:195099694,yes,Scotch Broom Patrol,Scotch Broom Patrol,2026-01-10 17:30,2026-01-10 17:30,"Definitely the same. Probably a repost, or a situation where something was posted, deleted, then reposted on an upstream site leading to duplication on SPR"
+DNDA:9231,SPR:195099759,no,Forest Restoration at Delridge Native Forest Garden,East Duwamish Work Party,2026-09-19 17:00,2026-09-19 17:00,
+DNDA:8179,SPR:191007710,no,Park Cleanup at Dragonfly Pavilion,Forest Restoration - Longfellow Creek at Graham Street,2025-11-15 18:00,2025-11-15 18:00,
+DNDA:8179,SPR:191720961,no,Park Cleanup at Dragonfly Pavilion,Longfellow Creek GS Restoration Event,2025-11-15 18:00,2025-11-15 18:00,
+SPF:2nd-saturday-work-party-in-volunteer-park-10,SPR:188165622,no,2nd Saturday Work Party in Volunteer Park,Blackberry Be Gone Workparty,2025-09-13 17:00,2025-09-13 17:00,
+DNDA:8247,SPR:193557841,no,Forest Restoration at Dragonfly Pavilion,Longfellow Creek GS Restoration Event,2025-12-09 18:00,2025-12-09 18:00,
+DNDA:8628,SPR:198238836,yes,Private Volunteer Event,EC Hughes Restoration Event,2026-04-30 17:00,2026-04-30 17:00,Pretty sure they're the same - DNDA doesn't host a lot of different events on the same day/time b/c they're a small org
+DNDA:8179,SPR:191720969,no,Park Cleanup at Dragonfly Pavilion,Ivy Pulling at Camp Long 2,2025-11-15 18:00,2025-11-15 18:00,
+SPF:world-water-week-work-party-at-westcrest-park,SPR:187593773,no,World Water Week Work Party at Westcrest Park,Pigeon Point Park Restoration Event,2025-08-09 17:00,2025-08-09 17:00,

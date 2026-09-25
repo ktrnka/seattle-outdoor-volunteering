@@ -554,6 +554,25 @@ def _display_llm_categorization(categorization, status_note: str = "") -> None:
 
 
 @dev.command()
+def dedupe_eval():
+    """Re-run Splink clustering and score it against the hand-labeled pairs in data/dedupe_labels.csv."""
+    from .etl.dedupe_eval import load_labels, score_clusters
+    from .etl.splink_dedupe import cluster_events, load_source_events
+
+    df = load_source_events()
+    clusters = cluster_events(df)
+    score = score_clusters(clusters, load_labels())
+    sizes = clusters.groupby("cluster_id").size()
+
+    click.echo(f"\nEvents: {len(df)}  Clusters: {sizes.size}  Largest cluster: {sizes.max()}")
+    click.echo(f"Labeled pairs: precision {score.precision:.2f}, recall {score.recall:.2f} "
+               f"({score.true_merges} merged correctly, {score.false_merges} merged wrongly, {score.missed_merges} missed)")
+    for heading, rows in (("Wrongly merged", score.false_merge_rows), ("Missed", score.missed_merge_rows)):
+        for row in rows.itertuples():
+            click.echo(f"  {heading}: {row.title_l!r} ({row.start_l}) <-> {row.title_r!r} ({row.start_r})")
+
+
+@dev.command()
 @click.argument("max_events", type=int, required=True)
 def enrich_source_events(max_events: int):
     """Categorize uncategorized source events with LLM (deprecated - use 'fetch-categorizations' instead)."""

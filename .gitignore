@@ -182,6 +182,7 @@ data/cache/
 data/*.csv
 data/*.json
 !data/manual_events.yaml
+!data/dedupe_labels.csv
 
 # Logs
 logs/
@@ -213,3 +214,7 @@ downloads/
 scraped_data/
 
 .ruff_cache/
+
+# Agent review packages and scratch work
+review/
+scratch/

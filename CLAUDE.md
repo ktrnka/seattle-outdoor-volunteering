@@ -27,6 +27,7 @@ uv run seattle-volunteering --help
 | Generated static site | `docs/` (served as GitHub Pages) |
 | Tests | `tests/` |
 | Data source details | `DATA_SOURCES.md` |
+| Deduplication (Splink) model, tuning, evaluation | `DEDUPLICATION.md`; check changes with `uv run seattle-volunteering dev dedupe-eval` |
 
 ## Common Commands
 
