@@ -16,10 +16,9 @@ def temp_db():
     """Create a temporary database for testing."""
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / "test_events.sqlite"
-        db_gz_path = Path(tmpdir) / "test_events.sqlite.gz"
-        
+
         # Initialize the database schema
-        with Database(compress_on_exit=False, db_path=db_path, db_gz_path=db_gz_path) as db:
+        with Database(db_path=db_path) as db:
             db.init_database()
             yield db
 
