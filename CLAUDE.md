@@ -10,9 +10,10 @@ Public GitHub repo. Deployed via GitHub Actions.
 
 ## Quick Start
 
+From this repo's root:
+
 ```bash
-cd public/seattle-outdoor-volunteering
-cp .env.example .env   # first time only
+echo "GITHUB_TOKEN=..." > .env   # first time only; LLM steps need it (loaded via python-dotenv)
 uv sync --locked
 uv run seattle-volunteering --help
 ```
@@ -32,8 +33,8 @@ uv run seattle-volunteering --help
 ## Common Commands
 
 ```bash
-# Run full ETL + site generation
-uv run seattle-volunteering etl
+# Run the full pipeline (what the nightly GitHub Actions job runs)
+uv run seattle-volunteering pipeline
 
 # Generate site only (skip scraping)
 uv run seattle-volunteering build-site
@@ -50,10 +51,9 @@ GitHub Actions runs the full ETL nightly and pushes updated `docs/` to `main`, w
 
 | Var | Purpose |
 |-----|---------|
-| `OPENAI_API_KEY` | LLM enrichment of event descriptions |
-| `GITHUB_TOKEN` | CI: GitHub Models API access + commit push |
+| `GITHUB_TOKEN` | GitHub Models API access for LLM steps (needed locally too, read from `.env`); in CI, also commit push |
 
-See `.env.example` for the full list with descriptions.
+That's the only variable the code reads.
 
 ## Data Sources
 
