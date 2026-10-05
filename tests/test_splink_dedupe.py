@@ -46,7 +46,8 @@ def test_add_matching_columns():
         }
     )
     out = add_matching_columns(df)
-    assert out["address_clean"].tolist() == ["5900 lake washington blvd s", None]
+    assert out["address_clean"].iloc[0] == "5900 lake washington blvd s"
+    assert pd.isna(out["address_clean"].iloc[1])
     assert out["street_number"].iloc[0] == "5900"
     assert out["start_minute"].iloc[0] == 17 * 60 + 30
     assert pd.isna(out["start_minute"].iloc[1])  # start == end means the time is unknown
@@ -71,7 +72,9 @@ def _records(pairs):
     df = pd.DataFrame(rows)
     df["title"] = df["title"].fillna("x")
     df["address"] = df.get("address", pd.Series(dtype=object))
-    df["start"] = pd.to_datetime(df.get("start", pd.Series(dtype=object)).fillna("2026-01-01 17:00"))
+    if "start" not in df:
+        df["start"] = None
+    df["start"] = pd.to_datetime(df["start"].fillna("2026-01-01 17:00"))
     df["end"] = df["start"] + pd.Timedelta(hours=3)
     df["normalized_title"] = df["title"].apply(normalize_title)
     df["start_date"] = df["start"].dt.date.astype(str)
@@ -91,7 +94,8 @@ def _gamma(left, right, column):
     Uses predict() on an untrained model (same code path as production; the gammas don't depend on training).
     """
     df = _records([(left, right)])
-    linker = Linker([g for _, g in df.groupby("source")], splink_settings(), db_api=DuckDBAPI())
+    db_api = DuckDBAPI()
+    linker = Linker([db_api.register(g) for _, g in df.groupby("source")], splink_settings())
     preds = linker.inference.predict().as_pandas_dataframe()
     pair = preds[preds.unique_id_l.isin(["L:0", "R:0"]) & preds.unique_id_r.isin(["L:0", "R:0"])]
     return int(pair[f"gamma_{column}"].iloc[0])

@@ -51,7 +51,7 @@ def create_url_list(*urls: Optional[str]) -> list[str]:
     Returns:
         List of URLs
     """
-    return [normalize_url(url) for url in urls if url]
+    return [normalize_url(url) for url in urls if isinstance(url, str) and url]
 
 
 def load_source_events() -> pd.DataFrame:
@@ -210,8 +210,9 @@ def splink_settings() -> SettingsCreator:
 
 def train_linker(df: pd.DataFrame) -> Linker:
     """Build and train the Splink model. Also handy for debugging (waterfall charts); see DEDUPLICATION.md."""
-    dfs = [group for _, group in df.groupby("source")]
-    linker = Linker(dfs, splink_settings(), db_api=DuckDBAPI())  # type: ignore
+    db_api = DuckDBAPI()
+    dfs = [db_api.register(group) for _, group in df.groupby("source")]
+    linker = Linker(dfs, splink_settings())
 
     linker.training.estimate_probability_two_random_records_match(
         [block_on("start_date", "normalized_title")],
