@@ -1,4 +1,4 @@
-# CLAUDE.md — seattle-outdoor-volunteering
+# CLAUDE.md – seattle-outdoor-volunteering
 
 Context for AI-assisted development on this repo.
 
