@@ -9,6 +9,9 @@
 ### Observability
 - **Commit SHA tracking**: Record git commit SHA in ETL runs to correlate failures with code changes vs data source changes
 
+### LLM provider
+- GitHub Models endpoint appears gone: nightly LLM categorization has failed every run since the last success on 2026-07-30 (catalog returns non-JSON, completions come back as a string: `'str' object has no attribute 'choices'`). Fremont blog extraction is down too. Move `src/llm/llm.py` to a new provider; verify openai 3.x there and run the `-m llm` tests (deferred from the 2026-10 dependency upgrade)
+
 ### 8/8
 - There are a number of dedupe issues remaining in cases where the duplicate events have different titles
 
